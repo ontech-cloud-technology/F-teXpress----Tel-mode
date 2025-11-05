@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Connexion — 203 Celebration Hub</title>
+  <!-- Utilisation de Manrope comme demandé pour le style moderne -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <!-- Intégration des dépendances Firebase CDN pour les scripts de base -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  
+  <!-- Le style CSS est intégré ici pour la page de connexion -->
+  <style>
+    /* VARIABLES ET STYLE DE BASE (Adapté de votre style) */
+    :root {
+      --bg: radial-gradient(circle at top left, #1a0f30, #0a041c); /* Violet-foncé */
+      --glass: rgba(255, 255, 255, 0.04);
+      --accent: linear-gradient(90deg, #ff6f61, #f9c74f); /* Corail à Or (festif) */
+      --radius: 16px;
+      --shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      --muted: #c8c8d4; /* Texte moins fort */
+      --error-color: #f87171;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      font-family: 'Manrope', sans-serif;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card {
+      width: 95%;
+      max-width: 420px;
+      padding: 32px;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      position: relative;
+      animation: fadeIn 0.8s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0; transform: translateY(20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 1.8em;
+      margin: 0;
+      background: var(--accent);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .lead {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+
+    input:focus {
+      border-color: #ff6f61; /* Corail */
+      box-shadow: 0 0 12px rgba(255, 111, 97, 0.4);
+      outline: none;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      background: var(--accent);
+      padding: 12px 0;
+      border-radius: 10px;
+      color: #1a0f30; /* Couleur très foncée du bg pour un bon contraste */
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(255, 111, 97, 0.4);
+    }
+
+    #error {
+      color: var(--error-color);
+      font-size: 13px;
+      margin-top: 10px;
+      text-align: center;
+      display: none;
+    }
+
+    /* Footer */
+    .site-footer {
+        background: linear-gradient(135deg, #1a0f30, #2c1a4b);
+        color: #9ca3af;
+        padding: 2rem 0 1rem;
+        margin-top: auto;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .site-footer a {
+        color: #9ca3af;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .site-footer a:hover {
+        color: #ffffff;
+    }
+
+    .footer-links {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 1rem;
+        font-size: 0.875rem;
+    }
+
+    .footer-copyright {
+        text-align: center;
+        font-size: 0.875rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* OVERLAY & ANIMATIONS */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,4,28,0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 100;
+    }
+
+    #overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .welcome {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 40px;
+      border-radius: var(--radius);
+      text-align: center;
+      animation: pop 0.6s cubic-bezier(.3, .7, .4, 1);
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.9); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .welcome h2 {
+      margin: 0;
+      font-size: 22px;
+      color: #fff;
+    }
+
+    .welcome p {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: float 1.4s infinite ease-in-out;
+    }
+
+    .dot:nth-child(2){ animation-delay: 0.2s; }
+    .dot:nth-child(3){ animation-delay: 0.4s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>203 Celebration Hub 🎉</h1>
+    <p class="lead">Connectez-vous pour voir le calendrier des fêtes de la classe.</p>
+
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="Adresse e-mail" required />
+      <input id="password" type="password" placeholder="Mot de passe" required />
+      <button type="submit">Se connecter</button>
+      <div id="error"></div>
+    </form>
+  </div>
+
+  <div id="overlay">
+    <div class="welcome">
+      <h2 id="welcomeTitle">Bienvenue</h2>
+      <p id="welcomeSub">Vérification des rôles et préparation du calendrier…</p>
+      <div class="loading">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Le script firebase.js contenant la configuration et les fonctions de base -->
+  <script src="firebase.js"></script>
+
+  <!-- Logique de la page de connexion -->
+  <script>
+    const form = document.getElementById("loginForm");
+    const errorBox = document.getElementById("error");
+    const overlay = document.getElementById("overlay");
+    const welcomeTitle = document.getElementById("welcomeTitle");
+    const welcomeSub = document.getElementById("welcomeSub");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      errorBox.style.display = "none";
+
+      try {
+        // 1. Tenter la connexion via Firebase Auth
+        const userCredential = await signInUser(email, password);
+        const uid = userCredential.user.uid;
+        
+        // 2. Récupérer le rôle et le nom complet (fullName) depuis Firestore
+        const userData = await getUserRole(uid);
+        
+        // 3. Extraction correcte des données
+        const role = userData.role || 'eleve'; 
+        const name = userData.name || email.split('@')[0];
+
+        // 4. Vérifier si l'utilisateur doit changer son mot de passe
+        if (userData.needsPasswordChange === true) {
+            // Stocker les infos pour la page de changement de mot de passe
+            sessionStorage.setItem('tempUserId', uid);
+            sessionStorage.setItem('tempUserEmail', email);
+            sessionStorage.setItem('tempUserName', name);
+            sessionStorage.setItem('userRole', role);
+            
+            welcomeTitle.textContent = `Bienvenue, ${name} !`;
+            welcomeSub.textContent = "Vous devez définir un nouveau mot de passe...";
+            overlay.classList.add("show");
+            
+            setTimeout(() => {
+                window.location.href = 'change-password.html';
+            }, 2000);
+            return;
+        }
+
+        welcomeTitle.textContent = `Bonjour, ${name} (${role})`;
+        
+        let redirectUrl = 'eleve.html'; // Par défaut
+        let subText = 'Chargement du calendrier...';
+
+        // Définir la redirection et le message en fonction du rôle
+        if (role === 'admin') {
+             redirectUrl = 'admin.html';
+             subText = "Ouverture du tableau de bord d'administration...";
+        } else if (role === 'professeur') {
+             redirectUrl = 'teacher.html';
+             subText = "Accès aux outils de gestion professeur...";
+        } else if (role === 'comite') {
+             redirectUrl = 'committee.html';
+             subText = "Accès aux outils du comité...";
+        } else if (role === 'eleve') {
+             redirectUrl = 'eleve.html';
+             subText = "Chargement du calendrier des anniversaires...";
+        }
+        
+        welcomeSub.textContent = subText;
+        overlay.classList.add("show");
+
+        // Redirection après 2 secondes d'animation
+        setTimeout(() => {
+          sessionStorage.setItem('userRole', role);
+          sessionStorage.setItem('userName', name); 
+          
+          window.location.href = redirectUrl;
+        }, 2000);
+
+      } catch (err) {
+        console.error(err);
+        let msg = "Erreur de connexion inconnue.";
+        if (err.code === "auth/wrong-password") msg = "Mot de passe incorrect.";
+        else if (err.code === "auth/user-not-found") msg = "Utilisateur introuvable. Avez-vous le bon email ?";
+        else if (err.code === "auth/invalid-email") msg = "Adresse e-mail invalide.";
+        else if (err.code === "auth/too-many-requests") msg = "Tentatives de connexion bloquées. Veuillez réessayer plus tard.";
+
+        errorBox.textContent = msg;
+        errorBox.style.display = "block";
+      }
+    });
+  </script>
+
+
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendrier — 203 Celebration Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    
+    <!-- Écran de chargement -->
+    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
+        <div class="text-xl text-white">Chargement du calendrier...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <main id="mainContent" class="hidden">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <h1 class="text-3xl md:text-4xl font-extrabold">
+                Calendrier des <span class="header-gradient">Anniversaires</span>
+            </h1>
+            <div class="text-sm mt-2 md:mt-0 flex items-center space-x-4">
+                <span id="welcomeName"></span>
+                <button onclick="goToAdmin()" id="adminBtn" class="hidden flex items-center text-sm px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-700 transition">
+                    <i data-lucide="shield" class="w-4 h-4 mr-2"></i>
+                    Admin
+                </button>
+                <button onclick="signOutAndRedirect()" class="flex items-center text-sm px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 transition">
+                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                    Déconnexion
+                </button>
+            </div>
+        </header>
+
+        <!-- Section Calendrier -->
+        <section class="card p-6 rounded-xl">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i data-lucide="calendar" class="w-6 h-6 mr-2"></i>
+                Prochains Anniversaires
+            </h2>
+            <p class="text-sm text-gray-400 mb-6">Liste des anniversaires à venir dans la classe 203</p>
+            
+            <div id="celebrationsList" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">Chargement des anniversaires...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Inclusion du fichier firebase.js -->
+    <script src="firebase.js"></script>
+
+    <script>
+        const loadingScreen = document.getElementById('loadingScreen');
+        const mainContent = document.getElementById('mainContent');
+        const welcomeName = document.getElementById('welcomeName');
+        const adminBtn = document.getElementById('adminBtn');
+        const celebrationsList = document.getElementById('celebrationsList');
+
+        // Vérifier l'authentification
+        async function checkAuth() {
+            loadingScreen.style.display = 'flex';
+            
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            welcomeName.textContent = `Bienvenue, ${userData.name}`;
+
+            // Afficher le bouton admin si l'utilisateur est admin
+            if (userData.role === 'admin') {
+                adminBtn.classList.remove('hidden');
+            }
+
+            loadingScreen.style.display = 'none';
+            mainContent.classList.remove('hidden');
+            
+            loadCelebrations();
+        }
+
+        // Charger les célébrations
+        function loadCelebrations() {
+            firebase.firestore().collection('celebrations')
+                .orderBy('birthday', 'asc')
+                .onSnapshot(snapshot => {
+                    if (snapshot.empty) {
+                        celebrationsList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun anniversaire enregistré pour le moment.</p>';
+                        return;
+                    }
+
+                    celebrationsList.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const card = document.createElement('div');
+                        card.className = 'bg-bg-dark p-4 rounded-lg flex items-center justify-between hover:bg-opacity-80 transition';
+                        
+                        const dateParts = data.birthday ? data.birthday.split('-') : ['?', '?', '?'];
+                        const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : 'N/A';
+                        
+                        card.innerHTML = `
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
+                                    🎂
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-lg">${data.fullName || 'N/A'}</h3>
+                                    <p class="text-sm text-gray-400">Anniversaire: ${formattedDate}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-gray-500">${data.classNumber || 'N/A'}</span>
+                            </div>
+                        `;
+                        celebrationsList.appendChild(card);
+                    });
+                    lucide.createIcons();
+                }, error => {
+                    console.error("Erreur lors du chargement:", error);
+                    celebrationsList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur de chargement des données.</p>';
+                });
+        }
+
+        // Déconnexion
+        function signOutAndRedirect() {
+            signOutUser().then(() => {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }).catch(error => {
+                console.error("Erreur de déconnexion:", error);
+            });
+        }
+
+        // Aller vers admin
+        function goToAdmin() {
+            window.location.href = 'admin.html';
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkAuth();
+        });
+    </script>
+</body>
+</html>

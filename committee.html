@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Comité — 203 Celebration Hub</title>
+    <!-- Chargement de Tailwind CSS pour un style moderne et responsive -->
+    <!-- NOTE: CDN utilisé pour le développement. Pour la production, installer Tailwind via npm -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icones Lucide pour le côté moderne -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Intégration des dépendances Firebase CDN V9 COMPAT -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    
+    <!-- Bibliothèques pour Import/Export -->
+    <!-- SheetJS pour lire les fichiers Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF pour générer des PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas pour capturer du HTML en image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Configuration Tailwind pour la police Inter et le thème sombre -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Définition des variables de thème */
+        :root {
+            --primary: #ff6f61; /* Corail */
+            --secondary: #f9c74f; /* Or */
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+            --text-color: #f1f5f9;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex; 
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--bg-dark);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #475569;
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #64748b;
+        }
+        
+        /* Modales */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--bg-light);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        /* CORRECTION CRITIQUE DU STYLE DES INPUTS ET SELECT */
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        select {
+            color: var(--text-color) !important; 
+            background-color: var(--bg-dark) !important;
+        }
+        
+        /* Placeholder pour les inputs */
+        input::placeholder {
+            color: #9ca3af !important;
+        }
+        
+        /* Style spécifique pour input date */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+        
+        /* Garantir que les options du menu déroulant ont un texte lisible sur fond blanc */
+        select option {
+            color: #000 !important; /* Texte noir */
+            background-color: #ffffff !important; /* Fond blanc */
+        }
+        
+        /* Styles des Rôles */
+        .role-admin { color: #f87171; font-weight: 700; } 
+        .role-professeur { color: #34d399; font-weight: 700; } 
+        .role-comite { color: #60a5fa; font-weight: 700; } 
+        .role-eleve { color: #fde047; } 
+
+        /* Styles du menu latéral (SideNav) */
+        #sidenav {
+            width: 250px;
+            min-width: 250px;
+            background-color: #24143a;
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            color: var(--text-color);
+        }
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--primary);
+            padding-left: 20px;
+        }
+        /* Style actif pour les onglets de section */
+        .section-tab.active-tab {
+            color: var(--primary); 
+            border-color: var(--primary);
+        }
+
+        /* Responsive design pour mobile */
+        @media (max-width: 768px) {
+            #sidenav {
+                display: none; 
+            }
+            body {
+                display: block;
+            }
+            .modal-content {
+                margin: 20px;
+            }
+        }
+        /* Style actif pour les filtres */
+        .active-filter {
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+    </style>
+</head>
+
+<body>
+    
+    <!-- Menu Latéral de Navigation (SideNav) -->
+    <nav id="sidenav">
+        <div class="px-6 mb-8 text-2xl font-extrabold header-gradient">203 Hub</div>
+        
+        <!-- CORRECTION NAVIGATION: Les HREFs sont directs pour naviguer -->
+        <a href="calendrier.html" class="nav-item">
+            <i data-lucide="calendar" class="w-5 h-5 mr-3"></i>
+            Calendrier des Fêtes
+        </a>
+        <a href="committee.html" class="nav-item active">
+            <i data-lucide="shield-check" class="w-5 h-5 mr-3"></i>
+            Gestion Comité
+        </a>
+        <a onclick="signOutAndRedirect()" class="nav-item mt-auto text-red-400 hover:text-white">
+            <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+            Déconnexion
+        </a>
+        <p class="text-xs px-6 py-2 text-gray-500 mt-2">Connecté: <span id="welcomeName" class="text-gray-400"></span></p>
+    </nav>
+    
+    <!-- Écran de chargement/Autorisation -->
+    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
+        <div class="text-xl text-white">Vérification des autorisations...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu principal comité -->
+    <main id="committeeContent" class="hidden flex-grow p-4 md:p-8">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <h1 class="text-3xl md:text-4xl font-extrabold">
+                Gestion <span class="header-gradient">Comité</span>
+            </h1>
+        </header>
+
+        <!-- Section Unique: Gestion des Célébrations -->
+        <section id="section-celebrations">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- COLONNE GAUCHE: Formulaire d'Ajout -->
+                <div class="card p-6 rounded-xl lg:col-span-1 h-fit">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center header-gradient">
+                        <i data-lucide="plus-circle" class="w-6 h-6 mr-2"></i>
+                        Ajouter une Personne/Fête
+                    </h2>
+                    <form id="addCelebrationForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Nom Complet *</label>
+                            <input type="text" id="celeb_fullName" placeholder="Ex: Jean Dupont" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Date de Naissance / Fête *</label>
+                            <input type="date" id="celeb_birthday" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Numéro de Fiche</label>
+                            <input type="text" id="celeb_fileNumber" placeholder="Ex: 2030014" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Numéro de Classe</label>
+                            <input type="text" id="celeb_classNumber" placeholder="Ex: 14" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Genre</label>
+                            <select id="celeb_gender" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                                <option value="" disabled selected>Sélectionner le Genre</option>
+                                <option value="F">Féminin</option>
+                                <option value="M">Masculin</option>
+                                <option value="A">Autre / Non spécifié</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Information Supplémentaire</label>
+                            <input type="text" id="celeb_extraInfo" placeholder="Autre chose..." class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <!-- Case à cocher pour créer un compte utilisateur -->
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="celeb_createAccount" class="w-5 h-5 rounded border-gray-600 text-primary focus:ring-2 focus:ring-primary">
+                                <div>
+                                    <span class="text-sm font-medium text-white">Créer un compte utilisateur automatiquement</span>
+                                    <p class="text-xs text-gray-400 mt-1">Email: [Numéro de Fiche]@cslaval.qc.ca • Rôle: Élève • Mot de passe initial: login123</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" id="celebSaveBtn" class="w-full p-3 rounded btn-primary font-semibold mt-6 flex items-center justify-center">
+                            <i data-lucide="save" class="w-5 h-5 mr-2"></i>
+                            Sauvegarder la Personne
+                        </button>
+                        <p id="celebMsg" class="text-sm text-center pt-2 hidden"></p>
+                    </form>
+                </div>
+                
+                <!-- COLONNE DROITE: Liste des Célébrations et I/O -->
+                <div class="lg:col-span-2">
+                    <div class="card p-6 rounded-xl mb-6">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="folder-sync" class="w-6 h-6 mr-2 text-secondary"></i>
+                            Outils d'Import/Export
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">Importez un fichier Excel ou exportez la liste complète en PDF moderne</p>
+                        
+                        <!-- Input file caché pour l'import -->
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden">
+                        
+                        <div class="flex flex-wrap gap-4">
+                            <button onclick="triggerFileInput()" class="flex-1 min-w-[150px] flex items-center justify-center px-4 py-3 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold transition">
+                                <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
+                                Importer Excel/CSV
+                            </button>
+                            <button onclick="exportToPDF()" class="flex-1 min-w-[150px] flex items-center justify-center px-4 py-3 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition">
+                                <i data-lucide="file-down" class="w-5 h-5 mr-2"></i>
+                                Exporter en PDF
+                            </button>
+                        </div>
+                        <p id="ioMsg" class="text-sm mt-4 hidden">Message I/O...</p>
+                    </div>
+
+                    <div class="card p-6 rounded-xl">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="list-checks" class="w-5 h-5 mr-2 text-secondary"></i>
+                            Liste Complète des Personnes
+                        </h3>
+                        <div class="overflow-x-auto rounded-lg border border-gray-700">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead class="bg-bg-dark">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nom (Fiche/Classe)</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Fête/Anniv.</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">Genre</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden md:table-cell">Info Supp.</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="celebrationListBody" class="divide-y divide-gray-800">
+                                    <tr><td colspan="5" class="text-center py-4 text-gray-500">Aucune personne enregistrée.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Section 3 (TODO) -->
+        <section id="section-settings" class="card p-6 rounded-xl hidden">...</section>
+
+    </main>
+
+    <!-- Modale d'Édition d'Utilisateur -->
+    <div id="editUserModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6">Éditer l'Utilisateur</h3>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                
+                <div class="mb-4">
+                    <label for="editFullName" class="block text-sm font-medium mb-1">Nom Complet</label>
+                    <input type="text" id="editFullName" class="w-full p-2 rounded bg-bg-dark border border-gray-700 focus:ring-primary focus:border-primary">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="editEmail" class="block text-sm font-medium mb-1">Email (UID)</label>
+                    <input type="email" id="editEmail" readonly class="w-full p-2 rounded bg-gray-700 border border-gray-600 cursor-not-allowed text-gray-400">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="editRole" class="block text-sm font-medium mb-1">Rôle</label>
+                    <select id="editRole" class="w-full p-2 rounded bg-bg-dark border border-gray-700 focus:ring-primary focus:border-primary">
+                        <option value="admin">Admin</option>
+                        <option value="comite">Comité</option>
+                        <option value="professeur">Professeur</option>
+                        <option value="eleve">Élève</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-between items-center pt-4 border-t border-gray-700">
+                    <!-- Bouton de Suppression -->
+                    <button type="button" onclick="confirmDeleteUser()" class="flex items-center text-red-400 hover:text-red-500 transition">
+                        <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i>
+                        Supprimer l'Utilisateur
+                    </button>
+                    <div class="flex space-x-4">
+                        <button type="button" onclick="closeModal('editUserModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                        <button type="submit" class="px-4 py-2 rounded btn-primary">Sauvegarder</button>
+                    </div>
+                </div>
+                <div id="editError" class="text-sm text-red-400 mt-3 hidden">Erreur:</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale d'Ajout d'Utilisateur -->
+    <div id="addUserModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 flex items-center header-gradient">
+                <i data-lucide="user-plus" class="w-6 h-6 mr-2"></i>
+                Créer un Nouvel Utilisateur
+            </h3>
+            <form id="addUserForm">
+                <div class="space-y-4">
+                    <div>
+                        <label for="addFullName" class="block text-sm font-medium mb-2 text-gray-300">Nom Complet *</label>
+                        <input type="text" id="addFullName" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Ex: Jean Dupont">
+                    </div>
+                    
+                    <div>
+                        <label for="addEmail" class="block text-sm font-medium mb-2 text-gray-300">Email *</label>
+                        <input type="email" id="addEmail" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Ex: jean.dupont@example.com">
+                    </div>
+                    
+                    <div>
+                        <label for="addPassword" class="block text-sm font-medium mb-2 text-gray-300">Mot de passe *</label>
+                        <input type="password" id="addPassword" required minlength="6" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Minimum 6 caractères">
+                        <p class="text-xs text-gray-500 mt-1">Le mot de passe doit contenir au moins 6 caractères</p>
+                    </div>
+                    
+                    <div>
+                        <label for="addRole" class="block text-sm font-medium mb-2 text-gray-300">Rôle *</label>
+                        <select id="addRole" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                            <option value="" disabled selected>Sélectionner un rôle</option>
+                            <option value="eleve">Élève</option>
+                            <option value="comite">Comité</option>
+                            <option value="professeur">Professeur</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 mt-6 pt-4 border-t border-gray-700">
+                    <button type="button" onclick="closeModal('addUserModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                    <button type="submit" id="addUserBtn" class="px-4 py-2 rounded btn-primary flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 mr-2"></i>
+                        Créer l'Utilisateur
+                    </button>
+                </div>
+                <div id="addUserError" class="text-sm text-red-400 mt-3 hidden">Erreur:</div>
+                <div id="addUserSuccess" class="text-sm text-green-400 mt-3 hidden">Succès:</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale de Confirmation de Suppression Utilisateur -->
+    <div id="deleteConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Confirmer la Suppression</h3>
+            <p class="text-gray-400 mb-6">Êtes-vous sûr de vouloir supprimer <strong id="userToDeleteName" class="text-white"></strong> ? Cette action est irréversible et supprime l'accès au tableau de bord.</p>
+            <input type="hidden" id="deleteUserId">
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeModal('deleteConfirmModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                <button type="button" onclick="deleteUserConfirmed()" id="deleteConfirmBtn" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition">
+                    Oui, Supprimer Définitivement
+                </button>
+            </div>
+            <div id="deleteError" class="text-sm text-red-400 mt-3 hidden"></div>
+        </div>
+    </div>
+    
+    <!-- Modale de Confirmation de Suppression Célébration -->
+    <div id="deleteCelebConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Confirmer la Suppression de la Célébration</h3>
+            <p class="text-gray-400 mb-6">Êtes-vous sûr de vouloir supprimer la fête de <strong id="celebToDeleteName" class="text-white"></strong> ?</p>
+            <input type="hidden" id="deleteCelebId">
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeModal('deleteCelebConfirmModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                <button type="button" onclick="deleteCelebrationConfirmed()" id="deleteCelebConfirmBtn" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition">
+                    Oui, Supprimer
+                </button>
+            </div>
+            <div id="deleteCelebError" class="text-sm text-red-400 mt-3 hidden"></div>
+        </div>
+    </div>
+
+
+    <!-- Inclusion du fichier firebase.js -->
+    <script src="firebase.js"></script>
+    
+    <!-- Script principal -->
+    <script>
+        // Fonctions supplémentaires pour les célébrations
+        
+        /** Ajoute un document de célébration */
+        async function addCelebration(data) {
+            return db.collection('celebrations').add(data);
+        }
+        
+        /** Supprime un document de célébration */
+        async function deleteCelebration(id) {
+            return db.collection('celebrations').doc(id).delete();
+        }
+        
+        /** Configure l'écouteur en temps réel pour la collection 'celebrations' */
+        function listenForCelebrations(renderCallback) {
+            const q = db.collection('celebrations').orderBy('birthday', 'asc'); 
+
+            console.log("Setting up Firestore listener for celebrations");
+            const unsubscribe = q.onSnapshot(snapshot => {
+                const celebrations = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                renderCallback(celebrations);
+            }, (error) => {
+                console.error("Error listening to celebrations:", error);
+            });
+            return unsubscribe;
+        }
+
+        // --- Début du Script Principal ---
+
+        const celebrationListBody = document.getElementById('celebrationListBody');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const committeeContent = document.getElementById('committeeContent');
+        const welcomeName = document.getElementById('welcomeName');
+        const ioMsg = document.getElementById('ioMsg');
+
+        let allCelebrations = [];
+        let unsubscribeCelebrations = null;
+        
+        // --- Navigation et Autorisation ---
+
+        /** Redirige l'utilisateur s'il n'est pas membre du comité ou admin. */
+        async function checkCommitteeAuth() {
+            loadingScreen.style.display = 'flex';
+            
+            // Attendre que l'état d'authentification soit établi
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe(); // Arrêter l'écoute après la première vérification
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                // Pas connecté, rediriger vers login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            const role = userData.role;
+            
+            welcomeName.textContent = `${userData.name || userData.email || 'Comité'} (${role})`;
+
+            // Vérifier que l'utilisateur est membre du comité ou admin
+            if (role !== 'comite' && role !== 'admin') {
+                alert(`Accès refusé. Cette page est réservée au comité.`);
+                window.location.href = 'eleve.html';
+                return;
+            }
+
+            loadingScreen.style.display = 'none';
+            committeeContent.classList.remove('hidden');
+            
+            // Charger les célébrations directement
+            if (unsubscribeCelebrations) {
+                unsubscribeCelebrations();
+            }
+            unsubscribeCelebrations = listenForCelebrations(renderCelebrationList);
+        }
+
+
+        /** Déconnecte l'utilisateur et redirige vers la page de connexion. */
+        window.signOutAndRedirect = function() {
+            signOutUser().then(() => {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }).catch(error => {
+                console.error("Erreur de déconnexion:", error);
+                // Utiliser la zone de message existante ou une modale simple
+            });
+        }
+        
+        // --- Fonctions Générales des Modales ---
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        window.openModal = function(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+
+        // --- Gestion des Utilisateurs SUPPRIMÉE (Page Comité) ---
+        
+        // --- Gestion des Célébrations ---
+
+        /** Rendu de la liste des célébrations */
+        function renderCelebrationList(celebrations) {
+            // Stocker les célébrations pour l'export
+            allCelebrations = celebrations;
+            
+            celebrationListBody.innerHTML = '';
+
+            if (celebrations.length === 0) {
+                celebrationListBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Aucune personne enregistrée.</td></tr>';
+                return;
+            }
+
+            celebrations.forEach(celeb => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-bg-dark transition cursor-pointer';
+
+                // Format the date (YYYY-MM-DD to DD/MM/YYYY)
+                const dateParts = celeb.birthday ? celeb.birthday.split('-') : ['?', '?', '?'];
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : 'N/A';
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium">${celeb.fullName || 'N/A'} <span class="text-xs text-gray-500">(${celeb.fileNumber || 'N/A'}/${celeb.classNumber || 'N/A'})</span></td>
+                    <td class="px-4 py-3 text-sm">${formattedDate}</td>
+                    <td class="px-4 py-3 text-sm hidden sm:table-cell">${celeb.gender || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">${celeb.extraInfo || 'N/A'}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="openDeleteCelebModal('${celeb.id}', '${celeb.fullName.replace(/'/g, "\\'")}')" class="text-red-400 hover:text-red-500 transition p-2 rounded-full hover:bg-gray-700">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
+                        </button>
+                    </td>
+                `;
+                celebrationListBody.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+
+        /** Gère la soumission du formulaire d'ajout de célébration. */
+        document.getElementById('addCelebrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const saveBtn = document.getElementById('celebSaveBtn');
+            const msgElement = document.getElementById('celebMsg');
+            const createAccount = form.celeb_createAccount.checked;
+            const fileNumber = form.celeb_fileNumber.value.trim();
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>Ajout en cours...';
+            msgElement.classList.add('hidden');
+            msgElement.classList.remove('text-green-400', 'text-red-400');
+
+            try {
+                const data = {
+                    fullName: form.celeb_fullName.value,
+                    birthday: form.celeb_birthday.value,
+                    fileNumber: fileNumber,
+                    classNumber: form.celeb_classNumber.value,
+                    gender: form.celeb_gender.value,
+                    extraInfo: form.celeb_extraInfo.value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Ajouter la célébration
+                await addCelebration(data);
+                
+                // Si la case est cochée, créer un compte utilisateur
+                if (createAccount && fileNumber) {
+                    const email = `${fileNumber}@cslaval.qc.ca`;
+                    const tempPassword = 'login123';
+                    
+                    try {
+                        // Créer l'utilisateur dans Firebase Auth
+                        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, tempPassword);
+                        const uid = userCredential.user.uid;
+                        
+                        // Créer le document utilisateur dans Firestore avec flag temporaire
+                        await firebase.firestore().collection('users').doc(uid).set({
+                            fullName: data.fullName,
+                            email: email,
+                            role: 'eleve',
+                            needsPasswordChange: true, // Flag pour indiquer que le mot de passe doit être changé
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        msgElement.textContent = `✅ Personne et compte utilisateur créés avec succès ! Email: ${email}`;
+                    } catch (authError) {
+                        // Si l'utilisateur existe déjà, ce n'est pas grave
+                        if (authError.code === 'auth/email-already-in-use') {
+                            msgElement.textContent = '✅ Personne ajoutée ! (Compte utilisateur existe déjà)';
+                        } else {
+                            msgElement.textContent = `⚠️ Personne ajoutée mais erreur création compte: ${authError.message}`;
+                        }
+                    }
+                } else {
+                    msgElement.textContent = '✅ Personne ajoutée avec succès !';
+                }
+                
+                msgElement.classList.add('text-green-400');
+                form.reset();
+
+            } catch (error) {
+                console.error("Erreur lors de l'ajout de la célébration:", error);
+                msgElement.textContent = `❌ Erreur: ${error.message}`;
+                msgElement.classList.add('text-red-400');
+            } finally {
+                msgElement.classList.remove('hidden');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i data-lucide="save" class="w-5 h-5 mr-2"></i>Sauvegarder la Personne';
+                lucide.createIcons();
+            }
+        });
+
+        // --- Fonctions de Modale de Suppression Célébration ---
+
+        /** Ouvre la modale de confirmation de suppression de célébration. */
+        window.openDeleteCelebModal = function(celebId, fullName) {
+            document.getElementById('deleteCelebId').value = celebId;
+            document.getElementById('celebToDeleteName').textContent = fullName;
+            document.getElementById('deleteCelebError').classList.add('hidden');
+            openModal('deleteCelebConfirmModal');
+        }
+
+        /** Exécute la suppression de la célébration après confirmation. */
+        window.deleteCelebrationConfirmed = async function() {
+            const celebId = document.getElementById('deleteCelebId').value;
+            const deleteBtn = document.getElementById('deleteCelebConfirmBtn');
+            const errorElement = document.getElementById('deleteCelebError');
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Suppression...';
+            errorElement.classList.add('hidden');
+
+            try {
+                await deleteCelebration(celebId);
+                
+                closeModal('deleteCelebConfirmModal');
+                // L'écouteur onSnapshot s'occupera de la mise à jour automatique du tableau
+
+            } catch (error) {
+                console.error("Erreur de suppression de célébration:", error);
+                errorElement.textContent = `Erreur lors de la suppression: ${error.message}`;
+                errorElement.classList.remove('hidden');
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Oui, Supprimer';
+            }
+        }
+        
+        // --- Fonctions Import/Export ---
+        
+        /** Déclenche le sélecteur de fichier pour l'import */
+        window.triggerFileInput = function() {
+            document.getElementById('excelFileInput').click();
+        }
+        
+        /** Gère l'import de fichier Excel/CSV */
+        document.getElementById('excelFileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            ioMsg.textContent = "Lecture du fichier en cours...";
+            ioMsg.classList.remove('hidden', 'text-green-400', 'text-red-400', 'text-yellow-400');
+            ioMsg.classList.add('text-blue-400');
+            
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                if (jsonData.length === 0) {
+                    throw new Error("Le fichier est vide ou mal formaté");
+                }
+                
+                let imported = 0;
+                let errors = 0;
+                
+                // Importer chaque ligne
+                for (const row of jsonData) {
+                    try {
+                        // Essayer de détecter les colonnes automatiquement
+                        const celebData = {
+                            fullName: row['Nom'] || row['Nom Complet'] || row['fullName'] || row['name'] || '',
+                            birthday: row['Date'] || row['Anniversaire'] || row['birthday'] || row['Date de Naissance'] || '',
+                            fileNumber: row['Fiche'] || row['Numéro de Fiche'] || row['fileNumber'] || '',
+                            classNumber: row['Classe'] || row['Numéro de Classe'] || row['classNumber'] || '',
+                            gender: row['Genre'] || row['Sexe'] || row['gender'] || '',
+                            extraInfo: row['Info'] || row['Information'] || row['extraInfo'] || '',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        
+                        // Valider que le nom et la date sont présents
+                        if (!celebData.fullName || !celebData.birthday) {
+                            errors++;
+                            continue;
+                        }
+                        
+                        // Normaliser la date si nécessaire (DD/MM/YYYY vers YYYY-MM-DD)
+                        if (celebData.birthday.includes('/')) {
+                            const parts = celebData.birthday.split('/');
+                            if (parts.length === 3) {
+                                celebData.birthday = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                        }
+                        
+                        await addCelebration(celebData);
+                        imported++;
+                        
+                    } catch (err) {
+                        console.error("Erreur lors de l'import d'une ligne:", err);
+                        errors++;
+                    }
+                }
+                
+                ioMsg.textContent = `✅ Import terminé: ${imported} personne(s) ajoutée(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`;
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-green-400');
+                
+            } catch (error) {
+                console.error("Erreur lors de l'import:", error);
+                ioMsg.textContent = `❌ Erreur d'import: ${error.message}`;
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-red-400');
+            }
+            
+            // Réinitialiser l'input
+            e.target.value = '';
+        });
+        
+        /** Exporte toutes les célébrations en PDF moderne */
+        window.exportToPDF = async function() {
+            if (allCelebrations.length === 0) {
+                ioMsg.textContent = "❌ Aucune donnée à exporter";
+                ioMsg.classList.remove('hidden', 'text-green-400', 'text-blue-400');
+                ioMsg.classList.add('text-red-400');
+                return;
+            }
+            
+            ioMsg.textContent = "📄 Génération du PDF en cours...";
+            ioMsg.classList.remove('hidden', 'text-green-400', 'text-red-400');
+            ioMsg.classList.add('text-blue-400');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                // Configuration
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 15;
+                let yPos = margin;
+                
+                // Fonction pour ajouter une nouvelle page si nécessaire
+                const checkNewPage = (neededSpace = 20) => {
+                    if (yPos + neededSpace > pageHeight - margin) {
+                        doc.addPage();
+                        yPos = margin;
+                        return true;
+                    }
+                    return false;
+                };
+                
+                // En-tête moderne avec gradient (simulé)
+                doc.setFillColor(255, 111, 97); // Couleur primaire
+                doc.rect(0, 0, pageWidth, 40, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.text('203 Celebration Hub', margin, 20);
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Liste Complète des Anniversaires', margin, 30);
+                
+                // Date d'export
+                const today = new Date().toLocaleDateString('fr-FR');
+                doc.setFontSize(10);
+                doc.text(`Exporté le: ${today}`, pageWidth - margin - 40, 30);
+                
+                yPos = 50;
+                
+                // Statistiques
+                doc.setTextColor(50, 50, 50);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: ${allCelebrations.length} personne(s)`, margin, yPos);
+                yPos += 15;
+                
+                // Trier par date d'anniversaire
+                const sortedCelebrations = [...allCelebrations].sort((a, b) => {
+                    return (a.birthday || '').localeCompare(b.birthday || '');
+                });
+                
+                // Liste des personnes
+                sortedCelebrations.forEach((celeb, index) => {
+                    checkNewPage(35);
+                    
+                    // Carte pour chaque personne
+                    doc.setFillColor(245, 245, 250);
+                    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 30, 3, 3, 'F');
+                    
+                    // Bordure gauche colorée
+                    doc.setFillColor(255, 111, 97);
+                    doc.rect(margin, yPos, 3, 30, 'F');
+                    
+                    // Numéro
+                    doc.setTextColor(150, 150, 150);
+                    doc.setFontSize(10);
+                    doc.text(`#${index + 1}`, margin + 8, yPos + 8);
+                    
+                    // Nom
+                    doc.setTextColor(30, 30, 30);
+                    doc.setFontSize(13);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(celeb.fullName || 'N/A', margin + 8, yPos + 15);
+                    
+                    // Date d'anniversaire
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(100, 100, 100);
+                    const dateParts = (celeb.birthday || '').split('-');
+                    const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : 'N/A';
+                    doc.text(`🎂 ${formattedDate}`, margin + 8, yPos + 22);
+                    
+                    // Informations supplémentaires
+                    let xOffset = margin + 70;
+                    if (celeb.fileNumber) {
+                        doc.text(`Fiche: ${celeb.fileNumber}`, xOffset, yPos + 15);
+                        xOffset += 40;
+                    }
+                    if (celeb.classNumber) {
+                        doc.text(`Classe: ${celeb.classNumber}`, xOffset, yPos + 15);
+                    }
+                    if (celeb.gender) {
+                        doc.text(`Genre: ${celeb.gender}`, xOffset, yPos + 22);
+                    }
+                    
+                    yPos += 35;
+                });
+                
+                // Pied de page sur toutes les pages
+                const totalPages = doc.internal.pages.length - 1;
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(`Page ${i} / ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    doc.text('203 Celebration Hub - Gestion des Anniversaires', margin, pageHeight - 10);
+                }
+                
+                // Sauvegarder le PDF
+                doc.save(`Anniversaires_203_${today.replace(/\//g, '-')}.pdf`);
+                
+                ioMsg.textContent = "✅ PDF exporté avec succès !";
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-green-400');
+                
+            } catch (error) {
+                console.error("Erreur lors de l'export PDF:", error);
+                ioMsg.textContent = `❌ Erreur d'export: ${error.message}`;
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-red-400');
+            }
+        }
+
+        // Démarrage de l'application
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkCommitteeAuth();
+        });
+
+    </script>
+</body>
+</html>
