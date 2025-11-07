@@ -639,6 +639,9 @@
 
             // Logger la connexion
             await logActivity(currentUserId, 'login', { description: 'Connexion à la page admin' });
+            
+            // Stocker l'heure de connexion pour calculer la durée de session
+            sessionStorage.setItem('loginTime', Date.now());
         }
 
         /** Gère le changement d'onglet principal (Users, Celebrations, Settings). */
@@ -670,16 +673,25 @@
 
         /** Déconnecte l'utilisateur et redirige vers la page de connexion. */
         window.signOutAndRedirect = async function() {
-            // Logger la déconnexion
+            // Calculer la durée de session
+            const loginTime = sessionStorage.getItem('loginTime');
+            let sessionDuration = null;
+            if (loginTime) {
+                sessionDuration = Math.round((Date.now() - parseInt(loginTime)) / 1000); // Durée en secondes
+            }
+            
+            // Logger la déconnexion avec la durée de session
             if (currentUserId) {
-                await logActivity(currentUserId, 'logout', { description: 'Déconnexion depuis la page admin' });
+                await logActivity(currentUserId, 'logout', { 
+                    sessionDuration: sessionDuration,
+                    description: 'Déconnexion depuis la page admin' 
+                });
             }
             signOutUser().then(() => {
                 sessionStorage.clear();
                 window.location.href = 'login.html';
             }).catch(error => {
                 console.error("Erreur de déconnexion:", error);
-                // Utiliser la zone de message existante ou une modale simple
             });
         }
         

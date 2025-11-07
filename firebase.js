@@ -122,7 +122,7 @@ async function logActivity(userId, action, details = {}) {
     if (!userId) return; // Ne pas logger si pas d'utilisateur
 
     try {
-        // Collecter des informations système
+        // Collecter les informations système de base
         const logData = {
             userId,
             action,
@@ -143,13 +143,10 @@ async function logActivity(userId, action, details = {}) {
             os: navigator.platform,
             plugins: navigator.plugins ? navigator.plugins.length : 0,
             touchScreen: 'ontouchstart' in window,
-            batteryLevel: details.batteryLevel || null,
-            connectionSpeed: details.connectionSpeed || null,
-            location: details.location || null, // À implémenter si nécessaire
             ...details
         };
 
-        // Récupérer l'IP via une API externe (gratuite)
+        // Récupérer l'IP via une API externe
         try {
             const ipResponse = await fetch('https://api.ipify.org?format=json');
             if (ipResponse.ok) {
@@ -161,6 +158,50 @@ async function logActivity(userId, action, details = {}) {
         } catch (error) {
             console.warn('Impossible de récupérer l\'IP:', error);
             logData.ip = 'Unknown';
+        }
+
+        // Récupérer le niveau de batterie
+        if ('getBattery' in navigator) {
+            try {
+                const battery = await navigator.getBattery();
+                logData.batteryLevel = `${Math.round(battery.level * 100)}%`;
+                logData.batteryCharging = battery.charging;
+            } catch (error) {
+                logData.batteryLevel = 'Non disponible';
+            }
+        } else {
+            logData.batteryLevel = 'Non supporté';
+        }
+
+        // Récupérer les informations de connexion réseau
+        if ('connection' in navigator) {
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (connection) {
+                logData.connectionSpeed = connection.effectiveType || 'Unknown';
+                logData.connectionDownlink = connection.downlink || 'Unknown';
+                logData.connectionRtt = connection.rtt || 'Unknown';
+            } else {
+                logData.connectionSpeed = 'Non disponible';
+            }
+        } else {
+            logData.connectionSpeed = 'Non supporté';
+        }
+
+        // Récupérer la localisation approximative (si disponible)
+        if ('geolocation' in navigator) {
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        timeout: 5000,
+                        enableHighAccuracy: false
+                    });
+                });
+                logData.location = `${position.coords.latitude.toFixed(2)}, ${position.coords.longitude.toFixed(2)}`;
+            } catch (error) {
+                logData.location = 'Non autorisée ou indisponible';
+            }
+        } else {
+            logData.location = 'Non supporté';
         }
 
         // Ajouter à Firestore

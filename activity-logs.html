@@ -325,6 +325,8 @@
             }
         }
 
+        let userMap = {}; // Cache pour les noms d'utilisateurs
+
         async function getUsersForFilter() {
             try {
                 const users = await getAllUsers();
@@ -333,10 +335,31 @@
                     option.value = user.id;
                     option.textContent = user.name || user.email;
                     filterUser.appendChild(option);
+                    // Stocker dans le cache
+                    userMap[user.id] = user.name || user.email;
                 });
             } catch (error) {
                 console.error('Erreur lors de la récupération des utilisateurs:', error);
             }
+        }
+
+        function getUserName(userId) {
+            return userMap[userId] || 'Utilisateur inconnu';
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || seconds <= 0) return 'N/A';
+            
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            let result = '';
+            if (hours > 0) result += `${hours}h `;
+            if (minutes > 0 || hours > 0) result += `${minutes}m `;
+            result += `${secs}s`;
+            
+            return result.trim();
         }
 
         // Fonctions d'affichage
@@ -354,7 +377,7 @@
             logsToShow.forEach(log => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td class="px-4 py-3 text-sm">${log.userName || 'Utilisateur inconnu'}</td>
+                    <td class="px-4 py-3 text-sm">${getUserName(log.userId)}</td>
                     <td class="px-4 py-3 text-sm">
                         <span class="px-2 py-1 rounded text-xs ${getActionClass(log.action)}">${getActionLabel(log.action)}</span>
                     </td>
@@ -417,7 +440,7 @@
             const detailsContent = document.getElementById('detailsContent');
             detailsContent.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><strong>Utilisateur:</strong> ${log.userName || 'N/A'}</div>
+                    <div><strong>Utilisateur:</strong> ${getUserName(log.userId)}</div>
                     <div><strong>UID:</strong> ${log.userId || 'N/A'}</div>
                     <div><strong>Action:</strong> ${getActionLabel(log.action)}</div>
                     <div><strong>Timestamp:</strong> ${new Date(log.timestamp?.toDate()).toLocaleString('fr-FR')}</div>
@@ -429,7 +452,7 @@
                     <div><strong>Page:</strong> ${log.page || 'N/A'}</div>
                     <div><strong>Élément cliqué:</strong> ${log.elementClicked || 'N/A'}</div>
                     <div><strong>Données modifiées:</strong> ${log.modifiedData ? JSON.stringify(log.modifiedData, null, 2) : 'N/A'}</div>
-                    <div><strong>Durée de session:</strong> ${log.sessionDuration || 'N/A'}</div>
+                    <div><strong>Durée de session:</strong> ${log.sessionDuration ? formatDuration(log.sessionDuration) : 'N/A'}</div>
                     <div><strong>Référent:</strong> ${log.referrer || 'N/A'}</div>
                     <div><strong>Langue:</strong> ${log.language || 'N/A'}</div>
                     <div><strong>Timezone:</strong> ${log.timezone || 'N/A'}</div>
@@ -439,7 +462,10 @@
                     <div><strong>Plugins:</strong> ${log.plugins || 'N/A'}</div>
                     <div><strong>Touchscreen:</strong> ${log.touchScreen ? 'Oui' : 'Non'}</div>
                     <div><strong>Batterie:</strong> ${log.batteryLevel || 'N/A'}</div>
-                    <div><strong>Vitesse connexion:</strong> ${log.connectionSpeed || 'N/A'}</div>
+                    <div><strong>Connexion:</strong> ${log.connectionSpeed || 'N/A'}</div>
+                    <div><strong>Downlink:</strong> ${log.connectionDownlink || 'N/A'}</div>
+                    <div><strong>RTT:</strong> ${log.connectionRtt ? `${log.connectionRtt}ms` : 'N/A'}</div>
+                    <div><strong>Charge batterie:</strong> ${log.batteryCharging !== undefined ? (log.batteryCharging ? 'Oui' : 'Non') : 'N/A'}</div>
                 </div>
                 <div class="mt-4"><strong>Description:</strong> ${log.description || 'N/A'}</div>
             `;
