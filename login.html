@@ -60,6 +60,7 @@
       font-size: 1.8em;
       margin: 0;
       background: var(--accent);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -271,6 +272,13 @@
         const role = userData.role || 'eleve'; 
         const name = userData.name || email.split('@')[0];
 
+        // DEBUG: Afficher les données récupérées
+        console.log('Utilisateur connecté:', email);
+        console.log('UID:', uid);
+        console.log('Données Firestore:', userData);
+        console.log('Rôle extrait:', role);
+        console.log('Nom extrait:', name);
+
         // 4. Vérifier si l'utilisateur doit changer son mot de passe
         if (userData.needsPasswordChange === true) {
             // Stocker les infos pour la page de changement de mot de passe
@@ -298,8 +306,8 @@
         if (role === 'admin') {
              redirectUrl = 'admin.html';
              subText = "Ouverture du tableau de bord d'administration...";
-        } else if (role === 'professeur') {
-             redirectUrl = 'teacher.html';
+        } else if (role === 'professeur' || role === 'teacher') {
+             redirectUrl = 'admin.html';
              subText = "Accès aux outils de gestion professeur...";
         } else if (role === 'comite') {
              redirectUrl = 'committee.html';

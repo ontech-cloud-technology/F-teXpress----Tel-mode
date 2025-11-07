@@ -55,6 +55,7 @@
         }
         .header-gradient {
             background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -200,6 +201,10 @@
         <a href="admin.html" class="nav-item active">
             <i data-lucide="shield-check" class="w-5 h-5 mr-3"></i>
             Dashboard Admin
+        </a>
+        <a href="activity-logs.html" class="nav-item">
+            <i data-lucide="activity" class="w-5 h-5 mr-3"></i>
+            Logs d'Activité
         </a>
         <a onclick="signOutAndRedirect()" class="nav-item mt-auto text-red-400 hover:text-white">
             <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
@@ -576,6 +581,7 @@
         let allUsers = []; 
         let currentFilterRole = 'all';
         let unsubscribeCelebrations = null; 
+        let currentUserId = null; // Pour le logging 
 
         const sections = {
             'users': document.getElementById('section-users'),
@@ -606,11 +612,23 @@
             const userData = await getUserRole(user.uid);
             const role = userData.role;
             
-            welcomeName.textContent = `${userData.name || userData.email || 'Admin'} (${role})`;
+            welcomeName.textContent = `${userData.name || userData.email || 'Admin'} (${role === 'professeur' || role === 'teacher' ? 'Professeur' : role})`;
+            currentUserId = user.uid; // Stocker pour logging
 
-            if (role !== 'admin') {
-                alert(`Accès refusé. Rôle actuel: ${role}. Redirection vers eleve.html.`);
-                window.location.href = 'eleve.html';
+            if (role !== 'admin' && role !== 'professeur' && role !== 'teacher') {
+                let redirectPage = 'eleve.html'; // Par défaut
+                let roleName = 'Élève';
+                
+                if (role === 'professeur' || role === 'teacher') {
+                    redirectPage = 'admin.html';
+                    roleName = 'Professeur';
+                } else if (role === 'comite') {
+                    redirectPage = 'committee.html';
+                    roleName = 'Comité';
+                }
+                
+                alert(`Accès refusé pour cette page. Rôle actuel: ${roleName}. Redirection vers ${redirectPage}.`);
+                window.location.href = redirectPage;
                 return;
             }
 
@@ -618,6 +636,9 @@
             adminContent.classList.remove('hidden');
             fetchUsers();
             changeSection('users'); // Afficher la section par défaut
+
+            // Logger la connexion
+            await logActivity(currentUserId, 'login', { description: 'Connexion à la page admin' });
         }
 
         /** Gère le changement d'onglet principal (Users, Celebrations, Settings). */
@@ -648,7 +669,11 @@
         }
 
         /** Déconnecte l'utilisateur et redirige vers la page de connexion. */
-        window.signOutAndRedirect = function() {
+        window.signOutAndRedirect = async function() {
+            // Logger la déconnexion
+            if (currentUserId) {
+                await logActivity(currentUserId, 'logout', { description: 'Déconnexion depuis la page admin' });
+            }
             signOutUser().then(() => {
                 sessionStorage.clear();
                 window.location.href = 'login.html';
@@ -729,6 +754,12 @@
                 
                 closeModal('editUserModal');
                 fetchUsers(); // Recharger les utilisateurs pour mettre à jour le tableau
+
+                // Logger la modification
+                await logActivity(currentUserId, 'update', { 
+                    modifiedData: { userId, fullName: newFullName, role: newRole }, 
+                    description: `Modification de l'utilisateur ${newFullName}` 
+                });
 
             } catch (error) {
                 console.error("Erreur lors de la mise à jour:", error);

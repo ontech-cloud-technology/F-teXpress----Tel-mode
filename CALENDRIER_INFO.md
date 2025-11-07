@@ -72,14 +72,14 @@ Trois cartes statistiques :
 Le lien "Tableau de Bord" dans la sidebar s'adapte au rôle :
 - **Admin** → `admin.html` (Dashboard Admin)
 - **Comité** → `committee.html` (Gestion Comité)
-- **Professeur** → `teacher.html` (Professeur)
+- **Professeur** → `admin.html` (Professeur)
 - **Élève** → `eleve.html` (Mon Profil)
 
 ### Liens vers le Calendrier
 Depuis les pages suivantes, le lien "Calendrier des Fêtes" redirige vers `calendrier.html` :
 - ✅ `admin.html`
 - ✅ `committee.html`
-- ✅ `teacher.html` (si créé)
+- ✅ `admin.html` (si créé)
 - ✅ `eleve.html` (si mis à jour)
 
 ---

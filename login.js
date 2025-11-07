@@ -24,7 +24,7 @@ loginForm.addEventListener("submit", async (e) => {
 
       // Redirection selon rôle
       if(role === "eleve") window.location.href = "eleve.html";
-      else if(role === "teacher") window.location.href = "teacher.html";
+      else if(role === "teacher" || role === "professeur") window.location.href = "admin.html";
       else if(role === "admin") window.location.href = "admin.html";
     } else {
       loginMessage.textContent = "Utilisateur non trouvé dans la base de données.";

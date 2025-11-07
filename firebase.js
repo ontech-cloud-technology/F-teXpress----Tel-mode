@@ -109,3 +109,64 @@ async function deleteUserDocument(uid) {
     // (ce qui nécessite le Firebase Admin SDK, donc généralement une Cloud Function).
     return db.collection("users").doc(uid).delete();
 }
+
+// --- Fonctions de Logging d'Activité ---
+
+/**
+ * Enregistre une activité utilisateur dans Firestore.
+ * @param {string} userId - UID de l'utilisateur.
+ * @param {string} action - Type d'action (ex: 'login', 'button_click', 'update').
+ * @param {Object} details - Détails supplémentaires (optionnel).
+ */
+async function logActivity(userId, action, details = {}) {
+    if (!userId) return; // Ne pas logger si pas d'utilisateur
+
+    try {
+        // Collecter des informations système
+        const logData = {
+            userId,
+            action,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            screenResolution: `${screen.width}x${screen.height}`,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            cookiesEnabled: navigator.cookieEnabled,
+            jsEnabled: true, // JS fonctionne puisque cette fonction est appelée
+            referrer: document.referrer,
+            page: window.location.pathname,
+            sessionDuration: details.sessionDuration || null,
+            modifiedData: details.modifiedData || null,
+            elementClicked: details.elementClicked || null,
+            description: details.description || '',
+            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            os: navigator.platform,
+            plugins: navigator.plugins ? navigator.plugins.length : 0,
+            touchScreen: 'ontouchstart' in window,
+            batteryLevel: details.batteryLevel || null,
+            connectionSpeed: details.connectionSpeed || null,
+            location: details.location || null, // À implémenter si nécessaire
+            ...details
+        };
+
+        // Récupérer l'IP via une API externe (gratuite)
+        try {
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            if (ipResponse.ok) {
+                const ipData = await ipResponse.json();
+                logData.ip = ipData.ip;
+            } else {
+                logData.ip = 'Unknown';
+            }
+        } catch (error) {
+            console.warn('Impossible de récupérer l\'IP:', error);
+            logData.ip = 'Unknown';
+        }
+
+        // Ajouter à Firestore
+        await db.collection('activity_logs').add(logData);
+        console.log(`Activité loggée: ${action} pour ${userId}`);
+    } catch (error) {
+        console.error('Erreur lors du logging de l\'activité:', error);
+    }
+}
