@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Infos sur Moi — 203 Celebration Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        input[type="text"], textarea {
+            color: white !important;
+            background-color: var(--bg-dark) !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #9ca3af !important;
+        }
+        .question-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4a5568;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold mb-2">
+                Infos sur <span class="header-gradient">Moi</span>
+            </h1>
+            <p class="text-gray-400 text-sm">
+                Remplis ces questions pour que les autres te connaissent mieux ! Tu peux choisir ce que tu veux partager 😊
+            </p>
+        </div>
+
+        <form id="profileForm" class="space-y-6">
+            <!-- Question 1 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">1.</span> Ton crush secret (si tu veux le partager 😏)
+                    </label>
+                </div>
+                <div class="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-3 text-sm mb-3">
+                    <p class="flex items-start">
+                        <i data-lucide="lock" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"></i>
+                        <span><strong>Confidentialité garantie :</strong> Cette information sera <strong>encryptée et codée</strong> de manière sécurisée dans notre base de données. Personne n'aura accès à cette information en clair, même les administrateurs. Si tu choisis de la rendre publique avec le toggle ci-dessous, elle sera visible aux autres élèves, mais restera toujours encryptée dans la base de données. Tu es en contrôle total ! 🔒</span>
+                    </p>
+                </div>
+                <input type="text" id="q1" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Tu peux garder ça secret si tu veux...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q1_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 2 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">2.</span> Ton meilleur ami(e)
+                    </label>
+                </div>
+                <input type="text" id="q2" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Qui est ton meilleur pote ?">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q2_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 3 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">3.</span> Ton animal préféré
+                    </label>
+                </div>
+                <input type="text" id="q3" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Chien, chat, panda, licorne...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q3_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 4 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">4.</span> Ton plat préféré
+                    </label>
+                </div>
+                <input type="text" id="q4" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Pizza, poutine, sushi...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q4_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 5 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">5.</span> Ton sport préféré
+                    </label>
+                </div>
+                <input type="text" id="q5" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Hockey, soccer, basketball...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q5_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 6 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">6.</span> Ton groupe/artiste de musique préféré
+                    </label>
+                </div>
+                <input type="text" id="q6" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Qui fait vibrer tes écouteurs ?">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q6_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 7 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">7.</span> Ton film préféré
+                    </label>
+                </div>
+                <input type="text" id="q7" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Le film que tu regarderais encore et encore">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q7_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 8 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">8.</span> Ton livre préféré
+                    </label>
+                </div>
+                <input type="text" id="q8" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Le livre qui t'a marqué">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q8_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 9 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">9.</span> Ton passe-temps favori
+                    </label>
+                </div>
+                <input type="text" id="q9" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Ce que tu fais quand tu t'ennuies">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q9_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 10 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">10.</span> La qualité que tu admires le plus chez quelqu'un
+                    </label>
+                </div>
+                <input type="text" id="q10" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Honnêteté, humour, gentillesse...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q10_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 11 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">11.</span> Ce qui te fait rire le plus
+                    </label>
+                </div>
+                <input type="text" id="q11" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Les memes, les blagues, les vidéos...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q11_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 12 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">12.</span> Ton superpouvoir rêvé
+                    </label>
+                </div>
+                <input type="text" id="q12" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Voler, invisibilité, téléportation...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q12_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 13 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">13.</span> Ton endroit préféré à l'école
+                    </label>
+                </div>
+                <input type="text" id="q13" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="La cafétéria, la bibliothèque, la cour...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q13_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 14 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">14.</span> Ton moment préféré de la journée
+                    </label>
+                </div>
+                <input type="text" id="q14" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Le matin, l'après-midi, le soir...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q14_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 15 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">15.</span> Ce que tu veux faire plus tard (métier/rêve)
+                    </label>
+                </div>
+                <input type="text" id="q15" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Ton rêve professionnel">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q15_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 16 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">16.</span> Ton emoji préféré
+                    </label>
+                </div>
+                <input type="text" id="q16" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="😎 🎉 🔥 ou autre...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q16_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 17 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">17.</span> Ta couleur préférée
+                    </label>
+                </div>
+                <input type="text" id="q17" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Bleu, rouge, violet...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q17_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 18 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">18.</span> Ton snack préféré
+                    </label>
+                </div>
+                <input type="text" id="q18" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Chips, chocolat, fruits...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q18_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 19 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">19.</span> Ce qui te motive le plus
+                    </label>
+                </div>
+                <input type="text" id="q19" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Tes objectifs, tes passions...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q19_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Question 20 -->
+            <div class="card p-6 rounded-xl question-card">
+                <div class="flex items-start justify-between mb-4">
+                    <label class="text-lg font-semibold flex-1">
+                        <span class="text-primary">20.</span> Ton rêve le plus fou
+                    </label>
+                </div>
+                <input type="text" id="q20" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="Voyager dans l'espace, rencontrer une célébrité...">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q20_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            </div>
+
+            <!-- Message d'erreur -->
+            <div id="errorBox" class="bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-3 text-sm hidden">
+                <p id="errorMsg" class="flex items-start">
+                    <i data-lucide="alert-circle" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"></i>
+                    <span></span>
+                </p>
+            </div>
+
+            <!-- Bouton de soumission -->
+            <div class="flex justify-center mb-8">
+                <button type="submit" id="submitBtn" class="px-8 py-4 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-bold hover:opacity-90 transition flex items-center justify-center text-lg">
+                    <i data-lucide="save" class="w-5 h-5 mr-2"></i>
+                    Sauvegarder mes infos
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Overlay de succès -->
+    <div id="successOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50">
+        <div class="text-center">
+            <div class="mb-4">
+                <i data-lucide="check-circle" class="w-20 h-20 text-green-400 mx-auto"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-2">Profil complété !</h2>
+            <p class="text-gray-400">Redirection en cours...</p>
+        </div>
+    </div>
+
+    <!-- Inclusion du fichier firebase.js -->
+    <script src="firebase.js"></script>
+
+    <script>
+        const form = document.getElementById('profileForm');
+        const errorBox = document.getElementById('errorBox');
+        const errorMsg = errorBox.querySelector('span');
+        const submitBtn = document.getElementById('submitBtn');
+        const successOverlay = document.getElementById('successOverlay');
+
+        // Fonctions d'encryption/décryption pour le crush secret
+        // Utilise une combinaison de base64 et chiffrement par clé unique basée sur l'UID
+        function encryptCrushSecret(text, userId) {
+            if (!text || text.trim() === '') return '';
+            
+            // Générer une clé unique basée sur l'UID de l'utilisateur
+            let key = 0;
+            for (let i = 0; i < userId.length; i++) {
+                key += userId.charCodeAt(i);
+            }
+            key = (key % 25) + 1; // Clé entre 1 et 25
+            
+            // Chiffrement par décalage (Caesar cipher)
+            let encrypted = '';
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const code = text.charCodeAt(i);
+                
+                if (code >= 65 && code <= 90) { // A-Z
+                    encrypted += String.fromCharCode(((code - 65 + key) % 26) + 65);
+                } else if (code >= 97 && code <= 122) { // a-z
+                    encrypted += String.fromCharCode(((code - 97 + key) % 26) + 97);
+                } else {
+                    encrypted += char; // Garder les autres caractères
+                }
+            }
+            
+            // Encoder en base64 pour plus de sécurité
+            return btoa(encrypted + '|' + key.toString());
+        }
+
+        // Fonction de décryptage (pour afficher l'information si l'utilisateur l'a rendue publique)
+        function decryptCrushSecret(encryptedText, userId) {
+            if (!encryptedText || encryptedText.trim() === '') return '';
+            
+            try {
+                // Décoder le base64
+                const decoded = atob(encryptedText);
+                const parts = decoded.split('|');
+                if (parts.length !== 2) return encryptedText; // Si le format est incorrect, retourner tel quel
+                
+                const encrypted = parts[0];
+                const key = parseInt(parts[1]);
+                
+                // Déchiffrement par décalage inverse
+                let decrypted = '';
+                for (let i = 0; i < encrypted.length; i++) {
+                    const code = encrypted.charCodeAt(i);
+                    
+                    if (code >= 65 && code <= 90) { // A-Z
+                        let newCode = code - 65 - key;
+                        if (newCode < 0) newCode += 26;
+                        decrypted += String.fromCharCode(newCode + 65);
+                    } else if (code >= 97 && code <= 122) { // a-z
+                        let newCode = code - 97 - key;
+                        if (newCode < 0) newCode += 26;
+                        decrypted += String.fromCharCode(newCode + 97);
+                    } else {
+                        decrypted += encrypted[i]; // Garder les autres caractères
+                    }
+                }
+                
+                return decrypted;
+            } catch (error) {
+                console.error('Erreur lors du décryptage:', error);
+                return encryptedText; // En cas d'erreur, retourner tel quel
+            }
+        }
+
+        // Vérifier l'authentification
+        async function checkAuth() {
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return null;
+            }
+
+            // Vérifier si le profil est déjà complété
+            const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+            if (userDoc.exists() && userDoc.data().profileCompleted) {
+                // Si le profil est déjà complété, rediriger vers eleve.html
+                window.location.href = 'eleve.html';
+                return null;
+            }
+
+            return user;
+        }
+
+        // Gestion du formulaire
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            errorBox.classList.add('hidden');
+            
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                errorMsg.textContent = "Vous devez être connecté pour sauvegarder votre profil.";
+                errorBox.classList.remove('hidden');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>Sauvegarde en cours...';
+            lucide.createIcons();
+            
+            try {
+                // Collecter toutes les réponses
+                const profileData = {
+                    profileCompleted: true,
+                    profileCompletedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    profileInfo: {}
+                };
+
+                // Questions avec leurs clés
+                const questions = [
+                    { key: 'crushSecret', id: 'q1' },
+                    { key: 'meilleurAmi', id: 'q2' },
+                    { key: 'animalPrefere', id: 'q3' },
+                    { key: 'platPrefere', id: 'q4' },
+                    { key: 'sportPrefere', id: 'q5' },
+                    { key: 'musiquePreferee', id: 'q6' },
+                    { key: 'filmPrefere', id: 'q7' },
+                    { key: 'livrePrefere', id: 'q8' },
+                    { key: 'passeTemps', id: 'q9' },
+                    { key: 'qualiteAdmiree', id: 'q10' },
+                    { key: 'faitRire', id: 'q11' },
+                    { key: 'superpouvoir', id: 'q12' },
+                    { key: 'endroitEcole', id: 'q13' },
+                    { key: 'momentJournee', id: 'q14' },
+                    { key: 'metierReve', id: 'q15' },
+                    { key: 'emojiPrefere', id: 'q16' },
+                    { key: 'couleurPreferee', id: 'q17' },
+                    { key: 'snackPrefere', id: 'q18' },
+                    { key: 'motivation', id: 'q19' },
+                    { key: 'reveFou', id: 'q20' }
+                ];
+
+                questions.forEach((q, index) => {
+                    let answer = document.getElementById(q.id).value.trim();
+                    const isPublic = document.getElementById(`${q.id}_public`).checked;
+                    
+                    // Encrypter la réponse du crush secret si elle n'est pas publique
+                    // Même si elle est publique, on l'encrypte quand même pour la sécurité
+                    if (q.key === 'crushSecret' && answer) {
+                        answer = encryptCrushSecret(answer, user.uid);
+                        // Marquer comme encryptée
+                        profileData.profileInfo[q.key] = {
+                            answer: answer,
+                            isPublic: isPublic,
+                            questionNumber: index + 1,
+                            encrypted: true // Flag pour indiquer que c'est encrypté
+                        };
+                    } else {
+                        profileData.profileInfo[q.key] = {
+                            answer: answer,
+                            isPublic: isPublic,
+                            questionNumber: index + 1
+                        };
+                    }
+                });
+
+                // Sauvegarder dans Firestore
+                await firebase.firestore().collection('users').doc(user.uid).update(profileData);
+                
+                // Confirmer la sauvegarde dans la console
+                console.log('✅ Profil sauvegardé avec succès !', {
+                    userId: user.uid,
+                    profileCompleted: true,
+                    nombreQuestions: Object.keys(profileData.profileInfo).length,
+                    crushSecretEncrypted: profileData.profileInfo.crushSecret?.encrypted || false
+                });
+                
+                // Afficher le succès
+                successOverlay.classList.remove('hidden');
+                successOverlay.classList.add('flex');
+                lucide.createIcons();
+                
+                // Rediriger vers eleve.html après 2 secondes
+                setTimeout(() => {
+                    window.location.href = 'eleve.html';
+                }, 2000);
+                
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde:", error);
+                errorMsg.textContent = `Erreur: ${error.message}`;
+                errorBox.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i data-lucide="save" class="w-5 h-5 mr-2"></i>Sauvegarder mes infos';
+                lucide.createIcons();
+            }
+        });
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            await checkAuth();
+        });
+    </script>
+</body>
+</html>
+

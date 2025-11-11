@@ -29,11 +29,77 @@
         .header-gradient {
             background-image: linear-gradient(90deg, var(--primary), var(--secondary));
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .card {
             background-color: var(--bg-light);
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .sidebar {
+            width: 250px;
+            min-height: calc(100vh - 2rem);
+            transition: transform 0.3s ease;
+        }
+        .sidebar-item {
+            transition: all 0.2s;
+        }
+        .sidebar-item:hover {
+            background-color: rgba(255, 111, 97, 0.1);
+        }
+        .sidebar-item.active {
+            background-color: rgba(255, 111, 97, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .calendar-day {
+            min-height: 150px;
+        }
+        /* Styles pour les textareas de messages */
+        textarea {
+            color: white !important;
+            background-color: var(--bg-dark) !important;
+            border: 2px solid rgba(255, 255, 255, 0.2) !important;
+            transition: all 0.3s ease;
+        }
+        textarea:focus {
+            outline: none !important;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(255, 111, 97, 0.2) !important;
+            background-color: rgba(26, 15, 48, 0.8) !important;
+        }
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+        /* Style pour les cartes de messages */
+        .message-card {
+            background: linear-gradient(135deg, var(--bg-light) 0%, rgba(44, 26, 75, 0.8) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .message-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary);
+        }
+        /* Style pour les boutons d'envoi */
+        .send-button {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: all 0.3s ease;
+        }
+        .send-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 111, 97, 0.4);
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+            }
         }
     </style>
 </head>
@@ -51,36 +117,123 @@
     </div>
 
     <!-- Contenu principal -->
-    <main id="mainContent" class="hidden">
-        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
-            <h1 class="text-3xl md:text-4xl font-extrabold">
-                Calendrier des <span class="header-gradient">Anniversaires</span>
-            </h1>
-            <div class="text-sm mt-2 md:mt-0 flex items-center space-x-4">
-                <span id="welcomeName"></span>
-                <button onclick="goToAdmin()" id="adminBtn" class="hidden flex items-center text-sm px-4 py-2 rounded-full bg-purple-600 hover:bg-purple-700 transition">
-                    <i data-lucide="shield" class="w-4 h-4 mr-2"></i>
-                    Admin
-                </button>
-                <button onclick="signOutAndRedirect()" class="flex items-center text-sm px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 transition">
-                    <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
-                    Déconnexion
-                </button>
+    <main id="mainContent" class="hidden flex flex-col md:flex-row gap-6">
+        <!-- Sidebar -->
+        <aside class="sidebar card p-4 rounded-xl">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold mb-4">
+                    <span class="header-gradient">Navigation</span>
+                </h2>
+                <nav class="space-y-2">
+                    <button onclick="showView('liste')" id="btnListe" class="sidebar-item active w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="list" class="w-5 h-5"></i>
+                        <span>Liste</span>
+                    </button>
+                    <button onclick="showView('calendrier')" id="btnCalendrier" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>Calendrier</span>
+                    </button>
+                    <button onclick="showView('notifications')" id="btnNotifications" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span>Notifications</span>
+                        <span id="notificationBadge" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
+                    </button>
+                </nav>
             </div>
-        </header>
-
-        <!-- Section Calendrier -->
-        <section class="card p-6 rounded-xl">
-            <h2 class="text-2xl font-bold mb-4 flex items-center">
-                <i data-lucide="calendar" class="w-6 h-6 mr-2"></i>
-                Prochains Anniversaires
-            </h2>
-            <p class="text-sm text-gray-400 mb-6">Liste des anniversaires à venir dans la classe 203</p>
             
-            <div id="celebrationsList" class="space-y-4">
-                <p class="text-gray-500 text-center py-8">Chargement des anniversaires...</p>
+            <div class="mt-auto pt-6 border-t border-gray-700">
+                <div class="text-sm mb-4">
+                    <span id="welcomeName" class="text-gray-400"></span>
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <button onclick="goToAdmin()" id="adminBtn" class="hidden flex items-center text-sm px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 transition">
+                        <i data-lucide="shield" class="w-4 h-4 mr-2"></i>
+                        Admin
+                    </button>
+                    <button onclick="signOutAndRedirect()" class="flex items-center text-sm px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition">
+                        <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                        Déconnexion
+                    </button>
+                </div>
             </div>
-        </section>
+        </aside>
+
+        <!-- Contenu principal -->
+        <div class="flex-1">
+            <header class="mb-6">
+                <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+                    <span class="header-gradient" id="pageTitle">Liste des Anniversaires</span>
+                </h1>
+            </header>
+
+            <!-- Vue Liste -->
+            <section id="viewListe" class="card p-6 rounded-xl">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i data-lucide="list" class="w-6 h-6 mr-2"></i>
+                    Prochains Anniversaires
+                </h2>
+                <p class="text-sm text-gray-400 mb-6">Liste des anniversaires à venir dans la classe 203</p>
+                
+                <div id="celebrationsList" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">Chargement des anniversaires...</p>
+                </div>
+            </section>
+
+            <!-- Vue Calendrier -->
+            <section id="viewCalendrier" class="card p-6 rounded-xl hidden">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i data-lucide="calendar" class="w-6 h-6 mr-2"></i>
+                    Calendrier des Anniversaires
+                </h2>
+                <p class="text-sm text-gray-400 mb-6">Tous les anniversaires de l'année</p>
+                
+                <div id="calendarContainer" class="calendar-grid">
+                    <p class="text-gray-500 text-center py-8 col-span-full">Chargement du calendrier...</p>
+                </div>
+            </section>
+
+            <!-- Vue Notifications -->
+            <section id="viewNotifications" class="card p-6 rounded-xl hidden">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i data-lucide="bell" class="w-6 h-6 mr-2"></i>
+                    Mes Notifications
+                </h2>
+                
+                <!-- Section pour envoyer des messages (si anniversaire dans 1 semaine ou moins) -->
+                <div id="sendMessageSection" class="mb-6 hidden">
+                    <div class="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-4 mb-4">
+                        <h3 class="font-bold mb-2 flex items-center">
+                            <i data-lucide="gift" class="w-5 h-5 mr-2"></i>
+                            Anniversaires à venir (dans 1 semaine ou moins)
+                        </h3>
+                        <p class="text-sm text-gray-300 mb-4">Tu peux envoyer un message secret ou public à ces personnes pour leur souhaiter un joyeux anniversaire !</p>
+                        <div id="upcomingBirthdays" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- Explication si la fête n'a pas encore passé -->
+                <div id="birthdayExplanation" class="bg-gradient-to-r from-primary to-secondary bg-opacity-20 border border-primary rounded-lg p-4 mb-6 hidden">
+                    <h3 class="font-bold mb-2 flex items-center">
+                        <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                        Comment ça marche ?
+                    </h3>
+                    <p class="text-sm">
+                        <strong>Ton anniversaire approche !</strong> Quand ton anniversaire est dans 1 semaine ou moins, 
+                        tes camarades peuvent t'envoyer des messages secrets ou publics pour te souhaiter un joyeux anniversaire. 
+                        Tu recevras ces messages ici dans tes notifications. Les messages secrets restent privés, 
+                        tandis que les messages publics peuvent être vus par tous. 🎉
+                    </p>
+                </div>
+
+                <!-- Liste des messages reçus -->
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold mb-4">Messages reçus</h3>
+                    <div id="messagesList" class="space-y-4">
+                        <p class="text-gray-500 text-center py-8">Chargement de tes messages...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <!-- Inclusion du fichier firebase.js -->
@@ -92,6 +245,12 @@
         const welcomeName = document.getElementById('welcomeName');
         const adminBtn = document.getElementById('adminBtn');
         const celebrationsList = document.getElementById('celebrationsList');
+        const calendarContainer = document.getElementById('calendarContainer');
+        const pageTitle = document.getElementById('pageTitle');
+        const notificationBadge = document.getElementById('notificationBadge');
+        let allCelebrations = [];
+        let currentUserId = null;
+        let currentUserBirthday = null;
 
         // Vérifier l'authentification
         async function checkAuth() {
@@ -109,8 +268,33 @@
                 return;
             }
 
+            // Vérifier si le profil est complété (seulement pour les élèves)
+            const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+            const docData = userDoc.data();
+            if (docData) {
+                // Si c'est un élève et que le profil n'est pas complété, rediriger
+                if (docData.role === 'eleve' && !docData.profileCompleted) {
+                    window.location.href = 'profile-setup.html';
+                    return;
+                }
+            }
+
             const userData = await getUserRole(user.uid);
             welcomeName.textContent = `Bienvenue, ${userData.name}`;
+            currentUserId = user.uid;
+
+            // Récupérer la date d'anniversaire de l'utilisateur
+            if (docData && docData.email) {
+                const fileNumber = docData.email.split('@')[0];
+                const userCelebration = await firebase.firestore().collection('celebrations')
+                    .where('fileNumber', '==', fileNumber)
+                    .limit(1)
+                    .get();
+                
+                if (!userCelebration.empty) {
+                    currentUserBirthday = userCelebration.docs[0].data().birthday;
+                }
+            }
 
             // Afficher le bouton admin si l'utilisateur est admin
             if (userData.role === 'admin') {
@@ -121,6 +305,25 @@
             mainContent.classList.remove('hidden');
             
             loadCelebrations();
+            loadNotifications();
+        }
+
+        // Calculer l'âge actuel
+        function calculateAge(birthday) {
+            if (!birthday) return 'N/A';
+            const dateParts = birthday.split('-');
+            if (dateParts.length !== 3) return 'N/A';
+            
+            const birthDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            
+            return age;
         }
 
         // Charger les célébrations
@@ -130,39 +333,483 @@
                 .onSnapshot(snapshot => {
                     if (snapshot.empty) {
                         celebrationsList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun anniversaire enregistré pour le moment.</p>';
+                        allCelebrations = [];
                         return;
                     }
 
-                    celebrationsList.innerHTML = '';
+                    allCelebrations = [];
                     snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const card = document.createElement('div');
-                        card.className = 'bg-bg-dark p-4 rounded-lg flex items-center justify-between hover:bg-opacity-80 transition';
-                        
-                        const dateParts = data.birthday ? data.birthday.split('-') : ['?', '?', '?'];
-                        const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : 'N/A';
-                        
-                        card.innerHTML = `
-                            <div class="flex items-center space-x-4">
-                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
-                                    🎂
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-lg">${data.fullName || 'N/A'}</h3>
-                                    <p class="text-sm text-gray-400">Anniversaire: ${formattedDate}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-xs text-gray-500">${data.classNumber || 'N/A'}</span>
-                            </div>
-                        `;
-                        celebrationsList.appendChild(card);
+                        allCelebrations.push({ id: doc.id, ...doc.data() });
                     });
-                    lucide.createIcons();
+
+                    // Charger la vue actuelle
+                    const currentView = document.querySelector('.sidebar-item.active')?.id;
+                    if (currentView === 'btnListe') {
+                        loadListView();
+                    } else if (currentView === 'btnCalendrier') {
+                        loadCalendarView();
+                    } else if (currentView === 'btnNotifications') {
+                        loadNotificationsView();
+                    }
+                    
+                    // Mettre à jour les notifications
+                    loadNotifications();
                 }, error => {
                     console.error("Erreur lors du chargement:", error);
                     celebrationsList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur de chargement des données.</p>';
                 });
+        }
+
+        // Charger la vue liste
+        function loadListView() {
+            if (allCelebrations.length === 0) {
+                celebrationsList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun anniversaire enregistré pour le moment.</p>';
+                return;
+            }
+
+            celebrationsList.innerHTML = '';
+            allCelebrations.forEach(data => {
+                const card = document.createElement('div');
+                card.className = 'bg-bg-dark p-4 rounded-lg flex items-center justify-between hover:bg-opacity-80 transition';
+                
+                const dateParts = data.birthday ? data.birthday.split('-') : ['?', '?', '?'];
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : 'N/A';
+                const age = calculateAge(data.birthday);
+                
+                card.innerHTML = `
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
+                            🎂
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">${data.fullName || 'N/A'}</h3>
+                            <p class="text-sm text-gray-400">Anniversaire: ${formattedDate} • ${age} ans</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-gray-500">${data.classNumber || 'N/A'}</span>
+                    </div>
+                `;
+                celebrationsList.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // Charger la vue calendrier
+        function loadCalendarView() {
+            if (allCelebrations.length === 0) {
+                calendarContainer.innerHTML = '<p class="text-gray-500 text-center py-8 col-span-full">Aucun anniversaire enregistré pour le moment.</p>';
+                return;
+            }
+
+            // Organiser les anniversaires par mois
+            const celebrationsByMonth = {};
+            const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                              'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+            allCelebrations.forEach(celeb => {
+                if (!celeb.birthday) return;
+                const dateParts = celeb.birthday.split('-');
+                if (dateParts.length !== 3) return;
+                
+                const month = parseInt(dateParts[1]) - 1;
+                const day = parseInt(dateParts[2]);
+                
+                if (!celebrationsByMonth[month]) {
+                    celebrationsByMonth[month] = [];
+                }
+                
+                celebrationsByMonth[month].push({
+                    ...celeb,
+                    day: day,
+                    age: calculateAge(celeb.birthday)
+                });
+            });
+
+            // Créer le calendrier
+            calendarContainer.innerHTML = '';
+            
+            for (let month = 0; month < 12; month++) {
+                const monthCard = document.createElement('div');
+                monthCard.className = 'calendar-day card p-4 rounded-lg';
+                
+                const monthCelebrations = celebrationsByMonth[month] || [];
+                monthCelebrations.sort((a, b) => a.day - b.day);
+                
+                let content = `
+                    <h3 class="font-bold text-lg mb-3 text-primary">${monthNames[month]}</h3>
+                `;
+                
+                if (monthCelebrations.length === 0) {
+                    content += '<p class="text-gray-500 text-sm">Aucun anniversaire</p>';
+                } else {
+                    content += '<div class="space-y-2">';
+                    monthCelebrations.forEach(celeb => {
+                        const dateParts = celeb.birthday.split('-');
+                        const formattedDate = `${celeb.day}/${parseInt(dateParts[1])}`;
+                        content += `
+                            <div class="bg-bg-dark p-2 rounded text-sm">
+                                <div class="font-semibold">${celeb.fullName || 'N/A'}</div>
+                                <div class="text-gray-400 text-xs">${formattedDate} • ${celeb.age} ans</div>
+                            </div>
+                        `;
+                    });
+                    content += '</div>';
+                }
+                
+                monthCard.innerHTML = content;
+                calendarContainer.appendChild(monthCard);
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Basculer entre les vues
+        function showView(view) {
+            const viewListe = document.getElementById('viewListe');
+            const viewCalendrier = document.getElementById('viewCalendrier');
+            const viewNotifications = document.getElementById('viewNotifications');
+            const btnListe = document.getElementById('btnListe');
+            const btnCalendrier = document.getElementById('btnCalendrier');
+            const btnNotifications = document.getElementById('btnNotifications');
+
+            // Cacher toutes les vues
+            viewListe.classList.add('hidden');
+            viewCalendrier.classList.add('hidden');
+            viewNotifications.classList.add('hidden');
+            
+            // Retirer l'état actif de tous les boutons
+            btnListe.classList.remove('active');
+            btnCalendrier.classList.remove('active');
+            btnNotifications.classList.remove('active');
+
+            if (view === 'liste') {
+                viewListe.classList.remove('hidden');
+                btnListe.classList.add('active');
+                pageTitle.textContent = 'Liste des Anniversaires';
+                loadListView();
+            } else if (view === 'calendrier') {
+                viewCalendrier.classList.remove('hidden');
+                btnCalendrier.classList.add('active');
+                pageTitle.textContent = 'Calendrier des Anniversaires';
+                loadCalendarView();
+            } else if (view === 'notifications') {
+                viewNotifications.classList.remove('hidden');
+                btnNotifications.classList.add('active');
+                pageTitle.textContent = 'Mes Notifications';
+                loadNotificationsView();
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Calculer les jours jusqu'à l'anniversaire
+        function daysUntilBirthday(birthday) {
+            if (!birthday) return null;
+            const dateParts = birthday.split('-');
+            if (dateParts.length !== 3) return null;
+            
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const birthMonth = parseInt(dateParts[1]) - 1;
+            const birthDay = parseInt(dateParts[2]);
+            
+            // Date d'anniversaire cette année
+            let birthdayThisYear = new Date(currentYear, birthMonth, birthDay);
+            
+            // Si l'anniversaire est déjà passé cette année, prendre l'année prochaine
+            if (birthdayThisYear < today) {
+                birthdayThisYear = new Date(currentYear + 1, birthMonth, birthDay);
+            }
+            
+            const diffTime = birthdayThisYear - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays;
+        }
+
+        // Charger les anniversaires à venir (dans 1 semaine ou moins)
+        function loadUpcomingBirthdays() {
+            const upcomingBirthdaysDiv = document.getElementById('upcomingBirthdays');
+            const sendMessageSection = document.getElementById('sendMessageSection');
+            
+            if (!allCelebrations.length) {
+                sendMessageSection.classList.add('hidden');
+                return;
+            }
+
+            const upcoming = [];
+            allCelebrations.forEach(celeb => {
+                if (!celeb.birthday) return;
+                const days = daysUntilBirthday(celeb.birthday);
+                if (days !== null && days >= 0 && days <= 7) {
+                    upcoming.push({ ...celeb, daysUntil: days });
+                }
+            });
+
+            if (upcoming.length === 0) {
+                sendMessageSection.classList.add('hidden');
+                return;
+            }
+
+            sendMessageSection.classList.remove('hidden');
+            upcomingBirthdaysDiv.innerHTML = '';
+
+            upcoming.forEach(person => {
+                const card = document.createElement('div');
+                card.className = 'message-card p-5 rounded-xl mb-4';
+                
+                const dateParts = person.birthday.split('-');
+                const formattedDate = `${dateParts[2]}/${dateParts[1]}`;
+                const daysText = person.daysUntil === 0 ? "Aujourd'hui ! 🎉" : 
+                                person.daysUntil === 1 ? "Demain ! 🎂" : 
+                                `Dans ${person.daysUntil} jours`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-700">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-xl">
+                                🎂
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-lg">${person.fullName || 'N/A'}</h4>
+                                <p class="text-sm text-gray-400">${formattedDate} • <span class="text-primary font-semibold">${daysText}</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Ton message</label>
+                            <textarea id="message_${person.id}" class="w-full p-3 rounded-lg text-white text-sm resize-none" placeholder="Écris un message personnalisé pour souhaiter un joyeux anniversaire... 🎉" rows="3"></textarea>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center space-x-2 cursor-pointer group">
+                                <input type="checkbox" id="public_${person.id}" class="w-4 h-4 rounded border-gray-600 bg-bg-dark text-primary focus:ring-primary focus:ring-2">
+                                <span class="text-sm text-gray-300 group-hover:text-white transition">Message public (visible par tous)</span>
+                            </label>
+                            <button onclick="sendMessage('${person.id}', '${person.fullName}')" class="send-button px-6 py-2 rounded-lg text-white text-sm font-semibold flex items-center space-x-2">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>Envoyer</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                upcomingBirthdaysDiv.appendChild(card);
+            });
+
+            lucide.createIcons();
+        }
+
+        // Envoyer un message
+        async function sendMessage(celebrationId, recipientName) {
+            const messageText = document.getElementById(`message_${celebrationId}`).value.trim();
+            const isPublic = document.getElementById(`public_${celebrationId}`).checked;
+
+            if (!messageText) {
+                alert('Veuillez écrire un message !');
+                return;
+            }
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                return;
+            }
+
+            // Récupérer l'ID utilisateur du destinataire
+            const celebration = allCelebrations.find(c => c.id === celebrationId);
+            if (!celebration || !celebration.fileNumber) {
+                alert('Erreur : impossible de trouver le destinataire');
+                return;
+            }
+
+            // Trouver l'utilisateur par fileNumber
+            const recipientUsers = await firebase.firestore().collection('users')
+                .where('email', '==', `${celebration.fileNumber}@cslaval.qc.ca`)
+                .limit(1)
+                .get();
+
+            if (recipientUsers.empty) {
+                alert('Erreur : utilisateur destinataire non trouvé');
+                return;
+            }
+
+            const recipientId = recipientUsers.docs[0].id;
+            const senderData = await firebase.firestore().collection('users').doc(currentUserId).get();
+            const senderName = senderData.data()?.fullName || 'Anonyme';
+
+            try {
+                await firebase.firestore().collection('messages').add({
+                    recipientId: recipientId,
+                    senderId: currentUserId,
+                    senderName: senderName,
+                    recipientName: recipientName,
+                    message: messageText,
+                    isPublic: isPublic,
+                    celebrationId: celebrationId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false
+                });
+
+                // Réinitialiser le formulaire
+                document.getElementById(`message_${celebrationId}`).value = '';
+                document.getElementById(`public_${celebrationId}`).checked = false;
+
+                alert('Message envoyé avec succès ! 🎉');
+                loadNotifications();
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi du message:', error);
+                alert('Erreur lors de l\'envoi du message');
+            }
+        }
+
+        // Charger les notifications
+        async function loadNotifications() {
+            if (!currentUserId) return;
+
+            try {
+                const messagesSnapshot = await firebase.firestore().collection('messages')
+                    .where('recipientId', '==', currentUserId)
+                    .get();
+
+                // Trier côté client pour éviter le besoin d'index composite
+                const messages = messagesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })).sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+                    return dateB - dateA;
+                });
+
+                const unreadCount = messages.filter(msg => !msg.read).length;
+                
+                if (unreadCount > 0) {
+                    notificationBadge.textContent = unreadCount;
+                    notificationBadge.classList.remove('hidden');
+                } else {
+                    notificationBadge.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des notifications:', error);
+            }
+        }
+
+        // Charger la vue notifications
+        async function loadNotificationsView() {
+            const messagesList = document.getElementById('messagesList');
+            const birthdayExplanation = document.getElementById('birthdayExplanation');
+            const sendMessageSection = document.getElementById('sendMessageSection');
+
+            // Vérifier si l'anniversaire de l'utilisateur approche
+            if (currentUserBirthday) {
+                const days = daysUntilBirthday(currentUserBirthday);
+                if (days !== null && days >= 0 && days <= 7) {
+                    birthdayExplanation.classList.remove('hidden');
+                } else {
+                    birthdayExplanation.classList.add('hidden');
+                }
+            }
+
+            // Charger les anniversaires à venir pour envoyer des messages
+            loadUpcomingBirthdays();
+
+            // Charger les messages reçus
+            if (!currentUserId) {
+                messagesList.innerHTML = '<p class="text-gray-500 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            try {
+                const messagesSnapshot = await firebase.firestore().collection('messages')
+                    .where('recipientId', '==', currentUserId)
+                    .get();
+
+                if (messagesSnapshot.empty) {
+                    messagesList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun message reçu pour le moment.</p>';
+                    return;
+                }
+
+                // Trier côté client pour éviter le besoin d'index composite
+                const messages = messagesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                })).sort((a, b) => {
+                    const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+                    const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+                    return dateB - dateA;
+                });
+
+                messagesList.innerHTML = '';
+                messages.forEach(messageData => {
+                    const message = messageData;
+                    const messageCard = document.createElement('div');
+                    messageCard.className = `message-card p-5 rounded-xl mb-4 ${!message.read ? 'border-l-4 border-primary ring-2 ring-primary ring-opacity-50' : 'opacity-90'}`;
+                    
+                    const date = message.createdAt?.toDate ? message.createdAt.toDate() : new Date();
+                    const formattedDate = date.toLocaleDateString('fr-FR', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    messageCard.innerHTML = `
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-lg font-bold">
+                                        ${(message.senderName || 'A')[0].toUpperCase()}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <span class="font-bold text-lg">${message.senderName || 'Anonyme'}</span>
+                                            ${message.isPublic ? 
+                                                '<span class="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-semibold">Public</span>' : 
+                                                '<span class="text-xs bg-purple-500 text-white px-3 py-1 rounded-full font-semibold">Secret</span>'
+                                            }
+                                            ${!message.read ? '<span class="text-xs bg-primary text-white px-2 py-1 rounded-full animate-pulse">Nouveau</span>' : ''}
+                                        </div>
+                                        <p class="text-xs text-gray-400">${formattedDate}</p>
+                                    </div>
+                                </div>
+                                <div class="bg-bg-dark p-4 rounded-lg border border-gray-700">
+                                    <p class="text-gray-200 leading-relaxed">${message.message}</p>
+                                </div>
+                            </div>
+                            ${!message.read ? `
+                                <button onclick="markAsRead('${message.id}')" class="ml-4 p-2 rounded-lg bg-primary hover:bg-secondary text-white transition transform hover:scale-110" title="Marquer comme lu">
+                                    <i data-lucide="check" class="w-5 h-5"></i>
+                                </button>
+                            ` : `
+                                <div class="ml-4 p-2 rounded-lg bg-gray-700 text-gray-400">
+                                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                                </div>
+                            `}
+                        </div>
+                    `;
+                    messagesList.appendChild(messageCard);
+                });
+
+                lucide.createIcons();
+                loadNotifications(); // Mettre à jour le badge
+            } catch (error) {
+                console.error('Erreur lors du chargement des messages:', error);
+                messagesList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des messages.</p>';
+            }
+        }
+
+        // Marquer un message comme lu
+        async function markAsRead(messageId) {
+            try {
+                await firebase.firestore().collection('messages').doc(messageId).update({
+                    read: true
+                });
+                loadNotificationsView();
+                loadNotifications();
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour du message:', error);
+            }
         }
 
         // Déconnexion
