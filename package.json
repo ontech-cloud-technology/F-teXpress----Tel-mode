@@ -2,9 +2,9 @@
   "name": "projet-aniversaire",
   "version": "1.0.0",
   "description": "Système de gestion des anniversaires avec notifications email",
-  "main": "email-service.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node email-api-server.js",
+    "start": "node server.js",
     "build": "echo 'Build complete'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
