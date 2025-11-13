@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Envoyer un Email - ONTech-Cloud Technology</title>
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #1a0f30;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #1a0f30;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input[type="email"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="email"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1a0f30;
+        }
+
+        .info-box strong {
+            color: #2196F3;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .loading-screen.hidden {
+            display: none;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Écran de chargement/Autorisation -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px;">Vérification des autorisations...</p>
+    </div>
+
+    <div class="container" id="mainContent" style="display: none;">
+        <a href="admin.html" class="back-link">← Retour au Dashboard Admin</a>
+        
+        <div class="header">
+            <h1>📧 Envoyer un Email</h1>
+            <p>Plateforme de gestion des anniversaires</p>
+        </div>
+
+        <div class="info-box">
+            <strong>💡 Info :</strong> Cette page permet d'envoyer des emails de test ou des notifications personnalisées.
+        </div>
+
+        <form id="emailForm">
+            <div class="form-group">
+                <label for="recipientEmail">📬 Email du destinataire *</label>
+                <input 
+                    type="email" 
+                    id="recipientEmail" 
+                    name="recipientEmail" 
+                    placeholder="exemple@cslaval.qc.ca" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="recipientName">👤 Nom du destinataire *</label>
+                <input 
+                    type="text" 
+                    id="recipientName" 
+                    name="recipientName" 
+                    placeholder="Prénom Nom" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="senderName">✍️ Nom de l'expéditeur *</label>
+                <input 
+                    type="text" 
+                    id="senderName" 
+                    name="senderName" 
+                    placeholder="Votre nom" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="message">💬 Message *</label>
+                <textarea 
+                    id="message" 
+                    name="message" 
+                    placeholder="Écrivez votre message ici..." 
+                    required
+                ></textarea>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="isPublic" name="isPublic">
+                <label for="isPublic">Message public (visible par tous)</label>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                📤 Envoyer l'email
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Envoi en cours...</p>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        // Configuration de l'API Email
+        // Détection automatique : localhost en développement, URL de production sinon
+        const EMAIL_API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001/api'
+            : 'https://votre-serveur-email.com/api'; // À configurer pour la production
+
+        // Vérification de l'authentification admin
+        async function checkAdminAuth() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainContent = document.getElementById('mainContent');
+            
+            loadingScreen.classList.remove('hidden');
+            
+            // Attendre que l'état d'authentification soit établi
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                // Pas connecté, rediriger vers login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Vérifier le rôle de l'utilisateur
+            const userData = await getUserRole(user.uid);
+            const role = userData.role;
+
+            if (role !== 'admin' && role !== 'professeur' && role !== 'teacher') {
+                alert(`Accès refusé. Cette page est réservée aux administrateurs. Rôle actuel: ${role}`);
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            // Afficher le contenu
+            loadingScreen.classList.add('hidden');
+            mainContent.style.display = 'block';
+        }
+
+        // Vérifier l'authentification au chargement
+        checkAdminAuth();
+
+        const form = document.getElementById('emailForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const messageDiv = document.getElementById('message');
+
+        function showMessage(text, isSuccess) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${isSuccess ? 'success' : 'error'} show`;
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                loading.classList.add('show');
+                submitBtn.disabled = true;
+                form.style.opacity = '0.6';
+            } else {
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+                form.style.opacity = '1';
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const recipientEmail = document.getElementById('recipientEmail').value;
+            const recipientName = document.getElementById('recipientName').value;
+            const senderName = document.getElementById('senderName').value;
+            const message = document.getElementById('message').value;
+            const isPublic = document.getElementById('isPublic').checked;
+
+            if (!recipientEmail || !recipientName || !senderName || !message) {
+                showMessage('❌ Veuillez remplir tous les champs obligatoires', false);
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${EMAIL_API_URL}/send-message-notification`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: recipientEmail,
+                        recipientName: recipientName,
+                        senderName: senderName,
+                        message: message,
+                        isPublic: isPublic,
+                        notificationsUrl: window.location.origin + '/eleve.html#notifications',
+                        birthdayMessage: ''
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('✅ Email envoyé avec succès !', true);
+                    form.reset();
+                } else {
+                    showMessage(`❌ Erreur : ${result.error || 'Impossible d\'envoyer l\'email'}`, false);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage(`❌ Erreur de connexion : ${error.message}`, false);
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>
+

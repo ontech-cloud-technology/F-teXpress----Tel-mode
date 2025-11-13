@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Progression — 203 Celebration Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .progress-bar {
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <script src="firebase.js"></script>
+    <script src="js/progression-system.js"></script>
+
+    <!-- Écran de chargement -->
+    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
+        <div class="text-xl text-white">Chargement de la progression...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <main id="mainContent" class="hidden">
+        <header class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+                    <span class="header-gradient">Progression des Messages</span>
+                </h1>
+                <p class="text-gray-400">Suivez votre progression vers l'objectif de 9 personnes consécutives !</p>
+            </div>
+            <button onclick="window.location.href='eleve.html'" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                <i data-lucide="arrow-left" class="w-5 h-5 inline mr-2"></i>
+                Retour
+            </button>
+        </header>
+
+        <!-- Carte de progression principale -->
+        <div class="card p-6 rounded-xl mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold">Objectif : 9 Personnes Consécutives</h2>
+                <div id="consecutiveCount" class="text-4xl font-bold text-primary">0</div>
+            </div>
+            <div class="progress-bar mb-4">
+                <div id="progressFill" class="progress-fill" style="width: 0%">0 / 9</div>
+            </div>
+            <p id="progressMessage" class="text-gray-400 text-sm">Chargement...</p>
+        </div>
+
+        <!-- Liste des célébrations -->
+        <div class="card p-6 rounded-xl">
+            <h2 class="text-2xl font-bold mb-4">Détails par Personne</h2>
+            <div id="celebrationsList" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">Chargement...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentUserId = null;
+
+        // Vérifier l'authentification
+        async function checkAuth() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainContent = document.getElementById('mainContent');
+
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            if (userData.role !== 'eleve') {
+                alert('Accès refusé. Cette page est réservée aux élèves.');
+                window.location.href = 'eleve.html';
+                return;
+            }
+
+            currentUserId = user.uid;
+            loadingScreen.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            
+            loadProgression();
+        }
+
+        // Charger la progression
+        async function loadProgression() {
+            try {
+                const progression = await calculateProgression();
+                
+                // Mettre à jour le compteur
+                const consecutiveCount = progression.consecutiveCount;
+                document.getElementById('consecutiveCount').textContent = consecutiveCount;
+                
+                // Mettre à jour la barre de progression
+                const progressPercentage = Math.min((consecutiveCount / 9) * 100, 100);
+                const progressFill = document.getElementById('progressFill');
+                progressFill.style.width = `${progressPercentage}%`;
+                progressFill.textContent = `${consecutiveCount} / 9`;
+                
+                // Message de progression
+                const progressMessage = document.getElementById('progressMessage');
+                if (consecutiveCount >= 9) {
+                    progressMessage.textContent = '🎉 Félicitations ! Vous avez atteint l\'objectif de 9 personnes consécutives !';
+                    progressMessage.classList.remove('text-gray-400');
+                    progressMessage.classList.add('text-green-400', 'font-bold');
+                } else {
+                    progressMessage.textContent = `Il reste ${9 - consecutiveCount} personne(s) pour atteindre l'objectif !`;
+                }
+                
+                // Afficher les célébrations
+                displayCelebrations(progression.allCelebrations, progression.consecutiveCount);
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement de la progression:', error);
+                alert('Erreur lors du chargement de la progression');
+            }
+        }
+
+        // Afficher les célébrations
+        function displayCelebrations(celebrations, consecutiveCount) {
+            const container = document.getElementById('celebrationsList');
+            
+            if (celebrations.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Aucune célébration trouvée.</p>';
+                return;
+            }
+            
+            // Trouver l'index de début de la séquence consécutive
+            let streakStartIndex = -1;
+            for (let i = 0; i < celebrations.length; i++) {
+                if (celebrations[i].completion.complete) {
+                    streakStartIndex = i;
+                    break;
+                }
+            }
+            
+            container.innerHTML = celebrations.map((item, index) => {
+                const celeb = item.celebration;
+                const completion = item.completion;
+                const isComplete = completion.complete;
+                const percentage = completion.totalStudents > 0 
+                    ? (completion.sentMessages / completion.totalStudents) * 100 
+                    : 0;
+                
+                // Vérifier si cette célébration fait partie de la séquence consécutive
+                const isInStreak = streakStartIndex >= 0 && index >= streakStartIndex && index < streakStartIndex + consecutiveCount;
+                
+                return `
+                    <div class="border border-gray-700 rounded-lg p-4 ${isComplete ? 'bg-green-900 bg-opacity-20 border-green-500' : 'bg-gray-800 bg-opacity-20'}">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 class="font-bold text-lg">${celeb.fullName || 'N/A'}</h3>
+                                <p class="text-sm text-gray-400">${celeb.birthday ? new Date(celeb.birthday).toLocaleDateString('fr-FR') : 'Date inconnue'}</p>
+                            </div>
+                            <div class="text-right">
+                                ${isComplete ? '<span class="px-3 py-1 rounded-full bg-green-500 text-white text-sm font-bold">✓ Complété</span>' : '<span class="px-3 py-1 rounded-full bg-yellow-500 text-white text-sm font-bold">En cours</span>'}
+                            </div>
+                        </div>
+                        <div class="progress-bar mb-2">
+                            <div class="progress-fill" style="width: ${percentage}%">
+                                ${completion.sentMessages} / ${completion.totalStudents}
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            ${completion.missingStudents.length > 0 
+                                ? `${completion.missingStudents.length} élève(s) n'ont pas encore envoyé de message` 
+                                : 'Tous les élèves ont envoyé un message !'}
+                        </p>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        // Initialiser
+        checkAuth();
+    </script>
+</body>
+</html>
+

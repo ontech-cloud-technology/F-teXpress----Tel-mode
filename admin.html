@@ -206,6 +206,14 @@
             <i data-lucide="activity" class="w-5 h-5 mr-3"></i>
             Logs d'Activité
         </a>
+        <a href="send-email.html" class="nav-item">
+            <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+            Envoyer un Email
+        </a>
+        <a href="fetes-tracking.html" class="nav-item">
+            <i data-lucide="trending-up" class="w-5 h-5 mr-3"></i>
+            Suivi des Fêtes
+        </a>
         <a onclick="signOutAndRedirect()" class="nav-item mt-auto text-red-400 hover:text-white">
             <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
             Déconnexion
@@ -240,6 +248,10 @@
             <button onclick="changeSection('celebrations')" id="tab-celebrations" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
                 <i data-lucide="gift" class="w-4 h-4 inline-block mr-2"></i>
                 Personnes & Célébrations
+            </button>
+            <button onclick="changeSection('activities')" id="tab-activities" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
+                <i data-lucide="vote" class="w-4 h-4 inline-block mr-2"></i>
+                Activités & Votes
             </button>
             <button onclick="changeSection('settings')" id="tab-settings" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
                 <i data-lucide="palette" class="w-4 h-4 inline-block mr-2"></i>
@@ -412,6 +424,73 @@
 
 
         <!-- Section 3 (TODO) -->
+        <!-- Section 3: Activités & Votes -->
+        <section id="section-activities" class="card p-6 rounded-xl hidden">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i data-lucide="vote" class="w-6 h-6 mr-2"></i>
+                Gestion des Activités & Votes
+            </h2>
+
+            <!-- Contrôles de vote -->
+            <div class="mb-8 p-6 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
+                <h3 class="text-xl font-bold mb-4">Contrôles de Vote</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-lg font-semibold">Vote Initial</label>
+                            <p class="text-sm text-gray-400">Permet aux élèves de voter pour leurs activités préférées</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleInitialVote" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-lg font-semibold">Vote Final</label>
+                            <p class="text-sm text-gray-400">Active le vote final pour choisir l'activité définitive</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleFinalVote" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestion des activités -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Liste des Activités</h3>
+                    <button onclick="openAddActivityModal()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-bg-dark font-semibold transition flex items-center">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        Ajouter une Activité
+                    </button>
+                </div>
+                <div id="activitiesList" class="space-y-3">
+                    <p class="text-gray-500 text-center py-8">Chargement des activités...</p>
+                </div>
+            </div>
+
+            <!-- Résultats de vote -->
+            <div class="mt-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Résultats des Votes</h3>
+                    <div class="flex space-x-2">
+                        <button onclick="loadVoteResults(false)" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                            Vote Initial
+                        </button>
+                        <button onclick="loadVoteResults(true)" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                            Vote Final
+                        </button>
+                    </div>
+                </div>
+                <div id="voteResultsContainer">
+                    <p class="text-gray-500 text-center py-8">Sélectionnez un type de vote pour voir les résultats</p>
+                </div>
+            </div>
+        </section>
+
         <section id="section-settings" class="card p-6 rounded-xl hidden">...</section>
 
     </main>
@@ -509,6 +588,36 @@
         </div>
     </div>
 
+    <!-- Modale d'Ajout/Édition d'Activité -->
+    <div id="addActivityModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 flex items-center header-gradient">
+                <i data-lucide="plus" class="w-6 h-6 mr-2"></i>
+                <span id="activityModalTitle">Ajouter une Activité</span>
+            </h3>
+            <form id="addActivityForm">
+                <input type="hidden" id="activityId">
+                <div class="space-y-4">
+                    <div>
+                        <label for="activityName" class="block text-sm font-medium mb-2 text-gray-300">Nom de l'Activité *</label>
+                        <input type="text" id="activityName" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Ex: Sortie au cinéma">
+                    </div>
+                    <div>
+                        <label for="activityDescription" class="block text-sm font-medium mb-2 text-gray-300">Description</label>
+                        <textarea id="activityDescription" rows="3" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Description de l'activité..."></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6 pt-4 border-t border-gray-700">
+                    <button type="button" onclick="closeModal('addActivityModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                    <button type="submit" id="activitySaveBtn" class="px-4 py-2 rounded btn-primary flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 mr-2"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modale de Confirmation de Suppression Utilisateur -->
     <div id="deleteConfirmModal" class="modal-overlay">
         <div class="modal-content">
@@ -544,6 +653,7 @@
 
     <!-- Inclusion du fichier firebase.js -->
     <script src="firebase.js"></script>
+    <script src="js/vote-system.js"></script>
     
     <!-- Script principal -->
     <script>
@@ -578,7 +688,16 @@
 
 
         // Configuration de l'API Email
-        const EMAIL_API_URL = process.env.EMAIL_API_URL || 'http://localhost:3001/api';
+        // Détection automatique : localhost en développement, URL de production sinon
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname === '';
+        const EMAIL_API_URL = isLocalhost
+            ? 'http://localhost:3001/api'
+            : 'https://votre-serveur-email.com/api'; // À configurer pour la production
+        
+        console.log('📧 EMAIL_API_URL configurée:', EMAIL_API_URL);
+        console.log('📍 Hostname:', window.location.hostname);
 
         /**
          * Envoie un email de bienvenue lors de la création d'un compte
@@ -588,6 +707,9 @@
          * @returns {Promise<boolean>} Succès ou échec
          */
         async function sendWelcomeEmail(email, fullName, tempPassword) {
+            console.log('📧 Tentative d\'envoi d\'email à:', email);
+            console.log('🔗 URL API:', `${EMAIL_API_URL}/send-welcome-email`);
+            
             try {
                 const response = await fetch(`${EMAIL_API_URL}/send-welcome-email`, {
                     method: 'POST',
@@ -602,7 +724,17 @@
                     })
                 });
                 
+                console.log('📡 Réponse du serveur:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Erreur HTTP:', response.status, errorText);
+                    return false;
+                }
+                
                 const result = await response.json();
+                console.log('📦 Résultat:', result);
+                
                 if (result.success) {
                     console.log('✅ Email de bienvenue envoyé à', email);
                     return true;
@@ -612,6 +744,7 @@
                 }
             } catch (error) {
                 console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+                console.error('❌ Détails:', error.message, error.stack);
                 // Ne pas bloquer la création du compte si l'email échoue
                 return false;
             }
@@ -636,6 +769,7 @@
         const sections = {
             'users': document.getElementById('section-users'),
             'celebrations': document.getElementById('section-celebrations'),
+            'activities': document.getElementById('section-activities'),
             'settings': document.getElementById('section-settings'),
         };
         
@@ -718,8 +852,264 @@
             
             if (sectionId === 'celebrations') {
                 unsubscribeCelebrations = listenForCelebrations(renderCelebrationList);
+            } else if (sectionId === 'activities') {
+                loadActivities();
+                loadVoteSettings();
             }
         }
+
+        // --- Gestion des Activités & Votes ---
+
+        // Charger les activités
+        async function loadActivities() {
+            const activitiesList = document.getElementById('activitiesList');
+            try {
+                const activities = await getAllActivities();
+                
+                if (activities.length === 0) {
+                    activitiesList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucune activité créée. Cliquez sur "Ajouter une Activité" pour commencer.</p>';
+                    return;
+                }
+                
+                activitiesList.innerHTML = activities.map(activity => `
+                    <div class="border border-gray-700 rounded-lg p-4 bg-gray-800 bg-opacity-20 flex items-center justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-lg">${activity.name}</h4>
+                            ${activity.description ? `<p class="text-sm text-gray-400 mt-1">${activity.description}</p>` : ''}
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editActivity('${activity.id}')" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteActivityConfirm('${activity.id}', '${activity.name.replace(/'/g, "\\'")}')" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des activités:', error);
+                activitiesList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des activités.</p>';
+            }
+        }
+
+        // Ouvrir la modale d'ajout d'activité
+        window.openAddActivityModal = function() {
+            document.getElementById('addActivityForm').reset();
+            document.getElementById('activityId').value = '';
+            document.getElementById('activityModalTitle').textContent = 'Ajouter une Activité';
+            openModal('addActivityModal');
+            lucide.createIcons();
+        }
+
+        // Éditer une activité
+        window.editActivity = async function(activityId) {
+            try {
+                const activityDoc = await firebase.firestore().collection('activities').doc(activityId).get();
+                if (!activityDoc.exists) {
+                    alert('Activité non trouvée');
+                    return;
+                }
+                
+                const activity = activityDoc.data();
+                document.getElementById('activityId').value = activityId;
+                document.getElementById('activityName').value = activity.name || '';
+                document.getElementById('activityDescription').value = activity.description || '';
+                document.getElementById('activityModalTitle').textContent = 'Modifier l\'Activité';
+                openModal('addActivityModal');
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors de l\'édition:', error);
+                alert('Erreur lors de l\'édition de l\'activité');
+            }
+        }
+
+        // Confirmer la suppression d'une activité
+        window.deleteActivityConfirm = function(activityId, activityName) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer l'activité "${activityName}" ?`)) {
+                deleteActivityById(activityId);
+            }
+        }
+
+        // Supprimer une activité
+        async function deleteActivityById(activityId) {
+            try {
+                await deleteActivity(activityId);
+                alert('Activité supprimée avec succès');
+                loadActivities();
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                alert('Erreur lors de la suppression de l\'activité');
+            }
+        }
+
+        // Gérer le formulaire d'activité
+        document.getElementById('addActivityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const saveBtn = document.getElementById('activitySaveBtn');
+            const activityId = document.getElementById('activityId').value;
+            const name = document.getElementById('activityName').value.trim();
+            const description = document.getElementById('activityDescription').value.trim();
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i>Enregistrement...';
+            
+            try {
+                if (activityId) {
+                    // Modifier
+                    await updateActivity(activityId, { name, description });
+                    alert('Activité modifiée avec succès !');
+                } else {
+                    // Créer
+                    await createActivity(name, description);
+                    alert('Activité créée avec succès !');
+                }
+                
+                form.reset();
+                closeModal('addActivityModal');
+                loadActivities();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement de l\'activité');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4 mr-2"></i>Enregistrer';
+                lucide.createIcons();
+            }
+        });
+
+        // Charger les paramètres de vote
+        async function loadVoteSettings() {
+            try {
+                const settings = await getVoteSettings();
+                document.getElementById('toggleInitialVote').checked = settings.votingEnabled || false;
+                document.getElementById('toggleFinalVote').checked = settings.finalVotingEnabled || false;
+            } catch (error) {
+                console.error('Erreur lors du chargement des paramètres:', error);
+            }
+        }
+
+        // Toggle vote initial
+        document.getElementById('toggleInitialVote').addEventListener('change', async (e) => {
+            try {
+                const settings = await getVoteSettings();
+                await updateVoteSettings({
+                    ...settings,
+                    votingEnabled: e.target.checked,
+                    // Si on désactive le vote initial, on désactive aussi le vote final
+                    finalVotingEnabled: e.target.checked ? settings.finalVotingEnabled : false
+                });
+                if (!e.target.checked) {
+                    document.getElementById('toggleFinalVote').checked = false;
+                }
+                alert('Paramètres de vote mis à jour');
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour');
+                e.target.checked = !e.target.checked; // Revert
+            }
+        });
+
+        // Toggle vote final
+        document.getElementById('toggleFinalVote').addEventListener('change', async (e) => {
+            try {
+                const settings = await getVoteSettings();
+                // Le vote final nécessite le vote initial
+                if (e.target.checked && !settings.votingEnabled) {
+                    alert('Vous devez d\'abord activer le vote initial');
+                    e.target.checked = false;
+                    return;
+                }
+                await updateVoteSettings({
+                    ...settings,
+                    finalVotingEnabled: e.target.checked
+                });
+                alert('Paramètres de vote mis à jour');
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour');
+                e.target.checked = !e.target.checked; // Revert
+            }
+        });
+
+        // Charger les résultats de vote
+        window.loadVoteResults = async function(isFinal = false) {
+            const container = document.getElementById('voteResultsContainer');
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement des résultats...</p>';
+            
+            try {
+                const [results, voteDetails] = await Promise.all([
+                    getVoteResults(isFinal),
+                    getAllVoteDetails(isFinal)
+                ]);
+                
+                if (results.totalVotes === 0) {
+                    container.innerHTML = `
+                        <div class="bg-gray-800 bg-opacity-30 border border-gray-700 rounded-lg p-4 text-center">
+                            <p class="text-gray-400">Aucun vote enregistré pour le ${isFinal ? 'vote final' : 'vote initial'}.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="mb-4 p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
+                        <div class="text-lg font-bold">Total des votes : ${results.totalVotes}</div>
+                        <div class="text-sm text-gray-400">Type : ${isFinal ? 'Vote Final' : 'Vote Initial'}</div>
+                    </div>
+                    <div class="space-y-4">
+                        ${results.results.map(item => {
+                            const percentage = item.percentage.toFixed(1);
+                            return `
+                                <div class="border border-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="font-bold text-lg">${item.activity.name}</h4>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-primary">${item.count}</div>
+                                            <div class="text-sm text-gray-400">${percentage}%</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-4">
+                                        <div class="bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-bold mb-3">Détails des votes</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-700 rounded-lg">
+                                <thead class="bg-gray-800">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Élève</th>
+                                        <th class="px-4 py-2 text-left">Activité</th>
+                                        <th class="px-4 py-2 text-left">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${voteDetails.map(vote => `
+                                        <tr class="border-t border-gray-700">
+                                            <td class="px-4 py-2">${vote.user ? vote.user.fullName : 'Inconnu'}</td>
+                                            <td class="px-4 py-2">${vote.activity ? vote.activity.name : 'N/A'}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-400">
+                                                ${vote.createdAt ? vote.createdAt.toDate().toLocaleString('fr-FR') : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Erreur lors du chargement des résultats:', error);
+                container.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des résultats.</p>';
+            }
+        };
 
         /** Déconnecte l'utilisateur et redirige vers la page de connexion. */
         window.signOutAndRedirect = async function() {
@@ -1006,10 +1396,19 @@
                     fullName: fullName,
                     email: email,
                     role: role,
+                    needsPasswordChange: true, // Flag pour indiquer que le mot de passe doit être changé
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
-                successElement.textContent = `✅ Utilisateur "${fullName}" créé avec succès !`;
+                // Envoyer l'email de bienvenue
+                console.log('📧 Envoi de l\'email de bienvenue pour:', email);
+                const emailSent = await sendWelcomeEmail(email, fullName, password);
+                
+                if (emailSent) {
+                    successElement.textContent = `✅ Utilisateur "${fullName}" créé avec succès ! Email de bienvenue envoyé à ${email}`;
+                } else {
+                    successElement.textContent = `✅ Utilisateur "${fullName}" créé avec succès ! Email: ${email} (⚠️ Email non envoyé)`;
+                }
                 successElement.classList.remove('hidden');
                 
                 // Réinitialiser le formulaire

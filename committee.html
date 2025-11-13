@@ -510,7 +510,10 @@
 
 
         // Configuration de l'API Email
-        const EMAIL_API_URL = process.env.EMAIL_API_URL || 'http://localhost:3001/api';
+        // Détection automatique : localhost en développement, URL de production sinon
+        const EMAIL_API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001/api'
+            : 'https://votre-serveur-email.com/api'; // À configurer pour la production
 
         /**
          * Envoie un email de bienvenue lors de la création d'un compte

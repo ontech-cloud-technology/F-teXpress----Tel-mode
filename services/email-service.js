@@ -12,10 +12,10 @@ const path = require('path');
 
 // Configuration
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDER_EMAIL = process.env.SENDER_EMAIL || process.env.SENDGRID_FROM_EMAIL || '2253342@cslaval.qc.ca';
+const SENDER_EMAIL = process.env.SENDER_EMAIL || process.env.SENDGRID_FROM_EMAIL || 'liorangezgeg@gmail.com';
 const SENDER_NAME = process.env.COMPANY_NAME || 'ONTech-Cloud Technology';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL;
-const BASE_URL = process.env.BASE_URL || 'https://203celebrationhub.com';
+const BASE_URL = process.env.BASE_URL || 'https://ontech-cloud-technology.github.io/Projet-aniversaire';
 
 // Initialiser SendGrid
 if (SENDGRID_API_KEY) {

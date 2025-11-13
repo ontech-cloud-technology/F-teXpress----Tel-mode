@@ -138,6 +138,14 @@
                         <span>Notifications</span>
                         <span id="notificationBadge" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
                     </button>
+                    <button onclick="window.location.href='progression.html'" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                        <span>Progression</span>
+                    </button>
+                    <button onclick="showView('vote')" id="btnVote" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="vote" class="w-5 h-5"></i>
+                        <span>Vote Activités</span>
+                    </button>
                 </nav>
             </div>
             
@@ -233,11 +241,23 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Vue Vote -->
+            <section id="viewVote" class="card p-6 rounded-xl hidden">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <i data-lucide="vote" class="w-6 h-6 mr-2"></i>
+                    Vote pour les Activités
+                </h2>
+                <div id="voteContent">
+                    <p class="text-gray-500 text-center py-8">Chargement...</p>
+                </div>
+            </section>
         </div>
     </main>
 
     <!-- Inclusion du fichier firebase.js -->
     <script src="firebase.js"></script>
+    <script src="js/vote-system.js"></script>
 
     <script>
         const loadingScreen = document.getElementById('loadingScreen');
@@ -253,7 +273,10 @@
         let currentUserBirthday = null;
 
         // Configuration de l'API Email
-        const EMAIL_API_URL = process.env.EMAIL_API_URL || 'http://localhost:3001/api';
+        // Détection automatique : localhost en développement, URL de production sinon
+        const EMAIL_API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3001/api'
+            : 'https://votre-serveur-email.com/api'; // À configurer pour la production
 
         /**
          * Envoie une notification par email lorsqu'un message est reçu
@@ -515,19 +538,23 @@
             const viewListe = document.getElementById('viewListe');
             const viewCalendrier = document.getElementById('viewCalendrier');
             const viewNotifications = document.getElementById('viewNotifications');
+            const viewVote = document.getElementById('viewVote');
             const btnListe = document.getElementById('btnListe');
             const btnCalendrier = document.getElementById('btnCalendrier');
             const btnNotifications = document.getElementById('btnNotifications');
+            const btnVote = document.getElementById('btnVote');
 
             // Cacher toutes les vues
             viewListe.classList.add('hidden');
             viewCalendrier.classList.add('hidden');
+            if (viewVote) viewVote.classList.add('hidden');
             viewNotifications.classList.add('hidden');
             
             // Retirer l'état actif de tous les boutons
             btnListe.classList.remove('active');
             btnCalendrier.classList.remove('active');
             btnNotifications.classList.remove('active');
+            if (btnVote) btnVote.classList.remove('active');
 
             if (view === 'liste') {
                 viewListe.classList.remove('hidden');
@@ -544,6 +571,11 @@
                 btnNotifications.classList.add('active');
                 pageTitle.textContent = 'Mes Notifications';
                 loadNotificationsView();
+            } else if (view === 'vote' && viewVote) {
+                viewVote.classList.remove('hidden');
+                if (btnVote) btnVote.classList.add('active');
+                pageTitle.textContent = 'Vote pour les Activités';
+                loadVoteView();
             }
             
             lucide.createIcons();
@@ -575,7 +607,7 @@
         }
 
         // Charger les anniversaires à venir (dans 1 semaine ou moins)
-        function loadUpcomingBirthdays() {
+        async function loadUpcomingBirthdays() {
             const upcomingBirthdaysDiv = document.getElementById('upcomingBirthdays');
             const sendMessageSection = document.getElementById('sendMessageSection');
             
@@ -601,7 +633,20 @@
             sendMessageSection.classList.remove('hidden');
             upcomingBirthdaysDiv.innerHTML = '';
 
-            upcoming.forEach(person => {
+            // Vérifier pour chaque personne si un message a déjà été envoyé
+            for (const person of upcoming) {
+                let messageAlreadySent = false;
+                
+                if (currentUserId) {
+                    const existingMessage = await firebase.firestore().collection('messages')
+                        .where('senderId', '==', currentUserId)
+                        .where('celebrationId', '==', person.id)
+                        .limit(1)
+                        .get();
+                    
+                    messageAlreadySent = !existingMessage.empty;
+                }
+
                 const card = document.createElement('div');
                 card.className = 'message-card p-5 rounded-xl mb-4';
                 
@@ -610,6 +655,11 @@
                 const daysText = person.daysUntil === 0 ? "Aujourd'hui ! 🎉" : 
                                 person.daysUntil === 1 ? "Demain ! 🎂" : 
                                 `Dans ${person.daysUntil} jours`;
+
+                const buttonDisabled = messageAlreadySent ? 'disabled opacity-50 cursor-not-allowed' : '';
+                const buttonText = messageAlreadySent ? 'Déjà envoyé ✓' : 'Envoyer';
+                const textareaDisabled = messageAlreadySent ? 'disabled opacity-50 cursor-not-allowed' : '';
+                const textareaPlaceholder = messageAlreadySent ? 'Vous avez déjà envoyé un message à cette personne.' : 'Écris un message personnalisé pour souhaiter un joyeux anniversaire... 🎉';
 
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-700">
@@ -626,22 +676,22 @@
                     <div class="space-y-3">
                         <div>
                             <label class="block text-sm font-medium mb-2 text-gray-300">Ton message</label>
-                            <textarea id="message_${person.id}" class="w-full p-3 rounded-lg text-white text-sm resize-none" placeholder="Écris un message personnalisé pour souhaiter un joyeux anniversaire... 🎉" rows="3"></textarea>
+                            <textarea id="message_${person.id}" ${messageAlreadySent ? 'disabled' : ''} class="w-full p-3 rounded-lg text-white text-sm resize-none ${textareaDisabled}" placeholder="${textareaPlaceholder}" rows="3"></textarea>
                         </div>
                         <div class="flex items-center justify-between">
                             <label class="flex items-center space-x-2 cursor-pointer group">
-                                <input type="checkbox" id="public_${person.id}" class="w-4 h-4 rounded border-gray-600 bg-bg-dark text-primary focus:ring-primary focus:ring-2">
+                                <input type="checkbox" id="public_${person.id}" ${messageAlreadySent ? 'disabled' : ''} class="w-4 h-4 rounded border-gray-600 bg-bg-dark text-primary focus:ring-primary focus:ring-2 ${messageAlreadySent ? 'opacity-50 cursor-not-allowed' : ''}">
                                 <span class="text-sm text-gray-300 group-hover:text-white transition">Message public (visible par tous)</span>
                             </label>
-                            <button onclick="sendMessage('${person.id}', '${person.fullName}')" class="send-button px-6 py-2 rounded-lg text-white text-sm font-semibold flex items-center space-x-2">
-                                <i data-lucide="send" class="w-4 h-4"></i>
-                                <span>Envoyer</span>
+                            <button onclick="${messageAlreadySent ? '' : `sendMessage('${person.id}', '${person.fullName}')`}" ${messageAlreadySent ? 'disabled' : ''} class="send-button px-6 py-2 rounded-lg text-white text-sm font-semibold flex items-center space-x-2 ${buttonDisabled}">
+                                <i data-lucide="${messageAlreadySent ? 'check' : 'send'}" class="w-4 h-4"></i>
+                                <span>${buttonText}</span>
                             </button>
                         </div>
                     </div>
                 `;
                 upcomingBirthdaysDiv.appendChild(card);
-            });
+            }
 
             lucide.createIcons();
         }
@@ -685,6 +735,18 @@
             const senderData = await firebase.firestore().collection('users').doc(currentUserId).get();
             const senderName = senderData.data()?.fullName || 'Anonyme';
 
+            // Vérifier si l'utilisateur a déjà envoyé un message à cette personne
+            const existingMessage = await firebase.firestore().collection('messages')
+                .where('senderId', '==', currentUserId)
+                .where('celebrationId', '==', celebrationId)
+                .limit(1)
+                .get();
+
+            if (!existingMessage.empty) {
+                alert('⚠️ Vous avez déjà envoyé un message à cette personne. Vous ne pouvez envoyer qu\'un seul message par personne.');
+                return;
+            }
+
             try {
                 await firebase.firestore().collection('messages').add({
                     recipientId: recipientId,
@@ -725,6 +787,23 @@
                 document.getElementById(`public_${celebrationId}`).checked = false;
 
                 alert('Message envoyé avec succès ! 🎉');
+                
+                // Vérifier la progression des 9 personnes consécutives
+                try {
+                    // Charger le script de progression si pas déjà chargé
+                    if (typeof checkAndNotify9Consecutive === 'undefined') {
+                        const script = document.createElement('script');
+                        script.src = 'js/progression-system.js';
+                        document.head.appendChild(script);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                    await checkAndNotify9Consecutive();
+                } catch (error) {
+                    console.error('Erreur lors de la vérification de progression:', error);
+                }
+                
+                // Recharger les anniversaires à venir pour mettre à jour l'état des boutons
+                await loadUpcomingBirthdays();
                 loadNotifications();
             } catch (error) {
                 console.error('Erreur lors de l\'envoi du message:', error);
@@ -898,6 +977,125 @@
         }
 
         // Initialisation
+        // Charger la vue vote
+        async function loadVoteView() {
+            const voteContent = document.getElementById('voteContent');
+            
+            if (!currentUserId) {
+                voteContent.innerHTML = '<p class="text-red-400 text-center py-8">Vous devez être connecté pour voter.</p>';
+                return;
+            }
+            
+            try {
+                const [activities, settings] = await Promise.all([
+                    getAllActivities(),
+                    getVoteSettings()
+                ]);
+                
+                const isFinal = settings.finalVotingEnabled;
+                const votingEnabled = settings.votingEnabled || settings.finalVotingEnabled;
+                
+                if (!votingEnabled) {
+                    voteContent.innerHTML = `
+                        <div class="bg-yellow-900 bg-opacity-30 border border-yellow-500 rounded-lg p-4 text-center">
+                            <i data-lucide="lock" class="w-8 h-8 mx-auto mb-2 text-yellow-400"></i>
+                            <p class="text-yellow-400 font-bold">Le vote n'est pas encore activé</p>
+                            <p class="text-gray-400 text-sm mt-2">Attendez que l'administrateur active le vote.</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+                
+                if (activities.length === 0) {
+                    voteContent.innerHTML = `
+                        <div class="bg-gray-800 bg-opacity-30 border border-gray-700 rounded-lg p-4 text-center">
+                            <p class="text-gray-400">Aucune activité disponible pour le moment.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Vérifier si l'utilisateur a déjà voté
+                const hasVoted = await hasUserVoted(currentUserId, isFinal);
+                const userVote = hasVoted ? await getUserVote(currentUserId, isFinal) : null;
+                
+                const voteTypeText = isFinal ? 'final' : 'initial';
+                const voteTypeLabel = isFinal ? 'Vote Final' : 'Vote Initial';
+                
+                voteContent.innerHTML = `
+                    <div class="mb-4 p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-blue-400">${voteTypeLabel}</h3>
+                                <p class="text-sm text-gray-300 mt-1">
+                                    ${isFinal ? 'Votez pour l\'activité que vous souhaitez faire !' : 'Votez pour vos activités préférées !'}
+                                </p>
+                            </div>
+                            ${hasVoted ? `
+                                <span class="px-3 py-1 rounded-full bg-green-500 text-white text-sm font-bold">
+                                    ✓ Vous avez voté
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        ${activities.map(activity => {
+                            const isSelected = userVote && userVote.activityId === activity.id;
+                            return `
+                                <div class="border border-gray-700 rounded-lg p-4 ${isSelected ? 'bg-green-900 bg-opacity-20 border-green-500' : 'bg-gray-800 bg-opacity-20'}">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-lg mb-1">${activity.name}</h3>
+                                            ${activity.description ? `<p class="text-sm text-gray-400">${activity.description}</p>` : ''}
+                                        </div>
+                                        <button 
+                                            onclick="submitVoteForActivity('${activity.id}')" 
+                                            ${hasVoted ? 'disabled' : ''}
+                                            class="px-6 py-2 rounded-lg ${isSelected ? 'bg-green-600' : 'bg-primary hover:bg-secondary'} text-white font-semibold transition ${hasVoted ? 'opacity-50 cursor-not-allowed' : ''}"
+                                        >
+                                            ${isSelected ? '✓ Sélectionné' : 'Voter'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement du vote:', error);
+                voteContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement du vote.</p>';
+            }
+        }
+        
+        // Soumettre un vote pour une activité
+        async function submitVoteForActivity(activityId) {
+            if (!currentUserId) {
+                alert('Vous devez être connecté pour voter.');
+                return;
+            }
+            
+            try {
+                const settings = await getVoteSettings();
+                const isFinal = settings.finalVotingEnabled;
+                
+                const success = await submitVote(currentUserId, activityId, isFinal);
+                
+                if (success) {
+                    alert('Vote enregistré avec succès !');
+                    loadVoteView(); // Recharger la vue
+                } else {
+                    alert('Erreur lors de l\'enregistrement du vote.');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la soumission du vote:', error);
+                alert('Erreur lors de la soumission du vote.');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             checkAuth();
