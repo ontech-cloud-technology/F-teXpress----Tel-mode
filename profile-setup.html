@@ -487,6 +487,11 @@
                 </button>
             </div>
         </form>
+        
+        <!-- Bouton admin caché (double-clic sur le titre) -->
+        <button id="adminSkipBtn" onclick="skipAsAdmin()" class="hidden fixed bottom-4 right-4 px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs opacity-0 transition-opacity z-50">
+            ⚡ Skip Admin
+        </button>
     </div>
 
     <!-- Overlay de succès -->
@@ -504,6 +509,41 @@
     <script src="firebase.js"></script>
 
     <script>
+        // Bouton admin caché - double-clic sur le titre
+        let clickCount = 0;
+        document.querySelector('h1').addEventListener('dblclick', function() {
+            clickCount++;
+            if (clickCount >= 3) {
+                const btn = document.getElementById('adminSkipBtn');
+                btn.classList.remove('hidden', 'opacity-0');
+                btn.classList.add('opacity-100');
+                setTimeout(() => {
+                    btn.classList.add('opacity-0');
+                    setTimeout(() => btn.classList.add('hidden'), 300);
+                }, 5000);
+            }
+        });
+        
+        // Fonction pour skip en tant qu'admin
+        async function skipAsAdmin() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            
+            const userData = await getUserRole(user.uid);
+            if (userData.role !== 'admin') {
+                alert('Accès refusé. Cette fonctionnalité est réservée aux administrateurs.');
+                return;
+            }
+            
+            if (confirm('Êtes-vous sûr de vouloir skip cette étape ?')) {
+                // Mettre à jour le flag profileCompleted
+                await firebase.firestore().collection('users').doc(user.uid).update({
+                    profileCompleted: true
+                });
+                window.location.href = 'admin.html';
+            }
+        }
+        
         const form = document.getElementById('profileForm');
         const errorBox = document.getElementById('errorBox');
         const errorMsg = errorBox.querySelector('span');
