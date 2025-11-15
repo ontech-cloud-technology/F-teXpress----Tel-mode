@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Présentation Admin — Fête Express</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        :root {
+            --bg: radial-gradient(circle at top left, #1a0f30, #0a041c);
+            --glass: rgba(255, 255, 255, 0.04);
+            --accent: linear-gradient(90deg, #ff6f61, #f9c74f);
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --radius: 16px;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            --muted: #c8c8d4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100vh;
+            background: var(--bg);
+            font-family: 'Manrope', sans-serif;
+            color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        /* Écran de login */
+        #loginScreen {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+        }
+
+        .login-card {
+            width: 90%;
+            max-width: 400px;
+            padding: 40px;
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow);
+        }
+
+        h1 {
+            font-weight: 800;
+            font-size: 2em;
+            margin-bottom: 10px;
+            background: var(--accent);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 30px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(255, 111, 97, 0.4);
+            outline: none;
+        }
+
+        button {
+            width: 100%;
+            border: none;
+            background: var(--accent);
+            padding: 14px 0;
+            border-radius: 10px;
+            color: #1a0f30;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 111, 97, 0.4);
+        }
+
+        .error-message {
+            color: #f87171;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* Écran de présentation */
+        #presentationScreen {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+            background: #000;
+        }
+
+        .presentation-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 15, 48, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .slide-counter {
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--primary);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .exit-btn {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .exit-btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .presentation-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px 20px;
+            overflow: auto;
+        }
+
+        .slide-container {
+            max-width: 100%;
+            max-height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide-image {
+            max-width: 100%;
+            max-height: calc(100vh - 120px);
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .loading {
+            text-align: center;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .no-slides {
+            text-align: center;
+            color: var(--muted);
+            padding: 40px;
+        }
+
+        .no-slides h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        /* Navigation au clavier */
+        .keyboard-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--muted);
+            z-index: 50;
+        }
+    </style>
+</head>
+<body>
+    <!-- Écran de Login -->
+    <div id="loginScreen">
+        <div class="login-card">
+            <h1>🔐 Accès Présentation</h1>
+            <p class="subtitle">Entrez le code d'accès administrateur</p>
+            <input 
+                type="password" 
+                id="accessCode" 
+                placeholder="Code d'accès"
+                autocomplete="off"
+                autofocus
+            />
+            <button onclick="checkAccess()">Accéder</button>
+            <div id="errorMessage" class="error-message">
+                Code d'accès incorrect
+            </div>
+        </div>
+    </div>
+
+    <!-- Écran de Présentation -->
+    <div id="presentationScreen">
+        <div class="presentation-header">
+            <div class="slide-counter">
+                <span id="currentSlide">1</span> / <span id="totalSlides">0</span>
+            </div>
+            <div class="controls">
+                <button class="control-btn" onclick="previousSlide()" id="prevBtn">
+                    <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                    Précédent
+                </button>
+                <button class="control-btn" onclick="nextSlide()" id="nextBtn">
+                    Suivant
+                    <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+                <button class="control-btn exit-btn" onclick="exitPresentation()">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                    Quitter
+                </button>
+            </div>
+        </div>
+        
+        <div class="presentation-content">
+            <div class="slide-container" id="slideContainer">
+                <div class="loading">Chargement de la présentation...</div>
+            </div>
+        </div>
+
+        <div class="keyboard-hint">
+            Utilisez les flèches ← → pour naviguer, ou ESC pour quitter
+        </div>
+    </div>
+
+    <script>
+        // Code d'accès secret (à changer selon vos besoins)
+        const ADMIN_ACCESS_CODE = '203ADMIN2024';
+        
+        let currentSlideIndex = 0;
+        let slides = [];
+        const SLIDES_DIR = 'presentation-slides/';
+
+        // Vérifier l'accès
+        function checkAccess() {
+            const code = document.getElementById('accessCode').value;
+            const errorMsg = document.getElementById('errorMessage');
+            
+            if (code === ADMIN_ACCESS_CODE) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('presentationScreen').style.display = 'flex';
+                loadPresentation();
+            } else {
+                errorMsg.style.display = 'block';
+                document.getElementById('accessCode').value = '';
+                document.getElementById('accessCode').focus();
+            }
+        }
+
+        // Entrée pour valider
+        document.getElementById('accessCode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkAccess();
+            }
+        });
+
+        // Charger la présentation
+        async function loadPresentation() {
+            const slideContainer = document.getElementById('slideContainer');
+            
+            // Essayer de charger les slides depuis le dossier
+            // Format attendu: slide-1.png, slide-2.png, etc.
+            slides = [];
+            let slideNumber = 1;
+            let foundSlides = true;
+
+            while (foundSlides) {
+                const img = new Image();
+                const slidePath = `${SLIDES_DIR}slide-${slideNumber}.png`;
+                
+                await new Promise((resolve) => {
+                    img.onload = () => {
+                        slides.push(slidePath);
+                        slideNumber++;
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        foundSlides = false;
+                        resolve();
+                    };
+                    img.src = slidePath;
+                });
+            }
+
+            // Si aucune slide trouvée, afficher un message
+            if (slides.length === 0) {
+                slideContainer.innerHTML = `
+                    <div class="no-slides">
+                        <h2>⚠️ Aucune slide trouvée</h2>
+                        <p>Veuillez convertir le PowerPoint en images et les placer dans le dossier <code>presentation-slides/</code></p>
+                        <p style="margin-top: 20px; font-size: 14px;">
+                            Format attendu: <code>slide-1.png</code>, <code>slide-2.png</code>, etc.
+                        </p>
+                    </div>
+                `;
+                document.getElementById('totalSlides').textContent = '0';
+                return;
+            }
+
+            document.getElementById('totalSlides').textContent = slides.length;
+            showSlide(0);
+            lucide.createIcons();
+        }
+
+        // Afficher une slide
+        function showSlide(index) {
+            if (index < 0 || index >= slides.length) return;
+            
+            currentSlideIndex = index;
+            const slideContainer = document.getElementById('slideContainer');
+            
+            slideContainer.innerHTML = `
+                <img src="${slides[index]}" alt="Slide ${index + 1}" class="slide-image" />
+            `;
+            
+            document.getElementById('currentSlide').textContent = index + 1;
+            
+            // Mettre à jour les boutons
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === slides.length - 1;
+        }
+
+        // Navigation
+        function nextSlide() {
+            if (currentSlideIndex < slides.length - 1) {
+                showSlide(currentSlideIndex + 1);
+            }
+        }
+
+        function previousSlide() {
+            if (currentSlideIndex > 0) {
+                showSlide(currentSlideIndex - 1);
+            }
+        }
+
+        function exitPresentation() {
+            if (confirm('Êtes-vous sûr de vouloir quitter la présentation ?')) {
+                document.getElementById('presentationScreen').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('accessCode').value = '';
+                document.getElementById('accessCode').focus();
+            }
+        }
+
+        // Navigation au clavier
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('presentationScreen').style.display === 'none') return;
+            
+            switch(e.key) {
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    previousSlide();
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    exitPresentation();
+                    break;
+            }
+        });
+
+        // Initialiser les icônes
+        lucide.createIcons();
+    </script>
+</body>
+</html>
+

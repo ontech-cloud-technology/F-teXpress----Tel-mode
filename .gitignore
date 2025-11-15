@@ -21,4 +21,10 @@ Thumbs.db
 *.swp
 *.swo
 
+# Présentation (fichiers volumineux)
+presentation-slides/*.png
+presentation-slides/*.jpg
+presentation-slides/*.jpeg
+!presentation-slides/.gitkeep
+
 

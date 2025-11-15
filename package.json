@@ -10,7 +10,9 @@
     "version:patch": "./create-tag.sh patch",
     "version:minor": "./create-tag.sh minor",
     "version:major": "./create-tag.sh major",
-    "version": "cat VERSION"
+    "version": "cat VERSION",
+    "convert-pptx": "node convert-pptx-to-slides.js",
+    "install-and-convert": "./install-and-convert.sh"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
