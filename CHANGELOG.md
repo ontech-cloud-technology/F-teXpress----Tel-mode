@@ -5,6 +5,35 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.3.0] - 2024-12-XX
+
+### Ajouté
+- Page de démo interactive (`demo.html`) accessible depuis `index.html`
+- Système de démo avec données mockées pour présenter l'interface élève
+- Design moderne et professionnel avec glassmorphism
+- Animations de fond avec gradients flottants
+- Scrollbar personnalisée avec gradient
+- Système d'animations fade-in pour les transitions
+
+### Modifié
+- **Refonte complète du design** de toutes les pages principales :
+  - Nouvelle palette de couleurs moderne (Indigo #6366f1, Violet #8b5cf6, Rose #ec4899)
+  - Fond sombre (#0f172a) avec dégradés animés
+  - Glassmorphism appliqué sur toutes les cartes et modales
+  - Sidebar modernisée avec effets hover et barres latérales actives
+  - Headers améliorés avec icônes et gradients
+  - Boutons avec effets glow et animations
+- `index.html` : Design modernisé, ajout de liens vers la démo
+- `admin.html` : Application du nouveau design moderne
+- `eleve.html` : Application du nouveau design moderne
+- `demo.html` : Nouvelle page de démo avec interface élève complète
+
+### Amélioré
+- Expérience utilisateur avec animations fluides
+- Cohérence visuelle entre toutes les pages
+- Design professionnel et moderne
+- Accessibilité améliorée avec meilleurs contrastes
+
 ## [1.2.0] - 2024-12-XX
 
 ### Ajouté

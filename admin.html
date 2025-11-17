@@ -40,45 +40,169 @@
     <style>
         /* Définition des variables de thème */
         :root {
-            --primary: #ff6f61; /* Corail */
-            --secondary: #f9c74f; /* Or */
-            --bg-dark: #1a0f30;
-            --bg-light: #2c1a4b;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
             --text-color: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);
             color: var(--text-color);
             min-height: 100vh;
-            display: flex; 
+            display: flex;
+            position: relative;
+            overflow-x: hidden;
         }
+
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animated::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            left: -250px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-strong {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
         .header-gradient {
-            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+
         .card {
-            background-color: var(--bg-light);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
         .btn-primary {
-            background-color: var(--primary);
-            color: var(--bg-dark);
-            transition: all 0.2s;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
         .btn-primary:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
         }
+
         .btn-secondary {
-            background-color: #475569;
+            background: rgba(71, 85, 105, 0.6);
+            backdrop-filter: blur(10px);
             color: var(--text-color);
-            transition: all 0.2s;
+            transition: all 0.3s ease;
         }
+
         .btn-secondary:hover {
-            background-color: #64748b;
+            background: rgba(100, 116, 139, 0.8);
+            transform: translateY(-1px);
         }
         
         /* Modales */
@@ -95,12 +219,16 @@
             z-index: 1000;
         }
         .modal-content {
-            background-color: var(--bg-light);
+            background: var(--bg-card);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
             width: 90%;
             max-width: 500px;
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 32px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-out;
         }
 
         /* CORRECTION CRITIQUE DU STYLE DES INPUTS ET SELECT */
@@ -136,35 +264,75 @@
 
         /* Styles du menu latéral (SideNav) */
         #sidenav {
-            width: 250px;
-            min-width: 250px;
-            background-color: #24143a;
+            width: 280px;
+            min-width: 280px;
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             padding: 24px 0;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
         }
+
         .nav-item {
             display: flex;
             align-items: center;
             padding: 12px 24px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.3s ease;
             text-decoration: none;
-            color: var(--text-color);
+            color: var(--text-secondary);
+            border-radius: 12px;
+            margin: 4px 12px;
+            position: relative;
+            overflow: hidden;
         }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
         .nav-item:hover {
-            background-color: rgba(255, 255, 255, 0.05);
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-color);
+            transform: translateX(4px);
         }
+
         .nav-item.active {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-left: 4px solid var(--primary);
-            padding-left: 20px;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--text-color);
+            border-left: 3px solid var(--primary);
+        }
+
+        .nav-item.active::before {
+            transform: scaleY(1);
         }
         /* Style actif pour les onglets de section */
+        .section-tab {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .section-tab:hover {
+            color: var(--primary);
+            border-bottom-color: rgba(99, 102, 241, 0.5);
+        }
+
         .section-tab.active-tab {
-            color: var(--primary); 
-            border-color: var(--primary);
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
         }
 
         /* Responsive design pour mobile */
@@ -182,6 +350,26 @@
         /* Style actif pour les filtres */
         .active-filter {
             box-shadow: 0 0 0 2px var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--primary-dark), var(--primary));
         }
 
         
@@ -346,7 +534,19 @@
     
     <!-- Menu Latéral de Navigation (SideNav) -->
     <nav id="sidenav">
-        <div class="px-6 mb-8 text-2xl font-extrabold header-gradient">203 Hub</div>
+        <div class="px-6 py-6 mb-4 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="shield" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black">
+                        <span class="header-gradient">203 Hub</span>
+                    </h2>
+                    <p class="text-xs text-gray-400">Fête Express</p>
+                </div>
+            </div>
+        </div>
         
         <!-- Sections de navigation -->
         <a href="calendrier.html" class="nav-item">
@@ -381,25 +581,46 @@
             Déconnexion
         </a>
         
-        <p class="text-xs px-6 py-2 text-gray-500 mt-2">Connecté: <span id="welcomeName" class="text-gray-400"></span></p>
+        <div class="px-6 py-4 mt-4 border-t border-gray-700">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500">Connecté</p>
+                    <p id="welcomeName" class="text-sm font-semibold text-white truncate"></p>
+                </div>
+            </div>
+        </div>
     </nav>
+
+    <!-- Animated Background -->
+    <div class="bg-animated"></div>
     
     <!-- Écran de chargement/Autorisation -->
-    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
-        <div class="text-xl text-white">Vérification des autorisations...</div>
+    <div id="loadingScreen" class="fixed inset-0 flex flex-col justify-center items-center z-50" style="background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);">
+        <div class="text-xl text-white mb-4">Vérification des autorisations...</div>
         <div class="loading my-4 flex space-x-2">
-            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
-            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
-            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce delay-300"></div>
         </div>
     </div>
 
     <!-- Contenu principal du Tableau de Bord -->
-    <main id="adminContent" class="hidden flex-grow p-4 md:p-8">
-        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
-            <h1 class="text-3xl md:text-4xl font-extrabold">
-                Gestion <span class="header-gradient">Administrateur / Enseignant</span>
-            </h1>
+    <main id="adminContent" class="hidden flex-grow p-4 md:p-8 relative z-10">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center fade-in">
+            <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="shield" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black">
+                        <span class="header-gradient">Tableau de Bord</span>
+                    </h1>
+                    <p class="text-sm text-gray-400 mt-1">Gestion Administrateur / Enseignant</p>
+                </div>
+            </div>
         </header>
 
         <!-- Navigation/Onglets Admin pour les sections -->
