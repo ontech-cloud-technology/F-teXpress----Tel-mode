@@ -318,6 +318,161 @@
         font-size: 15px;
       }
     }
+  
+  /* Styles Bootstrap pour les alertes */
+  .alert {
+    position: relative;
+    padding: 1rem 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+  }
+  
+  .alert-primary {
+    color: #084298;
+    background-color: #cfe2ff;
+    border-color: #b6d4fe;
+  }
+  
+  .alert-secondary {
+    color: #41464b;
+    background-color: #e2e3e5;
+    border-color: #d3d6d8;
+  }
+  
+  .alert-success {
+    color: #0f5132;
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+  }
+  
+  .alert-danger {
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+  }
+  
+  .alert-warning {
+    color: #664d03;
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+  }
+  
+  .alert-info {
+    color: #055160;
+    background-color: #cff4fc;
+    border-color: #b6effb;
+  }
+  
+  .alert-light {
+    color: #636464;
+    background-color: #fefefe;
+    border-color: #fdfdfe;
+  }
+  
+  .alert-dark {
+    color: #141619;
+    background-color: #d3d3d4;
+    border-color: #bcbebf;
+  }
+  
+  /* Mode sombre pour les alertes */
+  [data-theme="dark"] .alert-primary,
+  body:not([data-theme="light"]) .alert-primary {
+    color: #cfe2ff;
+    background-color: rgba(13, 110, 253, 0.2);
+    border-color: rgba(13, 110, 253, 0.4);
+  }
+  
+  [data-theme="dark"] .alert-secondary,
+  body:not([data-theme="light"]) .alert-secondary {
+    color: #e2e3e5;
+    background-color: rgba(108, 117, 125, 0.2);
+    border-color: rgba(108, 117, 125, 0.4);
+  }
+  
+  [data-theme="dark"] .alert-success,
+  body:not([data-theme="light"]) .alert-success {
+    color: #d1e7dd;
+    background-color: rgba(25, 135, 84, 0.2);
+    border-color: rgba(25, 135, 84, 0.4);
+  }
+  
+  [data-theme="dark"] .alert-danger,
+  body:not([data-theme="light"]) .alert-danger {
+    color: #f8d7da;
+    background-color: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.4);
+  }
+  
+  [data-theme="dark"] .alert-warning,
+  body:not([data-theme="light"]) .alert-warning {
+    color: #fff3cd;
+    background-color: rgba(255, 193, 7, 0.2);
+    border-color: rgba(255, 193, 7, 0.4);
+  }
+  
+  [data-theme="dark"] .alert-info,
+  body:not([data-theme="light"]) .alert-info {
+    color: #cff4fc;
+    background-color: rgba(13, 202, 240, 0.2);
+    border-color: rgba(13, 202, 240, 0.4);
+  }
+  
+  [data-theme="dark"] .alert-light,
+  body:not([data-theme="light"]) .alert-light {
+    color: #fefefe;
+    background-color: rgba(248, 249, 250, 0.1);
+    border-color: rgba(248, 249, 250, 0.2);
+  }
+  
+  [data-theme="dark"] .alert-dark,
+  body:not([data-theme="light"]) .alert-dark {
+    color: #d3d3d4;
+    background-color: rgba(33, 37, 41, 0.3);
+    border-color: rgba(33, 37, 41, 0.5);
+  }
+  
+  .alert-heading {
+    margin-bottom: 0.5rem;
+  }
+  
+  .alert-link {
+    font-weight: 700;
+    text-decoration: underline;
+  }
+  
+  .alert-primary .alert-link {
+    color: #06357a;
+  }
+  
+  .alert-secondary .alert-link {
+    color: #2d2e30;
+  }
+  
+  .alert-success .alert-link {
+    color: #0a3622;
+  }
+  
+  .alert-danger .alert-link {
+    color: #6a1a21;
+  }
+  
+  .alert-warning .alert-link {
+    color: #533f03;
+  }
+  
+  .alert-info .alert-link {
+    color: #04414d;
+  }
+  
+  .alert-light .alert-link {
+    color: #51585a;
+  }
+  
+  .alert-dark .alert-link {
+    color: #0f1113;
+  }
   </style>
 </head>
 <body>
@@ -413,32 +568,29 @@
         console.log('Rôle extrait:', role);
         console.log('Nom extrait:', name);
 
-        // 4. Vérifier si l'utilisateur a accepté les règles
-        if (userData.rulesAccepted !== true) {
+        // 4. Vérifier si l'utilisateur doit compléter son profil (première connexion uniquement)
+        // On vérifie si le profil n'est PAS complété OU si les règles ne sont PAS acceptées OU si le mot de passe doit être changé
+        const needsProfileSetup = !userData.profileCompleted || 
+                                   userData.rulesAccepted !== true || 
+                                   userData.needsPasswordChange === true;
+        
+        if (needsProfileSetup) {
+            // Déterminer le message approprié
+            let setupMessage = "Configuration de votre profil...";
+            if (userData.needsPasswordChange === true) {
+                setupMessage = "Vous devez définir un nouveau mot de passe...";
+            } else if (userData.rulesAccepted !== true) {
+                setupMessage = "Veuillez accepter les règles d'utilisation...";
+            } else if (!userData.profileCompleted) {
+                setupMessage = "Veuillez compléter votre profil...";
+            }
+            
             welcomeTitle.textContent = `Bienvenue, ${name} !`;
-            welcomeSub.textContent = "Veuillez accepter les règles d'utilisation...";
+            welcomeSub.textContent = setupMessage;
             overlay.classList.add("show");
             
             setTimeout(() => {
-                window.location.href = 'rules-acceptance.html';
-            }, 2000);
-            return;
-        }
-
-        // 5. Vérifier si l'utilisateur doit changer son mot de passe
-        if (userData.needsPasswordChange === true) {
-            // Stocker les infos pour la page de changement de mot de passe
-            sessionStorage.setItem('tempUserId', uid);
-            sessionStorage.setItem('tempUserEmail', email);
-            sessionStorage.setItem('tempUserName', name);
-            sessionStorage.setItem('userRole', role);
-            
-            welcomeTitle.textContent = `Bienvenue, ${name} !`;
-            welcomeSub.textContent = "Vous devez définir un nouveau mot de passe...";
-            overlay.classList.add("show");
-            
-            setTimeout(() => {
-                window.location.href = 'change-password.html';
+                window.location.href = 'profile-config.html';
             }, 2000);
             return;
         }

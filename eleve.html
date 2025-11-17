@@ -23,8 +23,21 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-dark);
-            color: white;
+            color: var(--text-primary, white);
             min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Mode clair */
+        [data-theme="light"] body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+        }
+        
+        /* Mode sombre */
+        [data-theme="dark"] body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
         }
         .header-gradient {
             background-image: linear-gradient(90deg, var(--primary), var(--secondary));
@@ -34,7 +47,9 @@
         }
         .card {
             background-color: var(--bg-light);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--card-shadow, 0 4px 6px rgba(0, 0, 0, 0.2));
+            border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
         .sidebar {
             width: 250px;
@@ -50,6 +65,17 @@
         .sidebar-item.active {
             background-color: rgba(255, 111, 97, 0.2);
             border-left: 3px solid var(--primary);
+        }
+        /* Styles pour les onglets Settings */
+        .settings-tab-btn {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .settings-tab-btn:hover {
+            color: var(--primary);
+        }
+        .settings-tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary) !important;
         }
         .calendar-grid {
             display: grid;
@@ -126,6 +152,161 @@
                 min-height: auto;
             }
         }
+        
+        /* Styles Bootstrap pour les alertes */
+        .alert {
+            position: relative;
+            padding: 1rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+        }
+        
+        .alert-primary {
+            color: #084298;
+            background-color: #cfe2ff;
+            border-color: #b6d4fe;
+        }
+        
+        .alert-secondary {
+            color: #41464b;
+            background-color: #e2e3e5;
+            border-color: #d3d6d8;
+        }
+        
+        .alert-success {
+            color: #0f5132;
+            background-color: #d1e7dd;
+            border-color: #badbcc;
+        }
+        
+        .alert-danger {
+            color: #842029;
+            background-color: #f8d7da;
+            border-color: #f5c2c7;
+        }
+        
+        .alert-warning {
+            color: #664d03;
+            background-color: #fff3cd;
+            border-color: #ffecb5;
+        }
+        
+        .alert-info {
+            color: #055160;
+            background-color: #cff4fc;
+            border-color: #b6effb;
+        }
+        
+        .alert-light {
+            color: #636464;
+            background-color: #fefefe;
+            border-color: #fdfdfe;
+        }
+        
+        .alert-dark {
+            color: #141619;
+            background-color: #d3d3d4;
+            border-color: #bcbebf;
+        }
+        
+        /* Mode sombre pour les alertes */
+        [data-theme="dark"] .alert-primary,
+        body:not([data-theme="light"]) .alert-primary {
+            color: #cfe2ff;
+            background-color: rgba(13, 110, 253, 0.2);
+            border-color: rgba(13, 110, 253, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-secondary,
+        body:not([data-theme="light"]) .alert-secondary {
+            color: #e2e3e5;
+            background-color: rgba(108, 117, 125, 0.2);
+            border-color: rgba(108, 117, 125, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-success,
+        body:not([data-theme="light"]) .alert-success {
+            color: #d1e7dd;
+            background-color: rgba(25, 135, 84, 0.2);
+            border-color: rgba(25, 135, 84, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-danger,
+        body:not([data-theme="light"]) .alert-danger {
+            color: #f8d7da;
+            background-color: rgba(220, 53, 69, 0.2);
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-warning,
+        body:not([data-theme="light"]) .alert-warning {
+            color: #fff3cd;
+            background-color: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-info,
+        body:not([data-theme="light"]) .alert-info {
+            color: #cff4fc;
+            background-color: rgba(13, 202, 240, 0.2);
+            border-color: rgba(13, 202, 240, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-light,
+        body:not([data-theme="light"]) .alert-light {
+            color: #fefefe;
+            background-color: rgba(248, 249, 250, 0.1);
+            border-color: rgba(248, 249, 250, 0.2);
+        }
+        
+        [data-theme="dark"] .alert-dark,
+        body:not([data-theme="light"]) .alert-dark {
+            color: #d3d3d4;
+            background-color: rgba(33, 37, 41, 0.3);
+            border-color: rgba(33, 37, 41, 0.5);
+        }
+        
+        .alert-heading {
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-link {
+            font-weight: 700;
+            text-decoration: underline;
+        }
+        
+        .alert-primary .alert-link {
+            color: #06357a;
+        }
+        
+        .alert-secondary .alert-link {
+            color: #2d2e30;
+        }
+        
+        .alert-success .alert-link {
+            color: #0a3622;
+        }
+        
+        .alert-danger .alert-link {
+            color: #6a1a21;
+        }
+        
+        .alert-warning .alert-link {
+            color: #533f03;
+        }
+        
+        .alert-info .alert-link {
+            color: #04414d;
+        }
+        
+        .alert-light .alert-link {
+            color: #51585a;
+        }
+        
+        .alert-dark .alert-link {
+            color: #0f1113;
+        }
     </style>
 </head>
 
@@ -163,23 +344,31 @@
                         <span>Messages</span>
                         <span id="notificationBadge" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
                     </button>
-                    <button onclick="window.location.href='progression.html'" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
-                        <i data-lucide="trending-up" class="w-5 h-5"></i>
-                        <span>Progression</span>
+                    <button onclick="showView('defis')" id="btnDefis" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="target" class="w-5 h-5"></i>
+                        <span>Défis</span>
                     </button>
-                    <button onclick="showView('vote')" id="btnVote" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
-                        <i data-lucide="vote" class="w-5 h-5"></i>
-                        <span>Vote Activités</span>
+                    <button onclick="showView('settings')" id="btnSettings" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                        <span>Paramètres</span>
                     </button>
-                    <button onclick="showView('profiles')" id="btnProfiles" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 hidden">
-                        <i data-lucide="users" class="w-5 h-5"></i>
-                        <span>Profils</span>
+                    <button onclick="showView('stats')" id="btnStats" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                        <span>Statistiques & Classements</span>
+                    </button>
+                    <button onclick="showView('favorites')" id="btnFavorites" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                        <i data-lucide="heart" class="w-5 h-5"></i>
+                        <span>Mes Favoris</span>
                     </button>
                 </nav>
             </div>
             
             <div class="mt-auto pt-6 border-t border-gray-700">
-                <div class="text-sm mb-4">
+                <div class="text-sm mb-4 flex items-center space-x-3">
+                    <img id="headerProfilePhoto" src="" alt="Photo de profil" class="w-10 h-10 rounded-full object-cover border-2 border-primary" style="display: none;">
+                    <div id="headerProfilePhotoPlaceholder" class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center border-2 border-primary">
+                        <i data-lucide="user" class="w-6 h-6 text-white"></i>
+                    </div>
                     <span id="welcomeName" class="text-gray-400"></span>
                 </div>
                 <div class="flex flex-col space-y-2">
@@ -203,6 +392,9 @@
                 </h1>
             </header>
 
+            <!-- Annonces -->
+            <div id="announcementsBanner" class="mb-6 space-y-3"></div>
+
             <!-- Vue Liste -->
             <section id="viewListe" class="card p-6 rounded-xl">
                 <h2 class="text-2xl font-bold mb-4 flex items-center">
@@ -218,10 +410,16 @@
 
             <!-- Vue Calendrier -->
             <section id="viewCalendrier" class="card p-6 rounded-xl hidden">
-                <h2 class="text-2xl font-bold mb-4 flex items-center">
-                    <i data-lucide="calendar" class="w-6 h-6 mr-2"></i>
-                    Calendrier des Anniversaires
-                </h2>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i data-lucide="calendar" class="w-6 h-6 mr-2"></i>
+                        Calendrier des Anniversaires
+                    </h2>
+                    <button onclick="exportCalendar()" class="flex items-center px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                        <i data-lucide="download" class="w-5 h-5 mr-2"></i>
+                        Exporter
+                    </button>
+                </div>
                 <p class="text-sm text-gray-400 mb-6">Tous les anniversaires de l'année</p>
                 
                 <div id="calendarContainer" class="calendar-grid">
@@ -235,6 +433,11 @@
                     <i data-lucide="bell" class="w-6 h-6 mr-2"></i>
                     Mes Messages
                 </h2>
+                
+                <!-- Messages Reçus -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold mb-4">Messages reçus</h3>
+                </div>
                 
                 <!-- Section pour envoyer des messages (si anniversaire dans 1 semaine ou moins) -->
                 <div id="sendMessageSection" class="mb-6 hidden">
@@ -262,58 +465,307 @@
                     </p>
                 </div>
 
-                <!-- Liste des messages reçus -->
+                <!-- Vue Messages Reçus -->
+                <div id="messagesReceivedView">
                 <div class="mb-4">
-                    <h3 class="text-xl font-bold mb-4">Messages reçus</h3>
                     <div id="messagesList" class="space-y-4">
                         <p class="text-gray-500 text-center py-8">Chargement de tes messages...</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Vue Vote -->
-            <section id="viewVote" class="card p-6 rounded-xl hidden">
-                <h2 class="text-2xl font-bold mb-4 flex items-center">
-                    <i data-lucide="vote" class="w-6 h-6 mr-2"></i>
-                    Vote pour les Activités
+            <!-- Vue Défis -->
+            <section id="viewDefis" class="card p-6 rounded-xl hidden">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i data-lucide="target" class="w-6 h-6 mr-2"></i>
+                    Défis
                 </h2>
-                <div id="voteContent">
+                
+                <!-- Onglets -->
+                <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700">
+                    <button onclick="showDefisTab('progression')" id="defisTabProgression" class="px-4 py-2 rounded-t-lg bg-primary bg-opacity-20 text-primary font-semibold border-b-2 border-primary">
+                        Progression
+                    </button>
+                    <button onclick="showDefisTab('vote')" id="defisTabVote" class="px-4 py-2 rounded-t-lg text-gray-400 hover:text-white transition">
+                        Vote Activités
+                    </button>
+                </div>
+
+                <!-- Onglet Progression -->
+                <div id="defisProgressionView">
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold">Objectif : 9 Personnes Consécutives</h3>
+                            <div id="consecutiveCount" class="text-4xl font-bold text-primary">0</div>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-8 mb-4 relative">
+                            <div id="progressFill" class="bg-gradient-to-r from-primary to-secondary h-8 rounded-full transition-all duration-500" style="width: 0%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center font-bold text-sm">
+                                <span id="progressText">0 / 9</span>
+                            </div>
+                        </div>
+                        <p id="progressMessage" class="text-gray-400 text-sm">Chargement...</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-bold mb-4">Détails par Personne</h3>
+                        <div id="progressionContent" class="space-y-4">
+                            <p class="text-gray-500 text-center py-8">Chargement...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Vote Activités -->
+                <div id="defisVoteView" class="hidden">
+                    <div id="voteContent">
+                        <p class="text-gray-500 text-center py-8">Chargement...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vue Statistiques & Classements -->
+            <section id="viewStats" class="card p-6 rounded-xl hidden">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i data-lucide="bar-chart-3" class="w-6 h-6 mr-2"></i>
+                    Statistiques & Classements
+                </h2>
+                
+                <!-- Onglets -->
+                <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700">
+                    <button onclick="showStatsTab('personal')" id="statsTabPersonal" class="px-4 py-2 rounded-t-lg bg-primary bg-opacity-20 text-primary font-semibold border-b-2 border-primary">
+                        Mes Statistiques
+                    </button>
+                    <button onclick="showStatsTab('leaderboard')" id="statsTabLeaderboard" class="px-4 py-2 rounded-t-lg text-gray-400 hover:text-white transition">
+                        Classements
+                    </button>
+                </div>
+
+                <!-- Contenu Statistiques Personnelles -->
+                <div id="statsPersonalView">
+                    <div id="statsContent">
+                        <p class="text-gray-500 text-center py-8">Chargement...</p>
+                    </div>
+                </div>
+
+                <!-- Contenu Classements -->
+                <div id="statsLeaderboardView" class="hidden">
+                    <p class="text-sm text-gray-400 mb-6">Vois où tu te situes parmi tes camarades !</p>
+                    
+                    <!-- Onglets de classement -->
+                    <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-700">
+                        <button onclick="loadLeaderboard('messages')" id="leaderboardTabMessages" class="px-4 py-2 rounded-t-lg bg-primary bg-opacity-20 text-primary font-semibold border-b-2 border-primary">
+                            Messages
+                        </button>
+                        <button onclick="loadLeaderboard('reputation')" id="leaderboardTabReputation" class="px-4 py-2 rounded-t-lg text-gray-400 hover:text-white transition">
+                            Réputation
+                        </button>
+                        <button onclick="loadLeaderboard('points')" id="leaderboardTabPoints" class="px-4 py-2 rounded-t-lg text-gray-400 hover:text-white transition">
+                            Points
+                        </button>
+                        <button onclick="loadLeaderboard('activeDays')" id="leaderboardTabActiveDays" class="px-4 py-2 rounded-t-lg text-gray-400 hover:text-white transition">
+                            Jours Actifs
+                        </button>
+                        <button onclick="loadLeaderboard('monthly')" id="leaderboardTabMonthly" class="px-4 py-2 rounded-t-lg text-gray-400 hover:text-white transition">
+                            Ce Mois
+                        </button>
+                    </div>
+                    
+                    <div id="leaderboardContent">
+                        <p class="text-gray-500 text-center py-8">Sélectionne un classement ci-dessus</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vue Favoris -->
+            <section id="viewFavorites" class="card p-6 rounded-xl hidden">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i data-lucide="heart" class="w-6 h-6 mr-2"></i>
+                    Mes Favoris
+                </h2>
+                <p class="text-sm text-gray-400 mb-6">Les anniversaires que tu as marqués comme favoris</p>
+                <div id="favoritesContent">
                     <p class="text-gray-500 text-center py-8">Chargement...</p>
                 </div>
             </section>
 
-            <!-- Vue Profils -->
-            <section id="viewProfiles" class="card p-6 rounded-xl hidden">
+            <!-- Vue Paramètres -->
+            <section id="viewSettings" class="card p-6 rounded-xl hidden">
                 <h2 class="text-2xl font-bold mb-6 flex items-center">
-                    <i data-lucide="users" class="w-6 h-6 mr-2"></i>
-                    Profils
+                    <i data-lucide="settings" class="w-6 h-6 mr-2"></i>
+                    Paramètres
                 </h2>
                 
-                <!-- Boutons d'action -->
-                <div class="flex flex-wrap gap-4 mb-8">
-                    <button onclick="openEditProfileModal()" class="flex items-center px-6 py-3 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
-                        <i data-lucide="edit" class="w-5 h-5 mr-2"></i>
-                        Modifier mon profil
-                    </button>
-                    <button onclick="openVisibilityModal()" class="flex items-center px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition">
-                        <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
-                        Modifier la visibilité de mes informations
-                    </button>
+                <!-- Onglets de navigation -->
+                <div class="mb-6 border-b border-gray-700">
+                    <div class="flex flex-wrap gap-2 -mb-px">
+                        <button 
+                            onclick="switchSettingsTab('profile')" 
+                            id="settingsTabProfile" 
+                            class="settings-tab-btn px-6 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent hover:border-primary hover:text-primary flex items-center space-x-2 active"
+                        >
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                            <span>Mon Profil</span>
+                        </button>
+                        <button 
+                            onclick="switchSettingsTab('wishlist')" 
+                            id="settingsTabWishlist" 
+                            class="settings-tab-btn px-6 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent hover:border-primary hover:text-primary flex items-center space-x-2"
+                        >
+                            <i data-lucide="gift" class="w-5 h-5"></i>
+                            <span>Souhaits de Cadeau</span>
+                        </button>
+                        <button 
+                            onclick="switchSettingsTab('preferences')" 
+                            id="settingsTabPreferences" 
+                            class="settings-tab-btn px-6 py-3 font-semibold text-sm rounded-t-lg transition-all border-b-2 border-transparent hover:border-primary hover:text-primary flex items-center space-x-2"
+                        >
+                            <i data-lucide="sliders" class="w-5 h-5"></i>
+                            <span>Préférences</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Section Profils des Autres Élèves -->
-                <div id="otherProfilesSection">
-                    <h3 class="text-xl font-bold mb-4 flex items-center">
-                        <i data-lucide="users" class="w-5 h-5 mr-2"></i>
-                        Profils des Autres Élèves
-                    </h3>
-                    <div id="profilesContent">
-                        <p class="text-gray-500 text-center py-8">Chargement...</p>
+                <!-- Section Mon Profil -->
+                <div id="settingsSectionProfile" class="settings-section">
+                    <!-- Photo de profil -->
+                    <div class="mb-8 text-center">
+                        <div class="relative inline-block">
+                            <img id="profilePhoto" src="" alt="Photo de profil" class="w-32 h-32 rounded-full object-cover border-4 border-primary mx-auto mb-4" style="display: none;">
+                            <div id="profilePhotoPlaceholder" class="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-4xl mx-auto mb-4 border-4 border-primary">
+                                <i data-lucide="user" class="w-16 h-16 text-white"></i>
+                            </div>
+                            <label for="profilePhotoInput" class="absolute bottom-0 right-0 bg-primary hover:bg-opacity-90 text-white p-2 rounded-full cursor-pointer transition">
+                                <i data-lucide="camera" class="w-5 h-5"></i>
+                                <input type="file" id="profilePhotoInput" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)">
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-4">Clique sur l'icône caméra pour changer ta photo</p>
+                        <div id="photoUploadStatus" class="hidden"></div>
+                    </div>
+
+                    <!-- Informations du profil -->
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                            Mes Informations
+                        </h3>
+                        <div id="myProfileContent" class="mb-6">
+                            <p class="text-gray-500 text-center py-8">Chargement...</p>
+                        </div>
+                        <div class="flex flex-wrap gap-4">
+                            <button onclick="openEditProfileModal()" class="flex items-center px-6 py-3 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                <i data-lucide="edit" class="w-5 h-5 mr-2"></i>
+                                Modifier mon profil
+                            </button>
+                            <button onclick="openVisibilityModal()" class="flex items-center px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition">
+                                <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
+                                Modifier la visibilité
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Liste de Souhaits -->
+                <div id="settingsSectionWishlist" class="settings-section hidden">
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="gift" class="w-5 h-5 mr-2"></i>
+                            Ma Liste de Souhaits
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">Ajoute tes souhaits d'anniversaire ici. Les autres pourront les voir si tu le permets.</p>
+                        
+                        <!-- Ajouter un souhait -->
+                        <div class="mb-4">
+                            <div class="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    id="settingsWishInput" 
+                                    placeholder="Ex: Un nouveau livre, des écouteurs..." 
+                                    class="flex-1 px-4 py-2 rounded-lg bg-bg-dark border border-gray-700 text-white focus:outline-none focus:border-primary transition"
+                                />
+                                <button onclick="addWishFromSettings()" class="px-6 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                    <i data-lucide="plus" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Visibilité -->
+                        <div class="mb-4 p-4 bg-bg-dark rounded-lg border border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold mb-1">Rendre ma liste visible</p>
+                                    <p class="text-sm text-gray-400">Les autres élèves pourront voir tes souhaits</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="settingsWishlistVisibilityToggle" onchange="toggleWishlistVisibilityFromSettings()" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Liste des souhaits -->
+                        <div id="settingsWishlistContent">
+                            <p class="text-gray-500 text-center py-8">Chargement...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Préférences -->
+                <div id="settingsSectionPreferences" class="settings-section hidden">
+                    <div class="mb-8">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="sliders" class="w-5 h-5 mr-2"></i>
+                            Préférences
+                        </h3>
+                        <div class="space-y-4">
+                            <!-- Mode sombre/clair -->
+                            <div class="bg-bg-dark p-4 rounded-lg border border-gray-700">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-semibold mb-1">Thème</h4>
+                                        <p class="text-sm text-gray-400">Choisir entre le mode sombre et clair</p>
+                                    </div>
+                                    <button onclick="themeManager.toggleTheme()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                        <i data-lucide="sun" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
         </div>
     </main>
+
+    <!-- Modale Profil depuis Calendrier -->
+    <div id="calendarProfileModal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold flex items-center">
+                    <i data-lucide="user" class="w-6 h-6 mr-2"></i>
+                    Profil
+                </h3>
+                <button onclick="closeModal('calendarProfileModal')" class="text-gray-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="calendarProfileContent" class="text-center">
+                <div class="mb-4">
+                    <img id="calendarProfilePhoto" src="" alt="Photo de profil" class="w-24 h-24 rounded-full object-cover border-4 border-primary mx-auto mb-4" style="display: none;">
+                    <div id="calendarProfilePhotoPlaceholder" class="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-3xl mx-auto mb-4 border-4 border-primary">
+                        <i data-lucide="user" class="w-12 h-12 text-white"></i>
+                    </div>
+                </div>
+                <h4 id="calendarProfileName" class="text-xl font-bold mb-2"></h4>
+                <p id="calendarProfileEmail" class="text-gray-400 text-sm mb-2"></p>
+                <p id="calendarProfileBirthday" class="text-gray-400 text-sm mb-4"></p>
+                <button onclick="viewFullProfile()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                    Voir le profil complet
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modale Modifier le Profil -->
     <div id="editProfileModal" class="modal-overlay">
@@ -334,7 +786,7 @@
                 <button onclick="closeModal('editProfileModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">
                     Annuler
                 </button>
-                <button onclick="window.location.href='profile-setup.html'" class="px-4 py-2 rounded bg-primary hover:bg-opacity-90 text-white transition">
+                <button onclick="window.location.href='profile-config.html'" class="px-4 py-2 rounded bg-primary hover:bg-opacity-90 text-white transition">
                     Aller au formulaire
                 </button>
             </div>
@@ -364,7 +816,22 @@
 
     <!-- Inclusion du fichier firebase.js -->
     <script src="firebase.js"></script>
+    <!-- Gestionnaire de thème (mode sombre/clair) -->
+    <script src="js/theme-manager.js"></script>
+    <script src="js/progression-system.js"></script>
     <script src="js/vote-system.js"></script>
+    <!-- Système de statistiques -->
+    <script src="js/stats-system.js"></script>
+    <!-- Système de favoris -->
+    <script src="js/favorites-system.js"></script>
+    <!-- Système de classements -->
+    <script src="js/leaderboard-system.js"></script>
+    <!-- Système d'annonces -->
+    <script src="js/announcements-system.js"></script>
+    <!-- Système de liste de souhaits -->
+    <script src="js/wishlist-system.js"></script>
+    <!-- Système Supabase Storage pour photos de profil -->
+    <script src="js/supabase-storage.js"></script>
 
     <script>
         const loadingScreen = document.getElementById('loadingScreen');
@@ -430,6 +897,7 @@
 
         // Vérifier l'authentification
         async function checkAuth() {
+            try {
             loadingScreen.style.display = 'flex';
             
             const user = await new Promise(resolve => {
@@ -450,7 +918,7 @@
             if (docData) {
                 // Si c'est un élève et que le profil n'est pas complété, rediriger
                 if (docData.role === 'eleve' && !docData.profileCompleted) {
-                    window.location.href = 'profile-setup.html';
+                    window.location.href = 'profile-config.html';
                     return;
                 }
             }
@@ -459,8 +927,23 @@
             welcomeName.textContent = `Bienvenue, ${userData.name}`;
             currentUserId = user.uid;
 
+            // Charger la photo de profil dans l'en-tête
+            await loadHeaderProfilePhoto();
+
+                // Initialiser le système de statistiques et mettre à jour les jours actifs
+                try {
+                    if (!statsSystem) {
+                        statsSystem = new StatsSystem(currentUserId);
+                    }
+                    await statsSystem.updateActiveDays();
+                } catch (statsError) {
+                    console.error('Erreur lors de la mise à jour des statistiques:', statsError);
+                    // Continuer même si les stats échouent
+                }
+
             // Récupérer la date d'anniversaire de l'utilisateur
             if (docData && docData.email) {
+                    try {
                 const fileNumber = docData.email.split('@')[0];
                 const userCelebration = await firebase.firestore().collection('celebrations')
                     .where('fileNumber', '==', fileNumber)
@@ -469,6 +952,9 @@
                 
                 if (!userCelebration.empty) {
                     currentUserBirthday = userCelebration.docs[0].data().birthday;
+                        }
+                    } catch (celebError) {
+                        console.error('Erreur lors de la récupération de l\'anniversaire:', celebError);
                 }
             }
 
@@ -477,20 +963,32 @@
                 adminBtn.classList.remove('hidden');
             }
 
-            // Vérifier si la visibilité des profils est activée
-            const settingsDoc = await firebase.firestore().collection('settings').doc('profileVisibility').get();
-            const profileVisibilityEnabled = settingsDoc.exists && settingsDoc.data().enabled || false;
-            
-            if (profileVisibilityEnabled) {
-                const btnProfiles = document.getElementById('btnProfiles');
-                if (btnProfiles) btnProfiles.classList.remove('hidden');
-            }
+                // Vérifier si la visibilité des profils est activée
+                try {
+                    const settingsDoc = await firebase.firestore().collection('settings').doc('profileVisibility').get();
+                    const profileVisibilityEnabled = settingsDoc.exists && settingsDoc.data().enabled || false;
+                    
+                    if (profileVisibilityEnabled) {
+                        const btnOtherProfiles = document.getElementById('settingsTabOtherProfiles');
+                        if (btnOtherProfiles) btnOtherProfiles.classList.remove('hidden');
+                    }
+                } catch (settingsError) {
+                    console.error('Erreur lors de la vérification des paramètres:', settingsError);
+                }
 
             loadingScreen.style.display = 'none';
             mainContent.classList.remove('hidden');
             
             loadCelebrations();
             loadNotifications();
+                loadAnnouncements();
+            } catch (error) {
+                console.error('Erreur lors de la vérification de l\'authentification:', error);
+                // S'assurer que l'écran de chargement est masqué même en cas d'erreur
+                loadingScreen.style.display = 'none';
+                mainContent.classList.remove('hidden');
+                alert('Une erreur est survenue lors du chargement. Veuillez rafraîchir la page.');
+            }
         }
 
         // Calculer l'âge actuel
@@ -546,46 +1044,760 @@
         }
 
         // Charger la vue liste
-        function loadListView() {
+        let favoritesSystem = null;
+        async function loadListView() {
             if (allCelebrations.length === 0) {
                 celebrationsList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun anniversaire enregistré pour le moment.</p>';
                 return;
             }
 
+            if (!favoritesSystem && currentUserId) {
+                favoritesSystem = new FavoritesSystem(currentUserId);
+            }
+
+            const favorites = favoritesSystem ? await favoritesSystem.getFavorites() : [];
+
             celebrationsList.innerHTML = '';
-            allCelebrations.forEach(data => {
+            
+            // Charger tous les utilisateurs une seule fois pour éviter les requêtes multiples
+            const allUsers = await getAllUsers();
+            const userMap = new Map();
+            allUsers.forEach(user => {
+                if (user.email) {
+                    const fileNumber = user.email.split('@')[0];
+                    userMap.set(fileNumber, user.id);
+                }
+            });
+
+            // Charger toutes les photos de profil en une fois
+            const userPhotosMap = new Map();
+            for (const userId of userMap.values()) {
+                const photoUrl = await getUserProfilePhoto(userId);
+                if (photoUrl) {
+                    userPhotosMap.set(userId, photoUrl);
+                }
+            }
+
+            for (const data of allCelebrations) {
                 const card = document.createElement('div');
                 card.className = 'bg-bg-dark p-4 rounded-lg flex items-center justify-between hover:bg-opacity-80 transition';
                 
                 const dateParts = data.birthday ? data.birthday.split('-') : ['?', '?', '?'];
                 const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : 'N/A';
                 const age = calculateAge(data.birthday);
+                const isFavorite = favorites.includes(data.id);
+                
+                // Récupérer l'ID utilisateur depuis le fileNumber
+                const userId = data.fileNumber ? userMap.get(data.fileNumber) : null;
+                const profilePhotoUrl = userId ? userPhotosMap.get(userId) : null;
                 
                 card.innerHTML = `
-                    <div class="flex items-center space-x-4">
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
-                            🎂
-                        </div>
-                        <div>
+                    <div class="flex items-center space-x-4 flex-1">
+                        ${profilePhotoUrl ? `
+                            <img src="${profilePhotoUrl}" alt="${data.fullName || 'N/A'}" class="w-12 h-12 rounded-full object-cover border-2 border-primary">
+                        ` : `
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-xl font-bold">
+                                ${(data.fullName || 'A')[0].toUpperCase()}
+                            </div>
+                        `}
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2">
                             <h3 class="font-bold text-lg">${data.fullName || 'N/A'}</h3>
+                                ${userId ? `<button onclick="viewStudentProfile('${userId}')" class="p-1 rounded-lg hover:bg-primary hover:bg-opacity-20 transition text-primary" title="Voir le profil">
+                                    <i data-lucide="user" class="w-4 h-4"></i>
+                                </button>` : ''}
+                            </div>
                             <p class="text-sm text-gray-400">Anniversaire: ${formattedDate} • ${age} ans</p>
                         </div>
                     </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="toggleFavorite('${data.id}')" class="p-2 rounded-lg hover:bg-opacity-20 transition ${isFavorite ? 'text-red-500' : 'text-gray-400'}">
+                            <i data-lucide="${isFavorite ? 'heart' : 'heart-off'}" class="w-5 h-5"></i>
+                        </button>
                     <div class="text-right">
                         <span class="text-xs text-gray-500">${data.classNumber || 'N/A'}</span>
+                        </div>
                     </div>
                 `;
                 celebrationsList.appendChild(card);
-            });
+            }
             lucide.createIcons();
         }
 
+        // Toggle favori
+        async function toggleFavorite(celebrationId) {
+            if (!currentUserId) return;
+            
+            if (!favoritesSystem) {
+                favoritesSystem = new FavoritesSystem(currentUserId);
+            }
+            
+            await favoritesSystem.toggleFavorite(celebrationId);
+            await loadListView(); // Recharger la liste
+        }
+
+        // Système de liste de souhaits
+        let wishlistSystem = null;
+        // Système Supabase Storage
+        let supabaseStorage = null;
+
+        // Charger la vue de la liste de souhaits
+        async function loadWishlistView() {
+            if (!currentUserId) {
+                document.getElementById('wishlistContent').innerHTML = '<p class="text-red-400 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const wishlist = await wishlistSystem.getWishlist();
+                
+                // Mettre à jour le toggle de visibilité
+                const toggle = document.getElementById('wishlistVisibilityToggle');
+                if (toggle) {
+                    toggle.checked = wishlist.isPublic || false;
+                }
+
+                // Afficher la liste
+                const wishlistContent = document.getElementById('wishlistContent');
+                
+                if (wishlist.items.length === 0) {
+                    wishlistContent.innerHTML = `
+                        <div class="text-center py-12">
+                            <i data-lucide="gift" class="w-16 h-16 mx-auto mb-4 text-gray-400"></i>
+                            <p class="text-gray-400 text-lg mb-2">Aucun souhait pour le moment</p>
+                            <p class="text-gray-500 text-sm">Ajoute tes souhaits d'anniversaire ci-dessus !</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                wishlistContent.innerHTML = `
+                    <div class="space-y-3">
+                        ${wishlist.items.map(item => `
+                            <div class="flex items-center justify-between p-4 bg-bg-dark rounded-lg border border-gray-700">
+                                <p class="text-white flex-1">${item.text}</p>
+                                <button onclick="removeWish('${item.id}')" class="ml-4 p-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition" title="Supprimer">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement de la liste de souhaits:', error);
+                document.getElementById('wishlistContent').innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement.</p>';
+            }
+        }
+
+        // Ajouter un souhait
+        window.addWish = async function() {
+            const input = document.getElementById('newWishInput');
+            const wishText = input.value.trim();
+
+            if (!wishText) {
+                alert('Veuillez entrer un souhait');
+                return;
+            }
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const success = await wishlistSystem.addWish(wishText);
+                if (success) {
+                    input.value = '';
+                    await loadWishlistView();
+                } else {
+                    alert('Erreur lors de l\'ajout du souhait');
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout du souhait:', error);
+                alert('Erreur lors de l\'ajout du souhait');
+            }
+        };
+
+        // Supprimer un souhait
+        window.removeWish = async function(wishId) {
+            if (!confirm('Es-tu sûr de vouloir supprimer ce souhait ?')) {
+                return;
+            }
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const success = await wishlistSystem.removeWish(wishId);
+                if (success) {
+                    await loadWishlistView();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                alert('Erreur lors de la suppression');
+            }
+        };
+
+        // Toggle visibilité
+        window.toggleWishlistVisibility = async function() {
+            const toggle = document.getElementById('wishlistVisibilityToggle');
+            const isPublic = toggle.checked;
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                toggle.checked = !isPublic;
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const success = await wishlistSystem.setVisibility(isPublic);
+                if (!success) {
+                    toggle.checked = !isPublic;
+                    alert('Erreur lors de la modification');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la modification de la visibilité:', error);
+                toggle.checked = !isPublic;
+                alert('Erreur lors de la modification');
+            }
+        };
+
+        // Charger les souhaits dans Settings
+        async function loadSettingsWishlist() {
+            if (!currentUserId) return;
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const wishlist = await wishlistSystem.getWishlist();
+                
+                // Mettre à jour le toggle
+                const toggle = document.getElementById('settingsWishlistVisibilityToggle');
+                if (toggle) {
+                    toggle.checked = wishlist.isPublic || false;
+                }
+
+                // Afficher la liste
+                const wishlistContent = document.getElementById('settingsWishlistContent');
+                
+                if (wishlist.items.length === 0) {
+                    wishlistContent.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="gift" class="w-12 h-12 mx-auto mb-2 text-gray-400"></i>
+                            <p class="text-gray-400 text-sm">Aucun souhait pour le moment</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                wishlistContent.innerHTML = `
+                    <div class="space-y-2">
+                        ${wishlist.items.map(item => `
+                            <div class="flex items-center justify-between p-3 bg-bg-dark rounded-lg border border-gray-700">
+                                <p class="text-white flex-1 text-sm">${item.text}</p>
+                                <button onclick="removeWishFromSettings('${item.id}')" class="ml-3 p-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white transition" title="Supprimer">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des souhaits:', error);
+            }
+        }
+
+        // Ajouter un souhait depuis Settings
+        window.addWishFromSettings = async function() {
+            const input = document.getElementById('settingsWishInput');
+            const wishText = input.value.trim();
+
+            if (!wishText) {
+                alert('Veuillez entrer un souhait');
+                return;
+            }
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const success = await wishlistSystem.addWish(wishText);
+                if (success) {
+                    input.value = '';
+                    await loadSettingsWishlist();
+                } else {
+                    alert('Erreur lors de l\'ajout du souhait');
+                }
+            } catch (error) {
+                console.error('Erreur lors de l\'ajout du souhait:', error);
+                alert('Erreur lors de l\'ajout du souhait');
+            }
+        };
+
+        // Supprimer un souhait depuis Settings
+        window.removeWishFromSettings = async function(wishId) {
+            if (!confirm('Es-tu sûr de vouloir supprimer ce souhait ?')) {
+                return;
+            }
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const success = await wishlistSystem.removeWish(wishId);
+                if (success) {
+                    await loadSettingsWishlist();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                alert('Erreur lors de la suppression');
+            }
+        };
+
+        // Toggle visibilité depuis Settings
+        window.toggleWishlistVisibilityFromSettings = async function() {
+            const toggle = document.getElementById('settingsWishlistVisibilityToggle');
+            const isPublic = toggle.checked;
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                toggle.checked = !isPublic;
+                return;
+            }
+
+            try {
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(currentUserId);
+                }
+
+                const success = await wishlistSystem.setVisibility(isPublic);
+                if (!success) {
+                    toggle.checked = !isPublic;
+                    alert('Erreur lors de la modification');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la modification de la visibilité:', error);
+                toggle.checked = !isPublic;
+                alert('Erreur lors de la modification');
+            }
+        };
+
+        // Gérer l'upload de photo de profil
+        window.handleProfilePhotoUpload = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!currentUserId) {
+                alert('Erreur : utilisateur non connecté');
+                return;
+            }
+
+            const statusDiv = document.getElementById('photoUploadStatus');
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerHTML = '<p class="text-blue-400 text-sm">Upload en cours...</p>';
+
+            try {
+                if (!supabaseStorage) {
+                    supabaseStorage = new SupabaseStorage();
+                }
+
+                const photoUrl = await supabaseStorage.uploadProfilePhoto(currentUserId, file);
+                
+                // Sauvegarder l'URL dans Firestore
+                await firebase.firestore().collection('users').doc(currentUserId).update({
+                    profilePhotoUrl: photoUrl,
+                    profilePhotoUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Afficher la photo
+                const profilePhoto = document.getElementById('profilePhoto');
+                const placeholder = document.getElementById('profilePhotoPlaceholder');
+                profilePhoto.src = photoUrl;
+                profilePhoto.style.display = 'block';
+                placeholder.style.display = 'none';
+
+                statusDiv.innerHTML = '<p class="text-green-400 text-sm">Photo uploadée avec succès !</p>';
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 3000);
+
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors de l\'upload:', error);
+                // Afficher l'erreur de manière plus visible
+                const errorMessage = error.message || 'Une erreur est survenue lors de l\'upload';
+                statusDiv.innerHTML = `
+                    <div class="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5"></i>
+                            <div class="flex-1">
+                                <p class="text-red-400 font-semibold mb-2">Erreur lors de l'upload</p>
+                                <p class="text-red-300 text-sm whitespace-pre-line">${errorMessage}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                
+                // Garder l'erreur visible plus longtemps
+                setTimeout(() => {
+                    if (statusDiv && statusDiv.parentElement) {
+                        statusDiv.classList.remove('hidden');
+                    }
+                }, 10000);
+            }
+        };
+
+        // Charger la photo de profil
+        async function loadProfilePhoto() {
+            if (!currentUserId) return;
+
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(currentUserId).get();
+                const userData = userDoc.data();
+                
+                if (userData && userData.profilePhotoUrl) {
+                    const profilePhoto = document.getElementById('profilePhoto');
+                    const placeholder = document.getElementById('profilePhotoPlaceholder');
+                    profilePhoto.src = userData.profilePhotoUrl;
+                    profilePhoto.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement de la photo:', error);
+            }
+        }
+
+        // Charger la photo de profil dans l'en-tête
+        async function loadHeaderProfilePhoto() {
+            if (!currentUserId) return;
+
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(currentUserId).get();
+                const userData = userDoc.data();
+                
+                const headerPhoto = document.getElementById('headerProfilePhoto');
+                const headerPlaceholder = document.getElementById('headerProfilePhotoPlaceholder');
+                
+                if (userData && userData.profilePhotoUrl) {
+                    headerPhoto.src = userData.profilePhotoUrl;
+                    headerPhoto.style.display = 'block';
+                    headerPlaceholder.style.display = 'none';
+                } else {
+                    headerPhoto.style.display = 'none';
+                    headerPlaceholder.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement de la photo dans l\'en-tête:', error);
+            }
+        }
+
+        // Fonction helper pour obtenir la photo de profil d'un utilisateur
+        async function getUserProfilePhoto(userId) {
+            if (!userId) return null;
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(userId).get();
+                const userData = userDoc.data();
+                return userData?.profilePhotoUrl || null;
+            } catch (error) {
+                console.error('Erreur lors de la récupération de la photo:', error);
+                return null;
+            }
+        }
+
+        // Variables globales pour le modal de profil
+        let currentProfileUserId = null;
+
+        // Afficher le modal de profil depuis le calendrier
+        window.showProfileModal = async function(userId, fullName, birthday, email) {
+            currentProfileUserId = userId;
+            const modal = document.getElementById('calendarProfileModal');
+            const nameEl = document.getElementById('calendarProfileName');
+            const emailEl = document.getElementById('calendarProfileEmail');
+            const birthdayEl = document.getElementById('calendarProfileBirthday');
+            const photoEl = document.getElementById('calendarProfilePhoto');
+            const placeholderEl = document.getElementById('calendarProfilePhotoPlaceholder');
+
+            // Afficher les informations de base
+            nameEl.textContent = fullName || 'N/A';
+            emailEl.textContent = email || 'N/A';
+            
+            // Formater la date d'anniversaire
+            if (birthday) {
+                const dateParts = birthday.split('-');
+                if (dateParts.length === 3) {
+                    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                    birthdayEl.textContent = `Anniversaire : ${formattedDate}`;
+                } else {
+                    birthdayEl.textContent = 'Date d\'anniversaire non disponible';
+                }
+            } else {
+                birthdayEl.textContent = 'Date d\'anniversaire non disponible';
+            }
+
+            // Charger la photo de profil si userId disponible
+            if (userId) {
+                try {
+                    const userDoc = await firebase.firestore().collection('users').doc(userId).get();
+                    const userData = userDoc.data();
+                    
+                    if (userData && userData.profilePhotoUrl) {
+                        photoEl.src = userData.profilePhotoUrl;
+                        photoEl.style.display = 'block';
+                        placeholderEl.style.display = 'none';
+                    } else {
+                        photoEl.style.display = 'none';
+                        placeholderEl.style.display = 'flex';
+                    }
+                } catch (error) {
+                    console.error('Erreur lors du chargement de la photo:', error);
+                    photoEl.style.display = 'none';
+                    placeholderEl.style.display = 'flex';
+                }
+            } else {
+                photoEl.style.display = 'none';
+                placeholderEl.style.display = 'flex';
+            }
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        // Voir le profil complet
+        window.viewFullProfile = function() {
+            if (currentProfileUserId) {
+                window.location.href = `student-profile.html?id=${currentProfileUserId}`;
+            } else {
+                alert('ID utilisateur non disponible');
+            }
+        };
+
+        // Permettre d'ajouter un souhait avec Enter
+        document.addEventListener('DOMContentLoaded', () => {
+            const wishInput = document.getElementById('newWishInput');
+            if (wishInput) {
+                wishInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        addWish();
+                    }
+                });
+            }
+        });
+
+        // Charger la vue des favoris
+        async function loadFavoritesView() {
+            if (!currentUserId) {
+                document.getElementById('favoritesContent').innerHTML = '<p class="text-red-400 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            const favoritesContent = document.getElementById('favoritesContent');
+            favoritesContent.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement de tes favoris...</p>';
+
+            try {
+                if (!favoritesSystem) {
+                    favoritesSystem = new FavoritesSystem(currentUserId);
+                }
+
+                const favorites = await favoritesSystem.getFavorites();
+                
+                if (favorites.length === 0) {
+                    favoritesContent.innerHTML = `
+                        <div class="text-center py-12">
+                            <i data-lucide="heart-off" class="w-16 h-16 mx-auto mb-4 text-gray-400"></i>
+                            <p class="text-gray-400 text-lg mb-2">Aucun favori pour le moment</p>
+                            <p class="text-gray-500 text-sm">Marque des anniversaires comme favoris depuis la liste pour les voir ici !</p>
+                        </div>
+                    `;
+            lucide.createIcons();
+                    return;
+                }
+
+                // Récupérer les détails des célébrations favorites
+                const favoriteCelebrations = [];
+                for (const favId of favorites) {
+                    const celebration = allCelebrations.find(c => c.id === favId);
+                    if (celebration) {
+                        favoriteCelebrations.push(celebration);
+                    }
+                }
+
+                if (favoriteCelebrations.length === 0) {
+                    favoritesContent.innerHTML = `
+                        <div class="text-center py-12">
+                            <i data-lucide="heart-off" class="w-16 h-16 mx-auto mb-4 text-gray-400"></i>
+                            <p class="text-gray-400 text-lg mb-2">Aucun favori trouvé</p>
+                            <p class="text-gray-500 text-sm">Les anniversaires favoris peuvent avoir été supprimés.</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                favoritesContent.innerHTML = `
+                    <div class="space-y-4">
+                        ${favoriteCelebrations.map(data => {
+                            const dateParts = data.birthday ? data.birthday.split('-') : ['?', '?', '?'];
+                            const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}` : 'N/A';
+                            const age = calculateAge(data.birthday);
+                            const days = daysUntilBirthday(data.birthday);
+                            
+                            return `
+                                <div class="bg-bg-dark p-4 rounded-lg flex items-center justify-between hover:bg-opacity-80 transition border-2 border-red-500 border-opacity-30">
+                                    <div class="flex items-center space-x-4 flex-1">
+                                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-2xl">
+                                            🎂
+                                        </div>
+                                        <div class="flex-1">
+                                            <h3 class="font-bold text-lg">${data.fullName || 'N/A'}</h3>
+                                            <p class="text-sm text-gray-400">Anniversaire: ${formattedDate} • ${age} ans</p>
+                                            ${days !== null ? `<p class="text-xs text-primary mt-1">${days === 0 ? "C'est aujourd'hui ! 🎉" : days === 1 ? "C'est demain !" : `Dans ${days} jours`}</p>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button onclick="toggleFavorite('${data.id}')" class="p-2 rounded-lg hover:bg-opacity-20 transition text-red-500">
+                                            <i data-lucide="heart" class="w-5 h-5"></i>
+                                        </button>
+                                        <div class="text-right">
+                                            <span class="text-xs text-gray-500">${data.classNumber || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des favoris:', error);
+                favoritesContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des favoris.</p>';
+            }
+        }
+
+        // Exporter le calendrier en format iCal
+        window.exportCalendar = function() {
+            if (allCelebrations.length === 0) {
+                alert('Aucun anniversaire à exporter');
+                return;
+            }
+
+            // Générer le contenu iCal
+            let icalContent = 'BEGIN:VCALENDAR\r\n';
+            icalContent += 'VERSION:2.0\r\n';
+            icalContent += 'PRODID:-//Fête Express//Anniversaires//FR\r\n';
+            icalContent += 'CALSCALE:GREGORIAN\r\n';
+            icalContent += 'METHOD:PUBLISH\r\n';
+
+            const currentYear = new Date().getFullYear();
+            
+            allCelebrations.forEach(celeb => {
+                if (!celeb.birthday) return;
+                
+                const dateParts = celeb.birthday.split('-');
+                if (dateParts.length !== 3) return;
+                
+                const month = dateParts[1];
+                const day = dateParts[2];
+                const year = currentYear;
+                
+                // Date de l'anniversaire cette année
+                const eventDate = new Date(year, parseInt(month) - 1, parseInt(day));
+                
+                // Si l'anniversaire est déjà passé cette année, utiliser l'année prochaine
+                const today = new Date();
+                if (eventDate < today) {
+                    eventDate.setFullYear(year + 1);
+                }
+                
+                // Formater la date pour iCal (YYYYMMDD)
+                const icalDate = eventDate.toISOString().split('T')[0].replace(/-/g, '');
+                
+                // Nom de l'événement
+                const summary = `🎂 Anniversaire de ${celeb.fullName || 'N/A'}`;
+                
+                // Description
+                const age = calculateAge(celeb.birthday);
+                const description = `Anniversaire de ${celeb.fullName || 'N/A'} (${age} ans)`;
+                
+                // Générer un UID unique
+                const uid = `anniversaire-${celeb.id || Date.now()}-${Math.random().toString(36).substr(2, 9)}@fete-express.com`;
+                
+                icalContent += 'BEGIN:VEVENT\r\n';
+                icalContent += `UID:${uid}\r\n`;
+                icalContent += `DTSTART;VALUE=DATE:${icalDate}\r\n`;
+                icalContent += `DTEND;VALUE=DATE:${icalDate}\r\n`;
+                icalContent += `SUMMARY:${summary}\r\n`;
+                icalContent += `DESCRIPTION:${description}\r\n`;
+                icalContent += 'RRULE:FREQ=YEARLY;INTERVAL=1\r\n';
+                icalContent += 'END:VEVENT\r\n';
+            });
+
+            icalContent += 'END:VCALENDAR\r\n';
+
+            // Créer un blob et télécharger
+            const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'anniversaires-fete-express.ics';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            alert('Calendrier exporté avec succès ! Tu peux l\'importer dans Google Calendar, Apple Calendar ou Outlook.');
+        };
+
         // Charger la vue calendrier
-        function loadCalendarView() {
+        async function loadCalendarView() {
             if (allCelebrations.length === 0) {
                 calendarContainer.innerHTML = '<p class="text-gray-500 text-center py-8 col-span-full">Aucun anniversaire enregistré pour le moment.</p>';
                 return;
             }
+
+            // Charger tous les utilisateurs pour avoir accès aux IDs
+            const allUsers = await getAllUsers();
 
             // Organiser les anniversaires par mois
             const celebrationsByMonth = {};
@@ -632,8 +1844,10 @@
                     monthCelebrations.forEach(celeb => {
                         const dateParts = celeb.birthday.split('-');
                         const formattedDate = `${celeb.day}/${parseInt(dateParts[1])}`;
+                        // Récupérer l'ID utilisateur depuis le fileNumber
+                        const userId = allUsers.find(u => u.email && u.email.split('@')[0] === celeb.fileNumber)?.id;
                         content += `
-                            <div class="bg-bg-dark p-2 rounded text-sm">
+                            <div class="bg-bg-dark p-2 rounded text-sm cursor-pointer hover:bg-opacity-80 transition" onclick="showProfileModal('${userId || ''}', '${celeb.fullName || 'N/A'}', '${celeb.birthday || ''}', '${celeb.email || ''}')">
                                 <div class="font-semibold">${celeb.fullName || 'N/A'}</div>
                                 <div class="text-gray-400 text-xs">${formattedDate} • ${celeb.age} ans</div>
                             </div>
@@ -654,27 +1868,35 @@
             const viewListe = document.getElementById('viewListe');
             const viewCalendrier = document.getElementById('viewCalendrier');
             const viewNotifications = document.getElementById('viewNotifications');
-            const viewVote = document.getElementById('viewVote');
-            const viewProfiles = document.getElementById('viewProfiles');
+            const viewDefis = document.getElementById('viewDefis');
+            const viewSettings = document.getElementById('viewSettings');
+            const viewStats = document.getElementById('viewStats');
+            const viewFavorites = document.getElementById('viewFavorites');
             const btnListe = document.getElementById('btnListe');
             const btnCalendrier = document.getElementById('btnCalendrier');
             const btnNotifications = document.getElementById('btnNotifications');
-            const btnVote = document.getElementById('btnVote');
-            const btnProfiles = document.getElementById('btnProfiles');
+            const btnDefis = document.getElementById('btnDefis');
+            const btnSettings = document.getElementById('btnSettings');
+            const btnStats = document.getElementById('btnStats');
+            const btnFavorites = document.getElementById('btnFavorites');
 
             // Cacher toutes les vues
             viewListe.classList.add('hidden');
             viewCalendrier.classList.add('hidden');
-            if (viewVote) viewVote.classList.add('hidden');
+            if (viewDefis) viewDefis.classList.add('hidden');
             viewNotifications.classList.add('hidden');
-            if (viewProfiles) viewProfiles.classList.add('hidden');
+            if (viewSettings) viewSettings.classList.add('hidden');
+            if (viewStats) viewStats.classList.add('hidden');
+            if (viewFavorites) viewFavorites.classList.add('hidden');
             
             // Retirer l'état actif de tous les boutons
             btnListe.classList.remove('active');
             btnCalendrier.classList.remove('active');
             btnNotifications.classList.remove('active');
-            if (btnVote) btnVote.classList.remove('active');
-            if (btnProfiles) btnProfiles.classList.remove('active');
+            if (btnDefis) btnDefis.classList.remove('active');
+            if (btnSettings) btnSettings.classList.remove('active');
+            if (btnStats) btnStats.classList.remove('active');
+            if (btnFavorites) btnFavorites.classList.remove('active');
 
             if (view === 'liste') {
                 viewListe.classList.remove('hidden');
@@ -691,20 +1913,76 @@
                 btnNotifications.classList.add('active');
                 pageTitle.textContent = 'Mes Messages';
                 loadNotificationsView();
-            } else if (view === 'vote' && viewVote) {
-                viewVote.classList.remove('hidden');
-                if (btnVote) btnVote.classList.add('active');
-                pageTitle.textContent = 'Vote pour les Activités';
-                loadVoteView();
-            } else if (view === 'profiles' && viewProfiles) {
-                viewProfiles.classList.remove('hidden');
-                if (btnProfiles) btnProfiles.classList.add('active');
-                pageTitle.textContent = 'Profils';
-                loadProfilesView();
+            } else if (view === 'defis' && viewDefis) {
+                viewDefis.classList.remove('hidden');
+                if (btnDefis) btnDefis.classList.add('active');
+                pageTitle.textContent = 'Défis';
+                showDefisTab('progression');
+            } else if (view === 'settings' && viewSettings) {
+                viewSettings.classList.remove('hidden');
+                if (btnSettings) btnSettings.classList.add('active');
+                pageTitle.textContent = 'Paramètres';
+                loadMyProfileContent();
+                loadProfilePhoto();
+                // Initialiser l'onglet par défaut (Mon Profil)
+                switchSettingsTab('profile');
+            } else if (view === 'stats' && viewStats) {
+                viewStats.classList.remove('hidden');
+                if (btnStats) btnStats.classList.add('active');
+                pageTitle.textContent = 'Statistiques & Classements';
+                showStatsTab('personal');
+            } else if (view === 'favorites' && viewFavorites) {
+                viewFavorites.classList.remove('hidden');
+                if (btnFavorites) btnFavorites.classList.add('active');
+                pageTitle.textContent = 'Mes Favoris';
+                loadFavoritesView();
             }
             
             lucide.createIcons();
         }
+
+        // Basculer entre les onglets Settings
+        window.switchSettingsTab = function(tabName) {
+            // Cacher toutes les sections
+            const sections = ['profile', 'wishlist', 'preferences'];
+            sections.forEach(section => {
+                const sectionEl = document.getElementById(`settingsSection${section.charAt(0).toUpperCase() + section.slice(1)}`);
+                if (sectionEl) {
+                    sectionEl.classList.add('hidden');
+                }
+            });
+
+            // Retirer l'état actif de tous les boutons
+            const buttons = ['Profile', 'Wishlist', 'Preferences'];
+            buttons.forEach(btn => {
+                const btnEl = document.getElementById(`settingsTab${btn}`);
+                if (btnEl) {
+                    btnEl.classList.remove('active');
+                    btnEl.classList.remove('border-primary');
+                    btnEl.classList.remove('text-primary');
+                }
+            });
+
+            // Afficher la section sélectionnée
+            const sectionEl = document.getElementById(`settingsSection${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+            if (sectionEl) {
+                sectionEl.classList.remove('hidden');
+            }
+
+            // Activer le bouton correspondant
+            const btnName = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+            const btnEl = document.getElementById(`settingsTab${btnName}`);
+            if (btnEl) {
+                btnEl.classList.add('active');
+                btnEl.classList.add('border-primary');
+                btnEl.classList.add('text-primary');
+            }
+
+            // Charger les données si nécessaire
+            if (tabName === 'wishlist') {
+                loadSettingsWishlist();
+            }
+        };
 
         // Calculer les jours jusqu'à l'anniversaire
         function daysUntilBirthday(birthday) {
@@ -988,6 +2266,17 @@
                     birthdayMessage || 'Tu as reçu un nouveau message !'
                 );
 
+                // Mettre à jour les statistiques
+                if (!statsSystem) {
+                    statsSystem = new StatsSystem(currentUserId);
+                }
+                await statsSystem.incrementMessagesSent();
+                await statsSystem.addPoints(5); // 5 points par message envoyé
+                
+                // Mettre à jour les stats du destinataire (messages reçus)
+                const recipientStatsSystem = new StatsSystem(recipientUserId);
+                await recipientStatsSystem.incrementMessagesReceived();
+
                 // Réinitialiser le formulaire
                 document.getElementById(`message_${celebrationId}`).value = '';
                 document.getElementById(`public_${celebrationId}`).checked = false;
@@ -1095,6 +2384,17 @@
                 });
 
                 messagesList.innerHTML = '';
+                
+                // Charger toutes les photos de profil des expéditeurs
+                const senderPhotosMap = new Map();
+                const uniqueSenderIds = [...new Set(messages.map(m => m.senderId).filter(Boolean))];
+                for (const senderId of uniqueSenderIds) {
+                    const photoUrl = await getUserProfilePhoto(senderId);
+                    if (photoUrl) {
+                        senderPhotosMap.set(senderId, photoUrl);
+                    }
+                }
+                
                 messages.forEach(messageData => {
                     const message = messageData;
                     const messageCard = document.createElement('div');
@@ -1109,13 +2409,19 @@
                         minute: '2-digit'
                     });
 
+                    const senderPhotoUrl = message.senderId ? senderPhotosMap.get(message.senderId) : null;
+
                     messageCard.innerHTML = `
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <div class="flex items-center space-x-3 mb-3">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-lg font-bold">
-                                        ${(message.senderName || 'A')[0].toUpperCase()}
-                                    </div>
+                                    ${senderPhotoUrl ? `
+                                        <img src="${senderPhotoUrl}" alt="${message.senderName || 'Anonyme'}" class="w-10 h-10 rounded-full object-cover border-2 border-primary">
+                                    ` : `
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-lg font-bold">
+                                            ${(message.senderName || 'A')[0].toUpperCase()}
+                                        </div>
+                                    `}
                                     <div class="flex-1">
                                         <div class="flex items-center space-x-2 mb-1">
                                             <span class="font-bold text-lg">${message.senderName || 'Anonyme'}</span>
@@ -1153,6 +2459,7 @@
                 messagesList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des messages.</p>';
             }
         }
+
 
         // Charger la vue des profils (autres élèves)
         async function loadProfilesView() {
@@ -1227,8 +2534,110 @@
         }
 
         // Voir le profil d'un élève
-        function viewStudentProfile(studentId) {
+        window.viewStudentProfile = function(studentId) {
             window.location.href = `student-profile.html?id=${studentId}`;
+        }
+
+        // Basculer entre les onglets Settings
+
+        // Charger le contenu du profil de l'utilisateur
+        async function loadMyProfileContent() {
+            const myProfileContent = document.getElementById('myProfileContent');
+            if (!currentUserId) {
+                myProfileContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            myProfileContent.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement...</p>';
+
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(currentUserId).get();
+                if (!userDoc.exists) {
+                    myProfileContent.innerHTML = '<p class="text-red-400 text-center py-8">Utilisateur non trouvé</p>';
+                    return;
+                }
+
+                const userData = userDoc.data();
+                if (!userData.profileCompleted || !userData.profileInfo) {
+                    myProfileContent.innerHTML = `
+                        <div class="text-center py-8">
+                            <i data-lucide="user-x" class="w-16 h-16 mx-auto mb-4 text-gray-500"></i>
+                            <p class="text-gray-400 mb-4">Ton profil n'est pas encore complété.</p>
+                            <button onclick="openEditProfileModal()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                Compléter mon profil
+                            </button>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                let html = `
+                    <div class="bg-bg-dark p-6 rounded-lg border border-gray-700 mb-4">
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-2xl">
+                                ${(userData.fullName || '?')[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-xl">${userData.fullName || 'N/A'}</h3>
+                                <p class="text-sm text-gray-400">${userData.email || ''}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                `;
+
+                // Afficher les informations du profil
+                for (const [key, value] of Object.entries(userData.profileInfo)) {
+                    // Les valeurs sont stockées comme des objets avec {answer, isPublic, questionNumber, encrypted?}
+                    let answer = '';
+                    let isPublic = false;
+                    let isEncrypted = false;
+                    
+                    if (typeof value === 'object' && value !== null) {
+                        answer = value.answer || '';
+                        isPublic = value.isPublic || false;
+                        isEncrypted = value.encrypted || false;
+                    } else if (typeof value === 'string') {
+                        // Ancien format (string directe) - pour compatibilité
+                        answer = value;
+                    }
+                    
+                    // Décrypter le crush secret si nécessaire
+                    if (key === 'crushSecret' && isEncrypted && answer) {
+                        try {
+                            answer = decryptCrushSecret(answer, currentUserId);
+                        } catch (e) {
+                            answer = '***';
+                        }
+                    }
+                    
+                    // Ne pas afficher si la réponse est vide
+                    if (!answer || answer.trim() === '') {
+                        continue;
+                    }
+                    
+                    html += `
+                        <div class="border-b border-gray-700 pb-3">
+                            <div class="flex items-center justify-between mb-1">
+                                <p class="text-sm text-gray-400">${questionLabels[key] || key}</p>
+                                ${isPublic ? '<span class="text-xs bg-green-500 bg-opacity-30 text-green-300 px-2 py-1 rounded">Public</span>' : '<span class="text-xs bg-red-500 bg-opacity-30 text-red-300 px-2 py-1 rounded">Privé</span>'}
+                            </div>
+                            <p class="text-white font-semibold">${answer}</p>
+                        </div>
+                    `;
+                }
+
+                html += `
+                        </div>
+                    </div>
+                `;
+
+                myProfileContent.innerHTML = html;
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement du profil:', error);
+                myProfileContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement du profil.</p>';
+            }
         }
 
         // Liste des mots interdits (filtre de contenu) - Plus de 200 mots
@@ -1665,6 +3074,188 @@
             window.location.href = 'admin.html';
         }
 
+        // Basculer entre les onglets Défis
+        window.showDefisTab = function(tab) {
+            const progressionView = document.getElementById('defisProgressionView');
+            const voteView = document.getElementById('defisVoteView');
+            const progressionTab = document.getElementById('defisTabProgression');
+            const voteTab = document.getElementById('defisTabVote');
+
+            // Cacher toutes les vues
+            progressionView.classList.add('hidden');
+            voteView.classList.add('hidden');
+
+            // Retirer l'état actif de tous les onglets
+            progressionTab.classList.remove('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+            progressionTab.classList.add('text-gray-400');
+            voteTab.classList.remove('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+            voteTab.classList.add('text-gray-400');
+
+            if (tab === 'progression') {
+                progressionView.classList.remove('hidden');
+                progressionTab.classList.add('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                progressionTab.classList.remove('text-gray-400');
+                loadProgressionView();
+            } else if (tab === 'vote') {
+                voteView.classList.remove('hidden');
+                voteTab.classList.add('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                voteTab.classList.remove('text-gray-400');
+                loadVoteView();
+            }
+        }
+
+        // Charger la vue progression
+        async function loadProgressionView() {
+            const progressionContent = document.getElementById('progressionContent');
+            const consecutiveCountEl = document.getElementById('consecutiveCount');
+            const progressFill = document.getElementById('progressFill');
+            const progressMessage = document.getElementById('progressMessage');
+
+            if (!currentUserId) {
+                progressionContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            progressionContent.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement...</p>';
+
+            try {
+                // Charger le script de progression si pas déjà chargé
+                if (typeof calculateProgression === 'undefined') {
+                    const script = document.createElement('script');
+                    script.src = 'js/progression-system.js';
+                    document.head.appendChild(script);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+
+                const progression = await calculateProgression();
+                
+                // Mettre à jour le compteur
+                const consecutiveCount = progression.consecutiveCount;
+                consecutiveCountEl.textContent = consecutiveCount;
+                
+                // Mettre à jour la barre de progression
+                const progressPercentage = Math.min((consecutiveCount / 9) * 100, 100);
+                progressFill.style.width = `${progressPercentage}%`;
+                const progressText = document.getElementById('progressText');
+                if (progressText) {
+                    progressText.textContent = `${consecutiveCount} / 9`;
+                }
+                
+                // Message de progression
+                if (consecutiveCount >= 9) {
+                    progressMessage.textContent = '🎉 Félicitations ! Vous avez atteint l\'objectif de 9 personnes consécutives !';
+                    progressMessage.classList.remove('text-gray-400');
+                    progressMessage.classList.add('text-green-400', 'font-bold');
+                } else {
+                    progressMessage.textContent = `Il reste ${9 - consecutiveCount} personne(s) pour atteindre l'objectif !`;
+                    progressMessage.classList.remove('text-green-400', 'font-bold');
+                    progressMessage.classList.add('text-gray-400');
+                }
+                
+                // Afficher les célébrations
+                displayProgressionCelebrations(progression.allCelebrations, consecutiveCount);
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement de la progression:', error);
+                progressionContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement de la progression.</p>';
+            }
+        }
+
+        // Afficher les célébrations de progression
+        function displayProgressionCelebrations(celebrations, consecutiveCount) {
+            const container = document.getElementById('progressionContent');
+            
+            if (celebrations.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Aucune célébration trouvée.</p>';
+                return;
+            }
+            
+            // Trouver l'index de début de la séquence consécutive
+            let streakStartIndex = -1;
+            for (let i = 0; i < celebrations.length; i++) {
+                if (celebrations[i].completion.complete) {
+                    streakStartIndex = i;
+                    break;
+                }
+            }
+            
+            container.innerHTML = celebrations.map((item, index) => {
+                const celeb = item.celebration;
+                const completion = item.completion;
+                const isComplete = completion.complete;
+                const percentage = completion.totalStudents > 0 
+                    ? (completion.sentMessages / completion.totalStudents) * 100 
+                    : 0;
+                
+                // Vérifier si cette célébration fait partie de la séquence consécutive
+                const isInStreak = streakStartIndex >= 0 && index >= streakStartIndex && index < streakStartIndex + consecutiveCount;
+                
+                // Calculer la date d'anniversaire prochaine
+                let formattedDate = 'Date inconnue';
+                let daysUntil = null;
+                if (celeb.birthday) {
+                    const dateParts = celeb.birthday.split('-');
+                    if (dateParts.length === 3) {
+                        const today = new Date();
+                        const currentYear = today.getFullYear();
+                        const birthMonth = parseInt(dateParts[1]) - 1;
+                        const birthDay = parseInt(dateParts[2]);
+                        
+                        let nextBirthday = new Date(currentYear, birthMonth, birthDay);
+                        if (nextBirthday < today) {
+                            nextBirthday = new Date(currentYear + 1, birthMonth, birthDay);
+                        }
+                        
+                        const diffTime = nextBirthday - today;
+                        daysUntil = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        formattedDate = nextBirthday.toLocaleDateString('fr-FR', { 
+                            day: 'numeric', 
+                            month: 'long',
+                            year: 'numeric'
+                        });
+                        
+                        if (daysUntil === 0) {
+                            formattedDate = `Aujourd'hui - ${formattedDate}`;
+                        } else if (daysUntil === 1) {
+                            formattedDate = `Demain - ${formattedDate}`;
+                        } else if (daysUntil > 0) {
+                            formattedDate = `Dans ${daysUntil} jours - ${formattedDate}`;
+                        } else {
+                            formattedDate = `${formattedDate} (passé)`;
+                        }
+                    }
+                }
+                
+                return `
+                    <div class="border border-gray-700 rounded-lg p-4 ${isComplete ? 'bg-green-900 bg-opacity-20 border-green-500' : 'bg-gray-800 bg-opacity-20'}">
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <h3 class="font-bold text-lg">${celeb.fullName || 'N/A'}</h3>
+                                <p class="text-sm text-gray-400">${formattedDate}</p>
+                            </div>
+                            <div class="text-right">
+                                ${isComplete ? '<span class="px-3 py-1 rounded-full bg-green-500 text-white text-sm font-bold">✓ Complété</span>' : '<span class="px-3 py-1 rounded-full bg-yellow-500 text-white text-sm font-bold">En cours</span>'}
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-6 mb-2 relative">
+                            <div class="bg-gradient-to-r from-primary to-secondary h-6 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center font-bold text-xs">
+                                ${completion.sentMessages} / ${completion.totalStudents}
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400">
+                            ${completion.missingStudents.length > 0 
+                                ? `${completion.missingStudents.length} élève(s) n'ont pas encore envoyé de message` 
+                                : 'Tous les élèves ont envoyé un message !'}
+                        </p>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
         // Initialisation
         // Charger la vue vote
         async function loadVoteView() {
@@ -1800,6 +3391,412 @@
             } catch (error) {
                 console.error('Erreur lors de la soumission du vote:', error);
                 alert('Erreur lors de la soumission du vote.');
+            }
+        }
+
+        // Basculer entre les onglets Statistiques/Classements
+        function showStatsTab(tab) {
+            const personalView = document.getElementById('statsPersonalView');
+            const leaderboardView = document.getElementById('statsLeaderboardView');
+            const personalTab = document.getElementById('statsTabPersonal');
+            const leaderboardTab = document.getElementById('statsTabLeaderboard');
+
+            if (tab === 'personal') {
+                personalView.classList.remove('hidden');
+                leaderboardView.classList.add('hidden');
+                personalTab.classList.add('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                personalTab.classList.remove('text-gray-400');
+                leaderboardTab.classList.remove('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                leaderboardTab.classList.add('text-gray-400');
+                loadStatsView();
+            } else if (tab === 'leaderboard') {
+                personalView.classList.add('hidden');
+                leaderboardView.classList.remove('hidden');
+                leaderboardTab.classList.add('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                leaderboardTab.classList.remove('text-gray-400');
+                personalTab.classList.remove('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                personalTab.classList.add('text-gray-400');
+                loadLeaderboard('messages');
+            }
+        }
+
+        // Charger la vue des statistiques
+        let statsSystem = null;
+        async function loadStatsView() {
+            if (!currentUserId) {
+                document.getElementById('statsContent').innerHTML = '<p class="text-red-400 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            const statsContent = document.getElementById('statsContent');
+            statsContent.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement de tes statistiques...</p>';
+
+            try {
+                if (!statsSystem) {
+                    statsSystem = new StatsSystem(currentUserId);
+                }
+
+                const stats = await statsSystem.getUserStats();
+                
+                // Récupérer la réputation depuis la collection users (source de vérité)
+                const userDoc = await firebase.firestore().collection('users').doc(currentUserId).get();
+                const userData = userDoc.data();
+                const reputation = userData?.reputation !== undefined ? userData.reputation : (stats.reputation || 100);
+                
+                // Mettre à jour stats avec la réputation correcte
+                stats.reputation = reputation;
+                
+                const badges = stats.badges || [];
+
+                // Calculer le pourcentage vers le prochain niveau
+                const currentLevel = stats.level || 1;
+                const currentPoints = stats.points || 0;
+                const pointsForCurrentLevel = Math.pow(currentLevel - 1, 2) * 10;
+                const pointsForNextLevel = Math.pow(currentLevel, 2) * 10;
+                const pointsInCurrentLevel = currentPoints - pointsForCurrentLevel;
+                const pointsNeededForNextLevel = pointsForNextLevel - pointsForCurrentLevel;
+                const progressPercent = Math.min(100, (pointsInCurrentLevel / pointsNeededForNextLevel) * 100);
+
+                statsContent.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Niveau et Points -->
+                        <div class="bg-gradient-to-r from-primary to-secondary bg-opacity-20 border border-primary rounded-lg p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-2xl font-bold mb-1">Niveau ${currentLevel}</h3>
+                                    <p class="text-gray-400 text-sm">${currentPoints} points</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-3xl font-bold">${Math.floor(progressPercent)}%</div>
+                                    <p class="text-gray-400 text-xs">vers niveau ${currentLevel + 1}</p>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-3 mb-2">
+                                <div class="bg-gradient-to-r from-primary to-secondary h-3 rounded-full transition-all duration-500" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <p class="text-xs text-gray-400">${pointsNeededForNextLevel - pointsInCurrentLevel} points jusqu'au prochain niveau</p>
+                        </div>
+
+                        <!-- Statistiques principales -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="card p-4 rounded-lg text-center">
+                                <div class="text-3xl font-bold text-primary mb-1">${stats.messagesSent || 0}</div>
+                                <div class="text-sm text-gray-400">Messages envoyés</div>
+                            </div>
+                            <div class="card p-4 rounded-lg text-center">
+                                <div class="text-3xl font-bold text-secondary mb-1">${stats.messagesReceived || 0}</div>
+                                <div class="text-sm text-gray-400">Messages reçus</div>
+                            </div>
+                            <div class="card p-4 rounded-lg text-center">
+                                <div class="text-3xl font-bold text-green-400 mb-1">${stats.activeDays || 0}</div>
+                                <div class="text-sm text-gray-400">Jours actifs</div>
+                            </div>
+                            <div class="card p-4 rounded-lg text-center">
+                                <div class="text-3xl font-bold text-blue-400 mb-1">${stats.consecutiveDays || 0}</div>
+                                <div class="text-sm text-gray-400">Jours consécutifs</div>
+                            </div>
+                        </div>
+
+                        <!-- Série et Célébrations -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="card p-4 rounded-lg">
+                                <h4 class="font-bold mb-3 flex items-center">
+                                    <i data-lucide="flame" class="w-5 h-5 mr-2 text-orange-400"></i>
+                                    Série de jours
+                                </h4>
+                                <div class="text-2xl font-bold mb-1">${stats.consecutiveDays || 0} jours</div>
+                                <p class="text-sm text-gray-400">Meilleure série: ${stats.longestStreak || 0} jours</p>
+                            </div>
+                            <div class="card p-4 rounded-lg">
+                                <h4 class="font-bold mb-3 flex items-center">
+                                    <i data-lucide="party-popper" class="w-5 h-5 mr-2 text-yellow-400"></i>
+                                    Célébrations
+                                </h4>
+                                <div class="text-2xl font-bold mb-1">${stats.celebrationsParticipated || 0}</div>
+                                <p class="text-sm text-gray-400">Célébrations participées</p>
+                            </div>
+                        </div>
+
+                        <!-- Badges -->
+                        <div class="card p-4 rounded-lg">
+                            <h4 class="font-bold mb-4 flex items-center">
+                                <i data-lucide="award" class="w-5 h-5 mr-2 text-yellow-400"></i>
+                                Badges obtenus (${badges.length})
+                            </h4>
+                            ${badges.length > 0 ? `
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    ${badges.map(badgeId => {
+                                        const badgeInfo = statsSystem.getBadgeInfo(badgeId);
+                                        return `
+                                            <div class="bg-gradient-to-br from-yellow-400 to-orange-500 bg-opacity-20 border border-yellow-500 rounded-lg p-3 text-center">
+                                                <div class="text-3xl mb-2">${badgeInfo.icon}</div>
+                                                <div class="text-sm font-bold">${badgeInfo.name}</div>
+                                                <div class="text-xs text-gray-400 mt-1">${badgeInfo.description}</div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            ` : `
+                                <p class="text-gray-400 text-center py-4">Aucun badge obtenu pour le moment. Continue à participer !</p>
+                            `}
+                        </div>
+
+                        <!-- Réputation -->
+                        <div class="card p-4 rounded-lg">
+                            <h4 class="font-bold mb-3 flex items-center">
+                                <i data-lucide="star" class="w-5 h-5 mr-2 text-yellow-400"></i>
+                                Réputation
+                            </h4>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-1">
+                                    <div class="w-full bg-gray-700 rounded-full h-4">
+                                        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 h-4 rounded-full transition-all duration-500" style="width: ${stats.reputation || 100}%"></div>
+                                    </div>
+                                </div>
+                                <div class="text-xl font-bold">${stats.reputation || 100}/100</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des statistiques:', error);
+                statsContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des statistiques.</p>';
+            }
+        }
+
+        // Charger les classements
+        let leaderboardSystem = null;
+        async function loadLeaderboard(type = 'messages') {
+            if (!currentUserId) {
+                document.getElementById('leaderboardContent').innerHTML = '<p class="text-red-400 text-center py-8">Erreur : utilisateur non connecté</p>';
+                return;
+            }
+
+            const leaderboardContent = document.getElementById('leaderboardContent');
+            leaderboardContent.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement du classement...</p>';
+
+            try {
+                if (!leaderboardSystem) {
+                    leaderboardSystem = new LeaderboardSystem();
+                }
+
+                // Mettre à jour les onglets actifs
+                document.querySelectorAll('[id^="leaderboardTab"]').forEach(btn => {
+                    btn.classList.remove('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                    btn.classList.add('text-gray-400');
+                });
+
+                const activeTab = document.getElementById(`leaderboardTab${type.charAt(0).toUpperCase() + type.slice(1)}`);
+                if (activeTab) {
+                    activeTab.classList.remove('text-gray-400');
+                    activeTab.classList.add('bg-primary', 'bg-opacity-20', 'text-primary', 'font-semibold', 'border-b-2', 'border-primary');
+                }
+
+                let leaderboard = [];
+                let title = '';
+                let icon = '';
+                let unit = '';
+
+                switch (type) {
+                    case 'messages':
+                        leaderboard = await leaderboardSystem.getMessagesLeaderboard(10);
+                        title = 'Classement par Messages Envoyés';
+                        icon = '💬';
+                        unit = 'messages';
+                        break;
+                    case 'reputation':
+                        leaderboard = await leaderboardSystem.getReputationLeaderboard(10);
+                        title = 'Classement par Réputation';
+                        icon = '⭐';
+                        unit = '/100';
+                        break;
+                    case 'points':
+                        leaderboard = await leaderboardSystem.getPointsLeaderboard(10);
+                        title = 'Classement par Points';
+                        icon = '🏆';
+                        unit = 'pts';
+                        break;
+                    case 'activeDays':
+                        leaderboard = await leaderboardSystem.getActiveDaysLeaderboard(10);
+                        title = 'Classement par Jours Actifs';
+                        icon = '📅';
+                        unit = 'jours';
+                        break;
+                    case 'monthly':
+                        leaderboard = await leaderboardSystem.getMonthlyLeaderboard(10);
+                        title = 'Classement Mensuel (Messages)';
+                        icon = '📊';
+                        unit = 'messages';
+                        break;
+                }
+
+                // Récupérer le rang de l'utilisateur
+                const userRank = await leaderboardSystem.getUserRank(currentUserId, type);
+
+                if (leaderboard.length === 0) {
+                    leaderboardContent.innerHTML = `
+                        <div class="text-center py-12">
+                            <i data-lucide="trophy" class="w-16 h-16 mx-auto mb-4 text-gray-400"></i>
+                            <p class="text-gray-400 text-lg mb-2">Aucun classement disponible</p>
+                            <p class="text-gray-500 text-sm">Les classements seront disponibles une fois que les élèves commenceront à participer.</p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    return;
+                }
+
+                // Trouver la position de l'utilisateur dans le top 10
+                const userInTop10 = leaderboard.findIndex(item => item.userId === currentUserId);
+
+                leaderboardContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-r from-yellow-500 to-orange-500 bg-opacity-20 border border-yellow-500 rounded-lg p-4 mb-6">
+                            <h3 class="font-bold text-lg mb-2 flex items-center">
+                                <span class="text-2xl mr-2">${icon}</span>
+                                ${title}
+                            </h3>
+                            ${userRank ? `
+                                <p class="text-sm text-gray-300 mt-2">
+                                    Ta position: <span class="font-bold text-yellow-400">#${userRank}</span>
+                                </p>
+                            ` : ''}
+                        </div>
+
+                        <div class="space-y-2">
+                            ${leaderboard.map((item, index) => {
+                                const isCurrentUser = item.userId === currentUserId;
+                                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                                const rank = index + 1;
+                                
+                                return `
+                                    <div class="bg-bg-dark p-4 rounded-lg flex items-center justify-between transition ${isCurrentUser ? 'border-2 border-primary bg-opacity-80' : 'border border-gray-700'}">
+                                        <div class="flex items-center space-x-4 flex-1">
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${rank <= 3 ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-gray-700'}">
+                                                ${medal || rank}
+                                            </div>
+                                            <div class="flex-1">
+                                                <h4 class="font-bold ${isCurrentUser ? 'text-primary' : ''}">
+                                                    ${item.name} ${isCurrentUser ? '(Toi)' : ''}
+                                                </h4>
+                                                ${item.level ? `<p class="text-xs text-gray-400">Niveau ${item.level}</p>` : ''}
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-xl font-bold ${rank <= 3 ? 'text-yellow-400' : ''}">
+                                                ${item.value} ${unit}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+
+                        ${userRank && userRank > 10 ? `
+                            <div class="bg-bg-dark p-4 rounded-lg border-2 border-primary mt-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold">
+                                            ${userRank}
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-primary">Toi</h4>
+                                            <p class="text-xs text-gray-400">Position actuelle</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xl font-bold text-primary">
+                                            ${leaderboard.find(item => item.userId === currentUserId)?.value || 0} ${unit}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement du classement:', error);
+                leaderboardContent.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement du classement.</p>';
+            }
+        }
+
+        // Charger les annonces
+        let announcementsSystem = null;
+        async function loadAnnouncements() {
+            if (!currentUserId) return;
+            const announcementsBanner = document.getElementById('announcementsBanner');
+            if (!announcementsBanner) return;
+            try {
+                if (!announcementsSystem) {
+                    announcementsSystem = new AnnouncementsSystem();
+                }
+                const announcements = await announcementsSystem.getActiveAnnouncements(currentUserId);
+                if (announcements.length === 0) {
+                    announcementsBanner.innerHTML = '';
+                    return;
+                }
+                // Mapping des priorités vers les classes Bootstrap alert
+                const priorityAlertClasses = {
+                    'urgent': 'alert-danger',
+                    'high': 'alert-warning',
+                    'normal': 'alert-info',
+                    'low': 'alert-secondary'
+                };
+                
+                const priorityIcons = {
+                    'urgent': 'alert-triangle',
+                    'high': 'alert-circle',
+                    'normal': 'info',
+                    'low': 'bell'
+                };
+                
+                announcementsBanner.innerHTML = announcements.map(announcement => {
+                    const date = announcement.createdAt?.toDate ? announcement.createdAt.toDate() : new Date();
+                    const formattedDate = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    const isUnread = !announcement.isRead;
+                    const alertClass = priorityAlertClasses[announcement.priority] || 'alert-info';
+                    const icon = priorityIcons[announcement.priority] || 'info';
+                    
+                    return `
+                        <div class="alert ${alertClass} flex items-start" role="alert">
+                            <i data-lucide="${icon}" class="w-5 h-5 flex-shrink-0 mr-2 mt-0.5"></i>
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="alert-heading font-bold text-lg mb-0">${announcement.title}</h4>
+                                    ${isUnread ? '<span class="px-2 py-1 rounded-full bg-primary text-white text-xs font-bold animate-pulse">Nouveau</span>' : ''}
+                                </div>
+                                <p class="text-sm opacity-75 mb-2">${formattedDate}</p>
+                                <p class="mb-0 whitespace-pre-wrap">${announcement.content}</p>
+                            </div>
+                            ${isUnread ? `
+                                <button onclick="markAnnouncementAsRead('${announcement.id}')" 
+                                        class="ml-4 p-2 rounded-lg bg-opacity-20 hover:bg-opacity-30 transition flex-shrink-0" 
+                                        title="Marquer comme lu">
+                                    <i data-lucide="check" class="w-5 h-5"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des annonces:', error);
+            }
+        }
+
+        async function markAnnouncementAsRead(announcementId) {
+            if (!currentUserId) return;
+            try {
+                if (!announcementsSystem) {
+                    announcementsSystem = new AnnouncementsSystem();
+                }
+                await announcementsSystem.markAsRead(announcementId, currentUserId);
+                await loadAnnouncements();
+            } catch (error) {
+                console.error('Erreur lors du marquage comme lu:', error);
             }
         }
 

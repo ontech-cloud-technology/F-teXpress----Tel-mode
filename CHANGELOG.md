@@ -5,6 +5,33 @@ Tous les changements notables de ce projet seront documentés dans ce fichier.
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère à [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.2.0] - 2024-12-XX
+
+### Ajouté
+- Page unifiée de configuration de profil (`profile-config.html`) remplaçant les pages séparées
+- Système multi-étapes avec barre de progression pour la configuration du profil
+- Étape complète dédiée aux règles et conditions d'utilisation (identique à `rules-acceptance.html`)
+- Support de la configuration de profil pour les administrateurs et professeurs
+- 20 questions de profil organisées en 4 étapes
+- 10 champs d'informations supplémentaires
+- Gestion intégrée de la photo de profil, thème, et liste de souhaits
+- Bouton "Mon Profil" dans l'interface admin pour voir son propre profil
+- Vérification automatique pour éviter de refaire le formulaire si déjà complété
+
+### Modifié
+- Logique de redirection dans `login.html` : vérification unique du profil complété
+- `student-profile.html` : affichage complet des 20 questions + 10 informations supplémentaires
+- `admin.html` : ajout du bouton pour voir son propre profil
+- Le profil n'est demandé qu'une seule fois lors de la première connexion
+- Messages de redirection adaptés selon l'état du profil
+
+### Corrigé
+- Erreur "Assignment to constant variable" dans la sauvegarde du profil
+- Redirection des admins vers la page élève au lieu de admin
+- Message de redirection affichant toujours "formulaire" même après complétion
+- Accessibilité : ajout du champ username caché pour les formulaires de mot de passe
+- Gestion d'erreur améliorée pour l'upload de photos (bucket Supabase)
+
 ## [1.1.0] - 2024-11-15
 
 ### Ajouté

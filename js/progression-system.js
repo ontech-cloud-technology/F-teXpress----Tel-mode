@@ -112,20 +112,43 @@ async function calculateProgression() {
     
     // Trier les célébrations par date d'anniversaire (prochaines d'abord)
     const today = new Date();
+    const currentYear = today.getFullYear();
+    
     const sortedCelebrations = celebrations
         .filter(celeb => {
             if (!celeb.birthday) return false;
-            const birthday = new Date(celeb.birthday);
-            // Inclure les anniversaires passés et futurs
             return true;
         })
+        .map(celeb => {
+            // Calculer la prochaine date d'anniversaire
+            const birthdayParts = celeb.birthday.split('-');
+            if (birthdayParts.length !== 3) return { ...celeb, nextBirthday: null };
+            
+            const birthMonth = parseInt(birthdayParts[1]) - 1; // Mois (0-11)
+            const birthDay = parseInt(birthdayParts[2]);
+            
+            // Créer la date d'anniversaire pour cette année
+            let nextBirthday = new Date(currentYear, birthMonth, birthDay);
+            
+            // Si l'anniversaire est déjà passé cette année, prendre l'année prochaine
+            if (nextBirthday < today) {
+                nextBirthday = new Date(currentYear + 1, birthMonth, birthDay);
+            }
+            
+            return {
+                ...celeb,
+                nextBirthday: nextBirthday
+            };
+        })
+        .filter(celeb => celeb.nextBirthday !== null)
         .sort((a, b) => {
-            const dateA = new Date(a.birthday);
-            const dateB = new Date(b.birthday);
-            // Comparer en ignorant l'année
-            const monthDayA = `${dateA.getMonth()}-${dateA.getDate()}`;
-            const monthDayB = `${dateB.getMonth()}-${dateB.getDate()}`;
-            return monthDayA.localeCompare(monthDayB);
+            // Trier par date d'anniversaire prochaine (plus proche en premier)
+            return a.nextBirthday - b.nextBirthday;
+        })
+        .map(celeb => {
+            // Retirer nextBirthday avant de retourner
+            const { nextBirthday, ...rest } = celeb;
+            return rest;
         });
     
     const results = [];
