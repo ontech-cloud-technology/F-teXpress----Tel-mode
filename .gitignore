@@ -28,4 +28,8 @@ presentation-slides/*.jpeg
 presentation-slides/*.pptx
 !presentation-slides/.gitkeep
 
+# Fichiers de clés Firebase (secrets)
+*firebase-adminsdk*.json
+projet-aniversaire-firebase-adminsdk*.json
+
 

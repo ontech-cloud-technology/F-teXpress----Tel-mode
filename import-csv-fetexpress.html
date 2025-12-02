@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importer depuis FêteXpress.csv</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a0f30 0%, #0a041c 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+            <h1 class="text-3xl font-bold text-white mb-6">📥 Importer depuis FêteXpress.csv</h1>
+            
+            <div id="authCheck" class="mb-6">
+                <p class="text-yellow-400">Vérification de l'authentification...</p>
+            </div>
+
+            <div id="importSection" class="hidden">
+                <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 mb-6">
+                    <p class="text-blue-200 font-semibold">ℹ️ Instructions :</p>
+                    <ol class="text-blue-100 text-sm mt-2 list-decimal list-inside space-y-1">
+                        <li>Sélectionnez le fichier FêteXpress.csv</li>
+                        <li>Le script va automatiquement lire et importer toutes les données</li>
+                        <li>Les lignes vides seront ignorées</li>
+                        <li>Vous devez être connecté en tant qu'admin</li>
+                    </ol>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-white mb-2 font-semibold">Sélectionner le fichier CSV :</label>
+                    <input 
+                        type="file" 
+                        id="csvFileInput" 
+                        accept=".csv"
+                        class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white"
+                    />
+                </div>
+
+                <button 
+                    id="importBtn" 
+                    onclick="importCSV()"
+                    class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                >
+                    📤 Importer les Données
+                </button>
+
+                <div id="status" class="mb-6 text-white"></div>
+                <div id="preview" class="mb-6 hidden">
+                    <h2 class="text-xl font-bold text-white mb-4">Aperçu des données à importer :</h2>
+                    <div id="previewContent" class="bg-white/5 rounded-lg p-4 max-h-96 overflow-y-auto"></div>
+                </div>
+                <div id="results" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let userRole = null;
+
+        // Vérifier l'authentification au chargement
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const roleData = await getUserRole(user.uid);
+                userRole = roleData?.role;
+                
+                if (userRole === 'admin' || userRole === 'prof') {
+                    document.getElementById('authCheck').innerHTML = `
+                        <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4">
+                            <p class="text-green-200">✅ Connecté en tant que: ${roleData?.name || user.email}</p>
+                            <p class="text-green-200">Rôle: ${userRole}</p>
+                        </div>
+                    `;
+                    document.getElementById('importSection').classList.remove('hidden');
+                } else {
+                    document.getElementById('authCheck').innerHTML = `
+                        <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+                            <p class="text-red-200">❌ Accès refusé. Vous devez être admin ou professeur pour importer des données.</p>
+                            <p class="text-red-200 mt-2">Rôle actuel: ${userRole || 'non défini'}</p>
+                            <a href="login.html" class="text-blue-400 underline mt-2 inline-block">Se connecter</a>
+                        </div>
+                    `;
+                }
+            } else {
+                document.getElementById('authCheck').innerHTML = `
+                    <div class="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+                        <p class="text-red-200">❌ Vous devez être connecté pour importer des données.</p>
+                        <a href="login.html" class="text-blue-400 underline mt-2 inline-block">Se connecter</a>
+                    </div>
+                `;
+            }
+        });
+
+        /**
+         * Parse une ligne CSV simple (gère les guillemets)
+         */
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            
+            return result;
+        }
+
+        /**
+         * Normalise une date (DD/MM/YYYY vers YYYY-MM-DD ou garde YYYY-MM-DD)
+         */
+        function normalizeDate(dateStr) {
+            if (!dateStr || dateStr.trim() === '') return null;
+            
+            const trimmed = dateStr.trim();
+            
+            // Si déjà au format ISO (YYYY-MM-DD)
+            if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+                return trimmed;
+            }
+            
+            // Si format français (DD/MM/YYYY)
+            if (trimmed.includes('/')) {
+                const parts = trimmed.split('/');
+                if (parts.length === 3) {
+                    const day = parts[0].padStart(2, '0');
+                    const month = parts[1].padStart(2, '0');
+                    const year = parts[2];
+                    return `${year}-${month}-${day}`;
+                }
+            }
+            
+            return trimmed;
+        }
+
+        /**
+         * Détecte les colonnes depuis l'en-tête
+         */
+        function detectColumns(headerRow) {
+            const columns = {};
+            headerRow.forEach((col, index) => {
+                const colLower = col.toLowerCase().trim();
+                
+                // Nom
+                if (colLower === 'nom' || colLower === 'nom complet' || colLower === 'fullname' || colLower === 'name') {
+                    columns.fullName = index;
+                }
+                // Date
+                else if (colLower === 'date' || colLower === 'anniversaire' || colLower === 'birthday' || colLower === 'date de naissance') {
+                    columns.birthday = index;
+                }
+                // Fiche
+                else if (colLower === 'fiche' || colLower === 'numéro de fiche' || colLower === 'filenumber') {
+                    columns.fileNumber = index;
+                }
+                // Classe
+                else if (colLower === 'classe' || colLower === 'numéro de classe' || colLower === 'classnumber') {
+                    columns.classNumber = index;
+                }
+                // Genre
+                else if (colLower === 'genre' || colLower === 'sexe' || colLower === 'gender') {
+                    columns.gender = index;
+                }
+                // Info
+                else if (colLower === 'info' || colLower === 'information' || colLower === 'extrainfo') {
+                    columns.extraInfo = index;
+                }
+            });
+            
+            return columns;
+        }
+
+        /**
+         * Importe les données depuis le CSV
+         */
+        async function importCSV() {
+            const fileInput = document.getElementById('csvFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('❌ Veuillez sélectionner un fichier CSV', 'error');
+                return;
+            }
+
+            if (!currentUser || (userRole !== 'admin' && userRole !== 'prof')) {
+                showStatus('❌ Vous devez être connecté en tant qu\'admin ou professeur', 'error');
+                return;
+            }
+
+            const importBtn = document.getElementById('importBtn');
+            importBtn.disabled = true;
+            importBtn.textContent = '⏳ Import en cours...';
+
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = '<p class="text-blue-400">📖 Lecture du fichier...</p>';
+
+            try {
+                const fileContent = await file.text();
+                const lines = fileContent.split('\n').filter(line => line.trim() !== '');
+                
+                if (lines.length === 0) {
+                    throw new Error('Le fichier CSV est vide');
+                }
+                
+                // Parser l'en-tête
+                const headerRow = parseCSVLine(lines[0]);
+                const columns = detectColumns(headerRow);
+                
+                console.log('Colonnes détectées:', columns);
+                
+                if (columns.fullName === undefined || columns.birthday === undefined) {
+                    throw new Error('Colonnes obligatoires manquantes (Nom et Date)');
+                }
+                
+                let imported = 0;
+                let errors = 0;
+                let skipped = 0;
+                const previewData = [];
+
+                statusDiv.innerHTML = '<p class="text-blue-400">📤 Import des données...</p>';
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+
+                // Traiter chaque ligne (sauf l'en-tête)
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const row = parseCSVLine(line);
+                    
+                    // Extraire les données selon les colonnes détectées
+                    const fullName = columns.fullName !== undefined ? (row[columns.fullName] || '').trim() : '';
+                    const birthday = columns.birthday !== undefined ? (row[columns.birthday] || '').trim() : '';
+                    const fileNumber = columns.fileNumber !== undefined ? (row[columns.fileNumber] || '').trim() : '';
+                    const classNumber = columns.classNumber !== undefined ? (row[columns.classNumber] || '').trim() : '';
+                    const gender = columns.gender !== undefined ? (row[columns.gender] || '').trim() : '';
+                    const extraInfo = columns.extraInfo !== undefined ? (row[columns.extraInfo] || '').trim() : '';
+                    
+                    // Vérifier que le nom et la date sont présents
+                    if (!fullName || !birthday) {
+                        skipped++;
+                        continue;
+                    }
+                    
+                    // Normaliser la date
+                    const normalizedDate = normalizeDate(birthday);
+                    if (!normalizedDate) {
+                        errors++;
+                        resultsDiv.innerHTML += `<p class="text-red-400">❌ Ligne ${i + 1}: Date invalide (${birthday})</p>`;
+                        continue;
+                    }
+                    
+                    try {
+                        // Préparer les données
+                        const celebData = {
+                            fullName: fullName,
+                            birthday: normalizedDate,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        
+                        // Ajouter les champs optionnels s'ils existent
+                        if (fileNumber) celebData.fileNumber = fileNumber;
+                        if (classNumber) celebData.classNumber = classNumber;
+                        if (gender) celebData.gender = gender;
+                        if (extraInfo) celebData.extraInfo = extraInfo;
+                        
+                        // Ajouter à Firestore
+                        await db.collection('celebrations').add(celebData);
+                        
+                        imported++;
+                        previewData.push({ fullName, birthday: normalizedDate, fileNumber, classNumber, gender });
+                        resultsDiv.innerHTML += `<p class="text-green-400">✅ ${i + 1}. ${fullName} (${normalizedDate})</p>`;
+                        
+                    } catch (error) {
+                        errors++;
+                        resultsDiv.innerHTML += `<p class="text-red-400">❌ Ligne ${i + 1} (${fullName}): ${error.message}</p>`;
+                    }
+                }
+                
+                // Afficher l'aperçu
+                if (previewData.length > 0) {
+                    const previewContent = document.getElementById('previewContent');
+                    previewContent.innerHTML = `
+                        <table class="w-full text-sm text-white">
+                            <thead>
+                                <tr class="border-b border-white/20">
+                                    <th class="text-left p-2">Nom</th>
+                                    <th class="text-left p-2">Date</th>
+                                    <th class="text-left p-2">Fiche</th>
+                                    <th class="text-left p-2">Classe</th>
+                                    <th class="text-left p-2">Genre</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${previewData.map(s => `
+                                    <tr class="border-b border-white/10">
+                                        <td class="p-2">${s.fullName || 'N/A'}</td>
+                                        <td class="p-2">${s.birthday || 'N/A'}</td>
+                                        <td class="p-2">${s.fileNumber || 'N/A'}</td>
+                                        <td class="p-2">${s.classNumber || 'N/A'}</td>
+                                        <td class="p-2">${s.gender || 'N/A'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    document.getElementById('preview').classList.remove('hidden');
+                }
+                
+                // Résumé final
+                statusDiv.innerHTML = `
+                    <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4">
+                        <h3 class="text-green-200 font-bold mb-2">📊 Résumé de l'import:</h3>
+                        <p class="text-green-200">✅ Importés: ${imported}</p>
+                        <p class="text-yellow-200">⏭️  Ignorés: ${skipped}</p>
+                        <p class="text-red-200">❌ Erreurs: ${errors}</p>
+                        <p class="text-white">📝 Total traité: ${imported + skipped + errors}</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="text-red-400">❌ Erreur: ${error.message}</p>`;
+            } finally {
+                importBtn.disabled = false;
+                importBtn.textContent = '📤 Importer les Données';
+            }
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            const colorClass = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-blue-400';
+            statusDiv.innerHTML = `<p class="${colorClass}">${message}</p>`;
+        }
+    </script>
+</body>
+</html>
+

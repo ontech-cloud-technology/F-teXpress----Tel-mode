@@ -711,7 +711,7 @@
                                 <input type="checkbox" id="celeb_createAccount" class="w-5 h-5 rounded border-gray-600 text-primary focus:ring-2 focus:ring-primary">
                                 <div>
                                     <span class="text-sm font-medium text-white">Créer un compte utilisateur automatiquement</span>
-                                    <p class="text-xs text-gray-400 mt-1">Email: [Numéro de Fiche]@cslaval.qc.ca • Rôle: Élève • Mot de passe initial: login123</p>
+                                    <p class="text-xs text-gray-400 mt-1">Email: [Numéro de Fiche]@cslaval.qc.ca • Rôle: Élève • Mot de passe initial: Login123</p>
                                 </div>
                             </label>
                         </div>
@@ -1849,7 +1849,7 @@
                 // Si la case est cochée, créer un compte utilisateur
                 if (createAccount && fileNumber) {
                     const email = `${fileNumber}@cslaval.qc.ca`;
-                    const tempPassword = 'login123';
+                    const tempPassword = 'Login123';
                     
                     try {
                         // Créer l'utilisateur dans Firebase Auth

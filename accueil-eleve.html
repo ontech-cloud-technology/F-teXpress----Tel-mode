@@ -286,20 +286,15 @@
                         <i data-lucide="home" class="w-5 h-5 text-indigo-400"></i>
                         <span class="font-semibold">Accueil</span>
                     </a>
-                    <a href="eleve.html?view=calendrier" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
+                    <button onclick="navigateToSection('calendrier')" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
                         <i data-lucide="calendar" class="w-5 h-5"></i>
                         <span>Calendrier</span>
-                    </a>
-                    <a href="eleve.html?view=messaging" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
-                        <i data-lucide="message-square" class="w-5 h-5"></i>
-                        <span>Messagerie</span>
-                        <span id="messagingBadge" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
-                    </a>
-                    <a href="eleve.html?view=notifications" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
+                    </button>
+                    <button onclick="navigateToSection('notifications')" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
                         <i data-lucide="bell" class="w-5 h-5"></i>
                         <span>Messages</span>
                         <span id="notificationBadge" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
-                    </a>
+                    </button>
                     <a href="progression.html" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
                         <i data-lucide="target" class="w-5 h-5"></i>
                         <span>Défis</span>
@@ -725,16 +720,6 @@
                 } else {
                     notificationBadge.classList.add('hidden');
                 }
-
-                // Badge pour la messagerie (messages non lus dans la messagerie)
-                const messagingBadge = document.getElementById('messagingBadge');
-                // Pour l'instant, on utilise le même nombre
-                if (unreadMessages.size > 0) {
-                    messagingBadge.textContent = unreadMessages.size;
-                    messagingBadge.classList.remove('hidden');
-                } else {
-                    messagingBadge.classList.add('hidden');
-                }
             } catch (error) {
                 console.error('Erreur lors du chargement des notifications:', error);
             }
@@ -782,6 +767,11 @@
         // Navigation
         function goToPage(url) {
             window.location.href = url;
+        }
+
+        // Navigation vers une section dans eleve.html
+        function navigateToSection(view) {
+            window.location.href = `eleve.html?view=${view}`;
         }
 
         // Initialisation

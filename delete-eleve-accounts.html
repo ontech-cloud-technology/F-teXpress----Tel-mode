@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supprimer Comptes Élèves</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a0f30 0%, #0a041c 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+            <h1 class="text-3xl font-bold text-white mb-6">🗑️ Suppression des Comptes Élèves</h1>
+            
+            <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-6">
+                <p class="text-yellow-200 font-semibold">⚠️ ATTENTION : Cette action est irréversible !</p>
+                <p class="text-yellow-100 text-sm mt-2">
+                    Ce script va supprimer TOUS les comptes élèves avec @cslaval.qc.ca 
+                    <strong>SAUF</strong> : 2253344@cslaval.qc.ca et 2253343@cslaval.qc.ca
+                </p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-white mb-2">Confirmer en tapant "SUPPRIMER" :</label>
+                <input 
+                    type="text" 
+                    id="confirmInput" 
+                    class="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white"
+                    placeholder="Tapez SUPPRIMER pour confirmer"
+                >
+            </div>
+
+            <button 
+                id="deleteBtn" 
+                onclick="deleteAccounts()"
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled
+            >
+                Supprimer les Comptes
+            </button>
+
+            <div id="status" class="mt-6 text-white"></div>
+            <div id="results" class="mt-6 space-y-2 max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        // Comptes à exclure de la suppression
+        const EXCLUDED_EMAILS = [
+            '2253344@cslaval.qc.ca',
+            '2253343@cslaval.qc.ca'
+        ];
+
+        // Activer le bouton si la confirmation est correcte
+        document.getElementById('confirmInput').addEventListener('input', (e) => {
+            const btn = document.getElementById('deleteBtn');
+            btn.disabled = e.target.value !== 'SUPPRIMER';
+        });
+
+        async function deleteAccounts() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            // Vérifier l'authentification
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                statusDiv.innerHTML = '<p class="text-red-400">❌ Vous devez être connecté pour exécuter ce script.</p>';
+                return;
+            }
+
+            // Vérifier que l'utilisateur est admin
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
+                if (userData.role !== 'admin') {
+                    statusDiv.innerHTML = '<p class="text-red-400">❌ Seuls les administrateurs peuvent exécuter ce script.</p>';
+                    return;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<p class="text-red-400">❌ Erreur lors de la vérification des permissions.</p>';
+                return;
+            }
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Suppression en cours...';
+            statusDiv.innerHTML = '<p class="text-blue-400">🔄 Recherche des comptes à supprimer...</p>';
+            resultsDiv.innerHTML = '';
+
+            try {
+                // Récupérer tous les utilisateurs (on ne peut pas filtrer par email avec contains dans Firestore)
+                const usersSnapshot = await firebase.firestore()
+                    .collection('users')
+                    .where('role', '==', 'eleve')
+                    .get();
+
+                // Filtrer les comptes élèves avec @cslaval.qc.ca et exclure les emails spécifiés
+                const accountsToDelete = [];
+                usersSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const email = data.email;
+                    
+                    // Vérifier que c'est un élève avec @cslaval.qc.ca et qu'il n'est pas dans la liste d'exclusion
+                    if (email && 
+                        email.includes('@cslaval.qc.ca') &&
+                        !EXCLUDED_EMAILS.includes(email)) {
+                        accountsToDelete.push({
+                            uid: doc.id,
+                            email: email,
+                            fullName: data.fullName || 'N/A'
+                        });
+                    }
+                });
+
+                if (accountsToDelete.length === 0) {
+                    statusDiv.innerHTML = '<p class="text-green-400">✅ Aucun compte à supprimer trouvé.</p>';
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = 'Supprimer les Comptes';
+                    return;
+                }
+
+                statusDiv.innerHTML = `<p class="text-yellow-400">⚠️ ${accountsToDelete.length} compte(s) trouvé(s) à supprimer.</p>`;
+
+                let deletedCount = 0;
+                let errorCount = 0;
+                const errors = [];
+
+                // Supprimer chaque compte
+                for (const account of accountsToDelete) {
+                    try {
+                        // Supprimer de Firestore
+                        await firebase.firestore().collection('users').doc(account.uid).delete();
+                        
+                        // Essayer de supprimer aussi les messages associés
+                        try {
+                            const messagesSnapshot = await firebase.firestore()
+                                .collection('messages')
+                                .where('senderId', '==', account.uid)
+                                .get();
+                            
+                            const deletePromises = [];
+                            messagesSnapshot.forEach(msgDoc => {
+                                deletePromises.push(msgDoc.ref.delete());
+                            });
+                            
+                            // Messages reçus
+                            const receivedMessagesSnapshot = await firebase.firestore()
+                                .collection('messages')
+                                .where('recipientId', '==', account.uid)
+                                .get();
+                            
+                            receivedMessagesSnapshot.forEach(msgDoc => {
+                                deletePromises.push(msgDoc.ref.delete());
+                            });
+                            
+                            await Promise.all(deletePromises);
+                        } catch (msgError) {
+                            console.warn(`Erreur lors de la suppression des messages pour ${account.email}:`, msgError);
+                        }
+
+                        deletedCount++;
+                        resultsDiv.innerHTML += `
+                            <div class="bg-green-500/20 border border-green-500/50 rounded p-2 text-green-200">
+                                ✅ Supprimé: ${account.email} (${account.fullName})
+                            </div>
+                        `;
+                    } catch (error) {
+                        errorCount++;
+                        errors.push({ email: account.email, error: error.message });
+                        resultsDiv.innerHTML += `
+                            <div class="bg-red-500/20 border border-red-500/50 rounded p-2 text-red-200">
+                                ❌ Erreur pour ${account.email}: ${error.message}
+                            </div>
+                        `;
+                    }
+                }
+
+                // Résumé final
+                statusDiv.innerHTML = `
+                    <div class="mt-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                        <p class="text-blue-200 font-bold text-lg">📊 Résumé de la suppression :</p>
+                        <p class="text-blue-100 mt-2">✅ Comptes supprimés : ${deletedCount}</p>
+                        <p class="text-blue-100">❌ Erreurs : ${errorCount}</p>
+                        <p class="text-blue-100">📝 Total trouvé : ${accountsToDelete.length}</p>
+                    </div>
+                `;
+
+                if (errors.length > 0) {
+                    resultsDiv.innerHTML += `
+                        <div class="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
+                            <p class="text-red-200 font-bold">Erreurs détaillées :</p>
+                            ${errors.map(e => `<p class="text-red-100 text-sm mt-1">${e.email}: ${e.error}</p>`).join('')}
+                        </div>
+                    `;
+                }
+
+                // Note importante
+                statusDiv.innerHTML += `
+                    <div class="mt-4 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+                        <p class="text-yellow-200 font-semibold">⚠️ Note importante :</p>
+                        <p class="text-yellow-100 text-sm mt-2">
+                            Les comptes ont été supprimés de Firestore. Pour supprimer complètement les comptes de Firebase Auth, 
+                            vous devez utiliser la console Firebase ou le Firebase Admin SDK côté serveur.
+                        </p>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                statusDiv.innerHTML = `<p class="text-red-400">❌ Erreur : ${error.message}</p>`;
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Supprimer les Comptes';
+            }
+        }
+
+        // Vérifier l'authentification au chargement
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+                document.getElementById('status').innerHTML = `
+                    <p class="text-red-400">❌ Vous devez être connecté pour utiliser ce script.</p>
+                    <p class="text-white mt-2">Redirection vers la page de connexion...</p>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
+

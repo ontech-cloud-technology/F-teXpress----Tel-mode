@@ -1230,11 +1230,39 @@
             loadCelebrations();
             loadNotifications();
                 loadAnnouncements();
-            // Initialiser le calendrier par défaut
-            if (!currentCalendarView) {
-                currentCalendarView = 'month';
+            
+            // Détecter le paramètre view dans l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const viewParam = urlParams.get('view');
+            
+            if (viewParam) {
+                // Afficher directement la vue demandée
+                if (viewParam === 'calendrier' || viewParam === 'calendar') {
+                    if (!currentCalendarView) {
+                        currentCalendarView = 'month';
+                    }
+                    showView('calendrier');
+                } else if (viewParam === 'notifications' || viewParam === 'messages' || viewParam === 'messaging') {
+                    // 'messaging' redirige vers 'notifications' qui contient les messages
+                    showView('notifications');
+                } else if (viewParam === 'defis' || viewParam === 'progression') {
+                    showView('defis');
+                } else if (viewParam === 'settings' || viewParam === 'parametres') {
+                    showView('settings');
+                } else {
+                    // Vue non reconnue, afficher le calendrier par défaut
+                    if (!currentCalendarView) {
+                        currentCalendarView = 'month';
+                    }
+                    showView('calendrier');
+                }
+            } else {
+                // Pas de paramètre view, afficher le calendrier par défaut
+                if (!currentCalendarView) {
+                    currentCalendarView = 'month';
+                }
+                showView('calendrier');
             }
-            loadCalendarView();
             } catch (error) {
                 console.error('Erreur lors de la vérification de l\'authentification:', error);
                 // S'assurer que l'écran de chargement est masqué même en cas d'erreur

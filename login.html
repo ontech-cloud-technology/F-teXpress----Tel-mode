@@ -551,8 +551,85 @@
 
       try {
         // 1. Tenter la connexion via Firebase Auth
-        const userCredential = await signInUser(email, password);
-        const uid = userCredential.user.uid;
+        let userCredential;
+        let uid;
+        
+        // Normaliser le mot de passe pour éviter les problèmes de casse
+        const normalizedPassword = password.trim();
+        
+        try {
+          userCredential = await signInUser(email, normalizedPassword);
+          uid = userCredential.user.uid;
+        } catch (firstAttemptError) {
+          // Si la connexion échoue avec "wrong-password" ou "invalid-login-credentials", 
+          // vérifier si c'est un compte qui ne s'est jamais connecté
+          const isPasswordError = firstAttemptError.code === "auth/wrong-password" || 
+                                  firstAttemptError.code === "auth/invalid-credential" ||
+                                  firstAttemptError.code === "auth/invalid-login-credentials";
+          
+          if (isPasswordError) {
+            // Ne pas essayer le mot de passe temporaire si l'utilisateur l'a déjà entré
+            if (normalizedPassword === 'Login123' || normalizedPassword === 'login123') {
+              // L'utilisateur a déjà essayé le mot de passe temporaire, lancer l'erreur
+              throw firstAttemptError;
+            }
+            
+            // Récupérer les données du compte depuis Firestore pour vérifier si c'est une première connexion
+            try {
+              // Chercher l'utilisateur par email dans Firestore
+              const usersSnapshot = await firebase.firestore().collection('users')
+                .where('email', '==', email)
+                .limit(1)
+                .get();
+              
+              if (!usersSnapshot.empty) {
+                const userDoc = usersSnapshot.docs[0];
+                const userDocData = userDoc.data();
+                
+                // Vérifier si le compte n'a jamais été connecté
+                // Un compte n'a jamais été connecté si :
+                // 1. needsPasswordChange est true (flag explicite)
+                // 2. lastLogin n'existe pas (jamais connecté)
+                // 3. Pour les élèves : profileCompleted est false (première connexion)
+                const neverLoggedIn = userDocData.needsPasswordChange === true || 
+                                     !userDocData.lastLogin ||
+                                     (userDocData.role === 'eleve' && userDocData.profileCompleted !== true);
+                
+                if (neverLoggedIn) {
+                  // Essayer avec "Login123" (mot de passe temporaire standard)
+                  try {
+                    userCredential = await signInUser(email, 'Login123');
+                    uid = userCredential.user.uid;
+                    console.log('Connexion réussie avec le mot de passe temporaire Login123');
+                  } catch (login123Error) {
+                    // Si Login123 ne fonctionne pas, essayer avec "login123" (compatibilité avec anciens comptes)
+                    try {
+                      userCredential = await signInUser(email, 'login123');
+                      uid = userCredential.user.uid;
+                      console.log('Connexion réussie avec le mot de passe temporaire login123');
+                    } catch (login123LowerError) {
+                      // Si aucun des deux ne fonctionne, lancer l'erreur originale
+                      throw firstAttemptError;
+                    }
+                  }
+                } else {
+                  // Le compte s'est déjà connecté, lancer l'erreur originale
+                  throw firstAttemptError;
+                }
+              } else {
+                // Utilisateur non trouvé dans Firestore, lancer l'erreur originale
+                throw firstAttemptError;
+              }
+            } catch (checkError) {
+              console.error('Erreur lors de la vérification du compte:', checkError);
+              // En cas d'erreur lors de la vérification, lancer l'erreur originale
+              throw firstAttemptError;
+            }
+          } else {
+            // Autre type d'erreur, la lancer directement
+            throw firstAttemptError;
+          }
+        }
         
         // 2. Récupérer le rôle et le nom complet (fullName) depuis Firestore
         const userData = await getUserRole(uid);
@@ -627,6 +704,16 @@
         console.log('Rôle extrait:', role);
         console.log('Nom extrait:', name);
 
+        // Mettre à jour lastLogin pour marquer que l'utilisateur s'est connecté
+        try {
+          const userDocRef = firebase.firestore().collection('users').doc(uid);
+          await userDocRef.update({
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch (updateError) {
+          console.warn('Erreur lors de la mise à jour de lastLogin:', updateError);
+        }
+
         // Logger la connexion
         try {
           await logActivity(uid, 'login', {
@@ -697,12 +784,23 @@
         }, 2000);
 
       } catch (err) {
-        console.error(err);
+        console.error('Erreur de connexion:', err);
         let msg = "Erreur de connexion inconnue.";
-        if (err.code === "auth/wrong-password") msg = "Mot de passe incorrect.";
-        else if (err.code === "auth/user-not-found") msg = "Utilisateur introuvable. Avez-vous le bon email ?";
-        else if (err.code === "auth/invalid-email") msg = "Adresse e-mail invalide.";
-        else if (err.code === "auth/too-many-requests") msg = "Tentatives de connexion bloquées. Veuillez réessayer plus tard.";
+        
+        // Gérer les différents codes d'erreur Firebase
+        if (err.code === "auth/wrong-password" || 
+            err.code === "auth/invalid-credential" || 
+            err.code === "auth/invalid-login-credentials") {
+          msg = "Mot de passe incorrect. Si c'est votre première connexion, utilisez le mot de passe temporaire Login123.";
+        } else if (err.code === "auth/user-not-found") {
+          msg = "Utilisateur introuvable. Avez-vous le bon email ?";
+        } else if (err.code === "auth/invalid-email") {
+          msg = "Adresse e-mail invalide.";
+        } else if (err.code === "auth/too-many-requests") {
+          msg = "Tentatives de connexion bloquées. Veuillez réessayer plus tard.";
+        } else if (err.code === "auth/network-request-failed") {
+          msg = "Erreur de connexion réseau. Vérifiez votre connexion internet.";
+        }
 
         errorBox.textContent = msg;
         errorBox.style.display = "block";

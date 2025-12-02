@@ -12,7 +12,11 @@
     "version:major": "./create-tag.sh major",
     "version": "cat VERSION",
     "convert-pptx": "node convert-pptx-to-slides.js",
-    "install-and-convert": "./install-and-convert.sh"
+    "install-and-convert": "./install-and-convert.sh",
+    "import-csv": "node import-fetexpress-csv.js",
+    "remove-duplicates": "node remove-duplicates-celebrations.js",
+    "create-missing-accounts": "node create-missing-user-accounts.js",
+    "reset-passwords": "node reset-all-passwords.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
