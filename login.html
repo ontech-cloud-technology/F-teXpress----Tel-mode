@@ -558,9 +558,13 @@
         const normalizedPassword = password.trim();
         
         try {
+          console.log('Tentative de connexion avec:', email);
           userCredential = await signInUser(email, normalizedPassword);
           uid = userCredential.user.uid;
+          console.log('Connexion réussie avec le mot de passe fourni');
         } catch (firstAttemptError) {
+          console.log('Erreur de connexion initiale:', firstAttemptError.code, firstAttemptError.message);
+          
           // Si la connexion échoue avec "wrong-password" ou "invalid-login-credentials", 
           // vérifier si c'est un compte qui ne s'est jamais connecté
           const isPasswordError = firstAttemptError.code === "auth/wrong-password" || 
@@ -569,22 +573,34 @@
           
           if (isPasswordError) {
             // Ne pas essayer le mot de passe temporaire si l'utilisateur l'a déjà entré
+            // Note: On ne bloque PAS les autres mots de passe (comme 123456) car ils pourraient être valides
             if (normalizedPassword === 'Login123' || normalizedPassword === 'login123') {
               // L'utilisateur a déjà essayé le mot de passe temporaire, lancer l'erreur
+              console.log('Mot de passe temporaire déjà essayé, abandon de la tentative');
               throw firstAttemptError;
             }
             
             // Récupérer les données du compte depuis Firestore pour vérifier si c'est une première connexion
             try {
+              console.log('Vérification du compte dans Firestore...');
               // Chercher l'utilisateur par email dans Firestore
               const usersSnapshot = await firebase.firestore().collection('users')
                 .where('email', '==', email)
                 .limit(1)
                 .get();
               
+              console.log('Résultat de la recherche Firestore:', usersSnapshot.empty ? 'Aucun résultat' : 'Utilisateur trouvé');
+              
               if (!usersSnapshot.empty) {
                 const userDoc = usersSnapshot.docs[0];
                 const userDocData = userDoc.data();
+                console.log('Données utilisateur trouvées:', {
+                  email: userDocData.email,
+                  role: userDocData.role,
+                  needsPasswordChange: userDocData.needsPasswordChange,
+                  lastLogin: userDocData.lastLogin,
+                  profileCompleted: userDocData.profileCompleted
+                });
                 
                 // Vérifier si le compte n'a jamais été connecté
                 // Un compte n'a jamais été connecté si :
@@ -595,35 +611,68 @@
                                      !userDocData.lastLogin ||
                                      (userDocData.role === 'eleve' && userDocData.profileCompleted !== true);
                 
+                console.log('Première connexion?', neverLoggedIn);
+                
                 if (neverLoggedIn) {
                   // Essayer avec "Login123" (mot de passe temporaire standard)
+                  console.log('Tentative avec Login123...');
                   try {
                     userCredential = await signInUser(email, 'Login123');
                     uid = userCredential.user.uid;
                     console.log('Connexion réussie avec le mot de passe temporaire Login123');
                   } catch (login123Error) {
+                    console.log('Login123 a échoué, tentative avec login123...');
                     // Si Login123 ne fonctionne pas, essayer avec "login123" (compatibilité avec anciens comptes)
                     try {
                       userCredential = await signInUser(email, 'login123');
                       uid = userCredential.user.uid;
                       console.log('Connexion réussie avec le mot de passe temporaire login123');
                     } catch (login123LowerError) {
+                      console.log('Les deux mots de passe temporaires ont échoué');
                       // Si aucun des deux ne fonctionne, lancer l'erreur originale
                       throw firstAttemptError;
                     }
                   }
                 } else {
-                  // Le compte s'est déjà connecté, lancer l'erreur originale
+                  // Le compte s'est déjà connecté, mais le mot de passe est incorrect
+                  console.log('Le compte a déjà été connecté, mais le mot de passe est incorrect');
                   throw firstAttemptError;
                 }
               } else {
-                // Utilisateur non trouvé dans Firestore, lancer l'erreur originale
+                // Utilisateur non trouvé dans Firestore
+                console.log('Utilisateur non trouvé dans Firestore');
+                // Vérifier si le compte existe dans Firebase Auth mais pas dans Firestore
+                // Dans ce cas, l'erreur est probablement que le mot de passe est incorrect
                 throw firstAttemptError;
               }
             } catch (checkError) {
               console.error('Erreur lors de la vérification du compte:', checkError);
-              // En cas d'erreur lors de la vérification, lancer l'erreur originale
-              throw firstAttemptError;
+              console.error('Code d\'erreur:', checkError.code);
+              console.error('Message d\'erreur:', checkError.message);
+              
+              // Si c'est une erreur de permissions, donner un message plus clair
+              if (checkError.code === 'permission-denied' || checkError.message.includes('permission')) {
+                console.warn('Erreur de permissions Firestore. Les règles peuvent ne pas être déployées.');
+                // Essayer quand même avec le mot de passe temporaire si c'est une première connexion
+                // (on suppose que c'est le cas si on ne peut pas vérifier)
+                try {
+                  userCredential = await signInUser(email, 'Login123');
+                  uid = userCredential.user.uid;
+                  console.log('Connexion réussie avec le mot de passe temporaire Login123 (fallback)');
+                } catch (login123Error) {
+                  try {
+                    userCredential = await signInUser(email, 'login123');
+                    uid = userCredential.user.uid;
+                    console.log('Connexion réussie avec le mot de passe temporaire login123 (fallback)');
+                  } catch (login123LowerError) {
+                    // Si aucun des deux ne fonctionne, lancer l'erreur originale
+                    throw firstAttemptError;
+                  }
+                }
+              } else {
+                // En cas d'erreur lors de la vérification, lancer l'erreur originale
+                throw firstAttemptError;
+              }
             }
           } else {
             // Autre type d'erreur, la lancer directement

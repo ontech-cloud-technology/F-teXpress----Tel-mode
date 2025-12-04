@@ -532,6 +532,10 @@
                         <span>Messages</span>
                         <span id="notificationBadge" class="hidden ml-auto bg-red-500 w-2 h-2 rounded-full"></span>
                     </button>
+                    <a href="messaging.html" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i>
+                        <span>Messagerie</span>
+                    </a>
                     <button onclick="showView('defis')" id="btnDefis" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3" style="display: none;">
                         <i data-lucide="target" class="w-5 h-5"></i>
                         <span>Défis</span>
@@ -2874,6 +2878,7 @@
                     message: messageText,
                     isPublic: isPublic,
                     celebrationId: celebrationId,
+                    messageType: 'birthday', // Distinguer les messages d'anniversaire
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     read: false
                 });
@@ -2977,8 +2982,14 @@
                     .where('recipientId', '==', currentUserId)
                     .get();
 
+                // Filtrer pour ne garder que les messages d'anniversaire
+                const birthdayMessages = messagesSnapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.celebrationId || data.messageType === 'birthday';
+                });
+
                 // Trier côté client pour éviter le besoin d'index composite
-                const messages = messagesSnapshot.docs.map(doc => ({
+                const messages = birthdayMessages.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 })).sort((a, b) => {
@@ -3033,17 +3044,24 @@
             }
 
             try {
+                // Récupérer tous les messages reçus
                 const messagesSnapshot = await firebase.firestore().collection('messages')
                     .where('recipientId', '==', currentUserId)
                     .get();
 
-                if (messagesSnapshot.empty) {
+                // Filtrer pour ne garder que les messages d'anniversaire (avec celebrationId ou messageType === 'birthday')
+                const birthdayMessages = messagesSnapshot.docs.filter(doc => {
+                    const data = doc.data();
+                    return data.celebrationId || data.messageType === 'birthday';
+                });
+
+                if (birthdayMessages.length === 0) {
                     messagesList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun message reçu pour le moment.</p>';
                     return;
                 }
 
                 // Trier côté client pour éviter le besoin d'index composite
-                const messages = messagesSnapshot.docs.map(doc => ({
+                const messages = birthdayMessages.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 })).sort((a, b) => {

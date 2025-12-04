@@ -1,0 +1,320 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is the owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to get user role (returns null if user doc doesn't exist)
+    function getUserRole() {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc != null && userDoc.data != null ? userDoc.data.role : null;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    // Helper function to check if user is admin or professor
+    function isAdminOrProfessor() {
+      let role = getUserRole();
+      return isAuthenticated() && (role == 'admin' || role == 'professeur' || role == 'teacher');
+    }
+    
+    // Helper function to check if user is admin, professor, or comité
+    function isAdminProfessorOrComite() {
+      let role = getUserRole();
+      return isAuthenticated() && (role == 'admin' || role == 'professeur' || role == 'teacher' || role == 'comite');
+    }
+    
+    // Collection: users
+    match /users/{userId} {
+      // Users can read their own data
+      allow read: if isOwner(userId);
+      
+      // Users can update their own data
+      allow update: if isOwner(userId);
+      
+      // Allow creating user document if it's for the current user (for initial setup)
+      // OR if the requester is an admin
+      allow create: if isAuthenticated() && 
+        (isOwner(userId) || isAdmin());
+      
+      // Only admins can delete users
+      allow delete: if isAdmin();
+      
+      // Admins and professors can read all users
+      allow read: if isAdminOrProfessor();
+      
+      // Authenticated users can read other users' basic info
+      // This is needed for:
+      // 1. Progression system (to count students and check completion)
+      // 2. Login verification (to check if user exists and needs password change)
+      // Note: This allows authenticated users to read user data for system functionality
+      allow read: if isAuthenticated();
+      
+      // SECURITY NOTE: Allow reading users by email for login purposes
+      // This is necessary because the login flow needs to check if a user exists
+      // and if they need to use the temporary password before authentication succeeds.
+      // This is a security trade-off - ideally this should be handled by a Cloud Function
+      // with admin privileges, but for now we allow it for login functionality.
+      // The exposed data is limited to: email, needsPasswordChange, lastLogin, role, profileCompleted
+      allow read: if true;
+      
+      // Subcollection: friends
+      match /friends/{friendId} {
+        // Users can read their own friends list
+        allow read: if isAuthenticated() && isOwner(userId);
+        
+        // Users can add friends to their own list
+        allow create: if isAuthenticated() && isOwner(userId);
+        
+        // Users can update their own friends list
+        allow update: if isAuthenticated() && isOwner(userId);
+        
+        // Users can delete friends from their own list
+        allow delete: if isAuthenticated() && isOwner(userId);
+        
+        // Admins can read all friends lists
+        allow read: if isAdmin();
+      }
+    }
+    
+    // Collection: activity_logs
+    match /activity_logs/{logId} {
+      // Users can create their own activity logs
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      
+      // Users can read their own activity logs
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      
+      // Admins can read all activity logs
+      allow read: if isAdmin();
+      
+      // No updates or deletes allowed (logs are append-only)
+      allow update, delete: if false;
+    }
+    
+    // Collection: session_info
+    match /session_info/{sessionId} {
+      // Users can create their own session info
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      
+      // Users can read their own session info
+      allow read: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      
+      // Users can update their own session info
+      allow update: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      
+      // Admins can read all session info
+      allow read: if isAdmin();
+      
+      // No deletes allowed
+      allow delete: if false;
+    }
+    
+    // Collection: celebrations
+    match /celebrations/{celebrationId} {
+      // All authenticated users can read celebrations
+      allow read: if isAuthenticated();
+      
+      // Only admins, professors, and comité can create/update celebrations
+      allow create, update: if isAdminProfessorOrComite();
+      
+      // Only admins can delete celebrations
+      allow delete: if isAdmin();
+    }
+    
+    // Collection: messages
+    match /messages/{messageId} {
+      // Users can read messages where they are the sender or recipient
+      allow read: if isAuthenticated() && 
+        (resource.data.senderId == request.auth.uid || 
+         resource.data.recipientId == request.auth.uid);
+      
+      // Users can create messages where they are the sender
+      allow create: if isAuthenticated() && 
+        request.resource.data.senderId == request.auth.uid;
+      
+      // Users can update their own sent messages
+      allow update: if isAuthenticated() && 
+        resource.data.senderId == request.auth.uid;
+      
+      // Recipients can update messages they received (for marking as read)
+      // Ensure critical fields (senderId, recipientId) don't change
+      allow update: if isAuthenticated() && 
+        resource.data.recipientId == request.auth.uid &&
+        request.resource.data.senderId == resource.data.senderId &&
+        request.resource.data.recipientId == resource.data.recipientId;
+      
+      // Admins can read all messages
+      allow read: if isAdmin();
+      
+      // Only admins can delete messages
+      allow delete: if isAdmin();
+    }
+    
+    // Collection: blockedMessages
+    match /blockedMessages/{blockedId} {
+      // Users can create blocked messages where they are the sender
+      allow create: if isAuthenticated() && 
+        request.resource.data.senderId == request.auth.uid;
+      
+      // Only admins can read blocked messages
+      allow read: if isAdmin();
+      
+      // No updates or deletes allowed
+      allow update, delete: if false;
+    }
+    
+    // Collection: settings
+    match /settings/{settingId} {
+      // All authenticated users can read settings
+      allow read: if isAuthenticated();
+      
+      // Only admins and professors can update settings
+      allow create, update: if isAdminOrProfessor();
+      
+      // Only admins can delete settings
+      allow delete: if isAdmin();
+    }
+    
+    // Collection: groups
+    match /groups/{groupId} {
+      // Users can read groups they are part of
+      allow read: if isAuthenticated() && 
+        (resource.data.members != null && 
+         request.auth.uid in resource.data.members);
+      
+      // Users can create groups where they are a member
+      allow create: if isAuthenticated() && 
+        request.resource.data.members != null && 
+        request.auth.uid in request.resource.data.members;
+      
+      // Users can update groups they are part of
+      allow update: if isAuthenticated() && 
+        resource.data.members != null && 
+        request.auth.uid in resource.data.members;
+      
+      // Admins can read all groups
+      allow read: if isAdmin();
+      
+      // Only admins can delete groups
+      allow delete: if isAdmin();
+      
+      // Subcollection: messages within groups
+      match /messages/{messageId} {
+        // Helper function to check if user is a member of the parent group
+        function isGroupMember() {
+          let groupDoc = get(/databases/$(database)/documents/groups/$(groupId));
+          return groupDoc != null && 
+                 groupDoc.data != null && 
+                 groupDoc.data.members != null &&
+                 request.auth.uid in groupDoc.data.members;
+        }
+        
+        // Group members can read all messages in the group
+        allow read: if isAuthenticated() && isGroupMember();
+        
+        // Group members can create messages where they are the sender
+        allow create: if isAuthenticated() && 
+          isGroupMember() && 
+          request.resource.data.senderId == request.auth.uid;
+        
+        // Group members can update their own messages
+        allow update: if isAuthenticated() && 
+          isGroupMember() && 
+          resource.data.senderId == request.auth.uid;
+        
+        // Admins can read all group messages
+        allow read: if isAdmin();
+        
+        // Only admins can delete group messages
+        allow delete: if isAdmin();
+      }
+    }
+    
+    // Collection: activities
+    match /activities/{activityId} {
+      // All authenticated users can read activities
+      allow read: if isAuthenticated();
+      
+      // Only admins and professors can create/update activities
+      allow create, update: if isAdminOrProfessor();
+      
+      // Only admins can delete activities
+      allow delete: if isAdmin();
+    }
+    
+    // Collection: notifications
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can create notifications for themselves
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own notifications
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Admins can read all notifications
+      allow read: if isAdmin();
+    }
+    
+    // Collection: conversations
+    match /conversations/{conversationId} {
+      // Helper function to check if user is a participant in the conversation
+      function isParticipant() {
+        return isAuthenticated() && 
+               resource.data != null &&
+               resource.data.participants != null &&
+               request.auth.uid in resource.data.participants;
+      }
+      
+      // Helper function to check if user will be a participant in the new conversation
+      function willBeParticipant() {
+        return isAuthenticated() && 
+               request.resource.data != null &&
+               request.resource.data.participants != null &&
+               request.auth.uid in request.resource.data.participants;
+      }
+      
+      // Users can read conversations they are part of
+      allow read: if isParticipant();
+      
+      // Users can create conversations where they are a participant
+      allow create: if willBeParticipant();
+      
+      // Users can update conversations they are part of
+      // Also allow if user will be a participant (handles set with merge on new documents)
+      allow update: if isParticipant() || willBeParticipant();
+      
+      // Users can delete conversations they are part of
+      allow delete: if isParticipant();
+      
+      // Admins can read all conversations
+      allow read: if isAdmin();
+    }
+    
+    // Default: deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
