@@ -2,8 +2,30 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <title>Fête Express - Gestion des Anniversaires</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fête Express">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192.png">
+    
+    <!-- Android Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Fête Express">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    
+    <!-- Prevent text size adjustment on iOS -->
+    <meta name="format-detection" content="telephone=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -202,6 +224,123 @@
             font-size: 0.875rem;
             padding-top: 1rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 640px) {
+            /* Navbar mobile */
+            .navbar {
+                padding: 0.5rem 0;
+            }
+            
+            .navbar .flex {
+                flex-wrap: wrap;
+            }
+            
+            .navbar span.text-xl {
+                font-size: 1rem;
+            }
+            
+            .navbar .text-xs {
+                font-size: 0.65rem;
+            }
+            
+            .navbar a {
+                padding: 0.5rem 1rem !important;
+                font-size: 0.875rem;
+            }
+            
+            .navbar a span {
+                display: none;
+            }
+            
+            /* Hero section mobile */
+            h1.text-5xl {
+                font-size: 2.5rem !important;
+                line-height: 1.2;
+            }
+            
+            .text-xl {
+                font-size: 1rem !important;
+            }
+            
+            .text-2xl {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Buttons mobile */
+            .btn-glow,
+            .glass {
+                padding: 0.75rem 1.5rem !important;
+                font-size: 0.875rem !important;
+            }
+            
+            /* Stats mobile */
+            .stat-number {
+                font-size: 2rem !important;
+            }
+            
+            /* Feature cards mobile */
+            .feature-card {
+                padding: 1.5rem !important;
+            }
+            
+            .feature-card h3 {
+                font-size: 1.25rem !important;
+            }
+            
+            /* Sections padding mobile */
+            section {
+                padding: 3rem 1rem !important;
+            }
+            
+            /* Glass cards mobile */
+            .glass-strong {
+                padding: 1.5rem !important;
+            }
+            
+            /* Footer mobile */
+            .footer-links {
+                flex-direction: column;
+                gap: 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            .footer-copyright {
+                font-size: 0.7rem;
+                padding: 0.5rem 1rem;
+            }
+        }
+
+        /* Touch optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            /* Larger touch targets */
+            a, button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Remove hover effects on touch devices */
+            .hover-lift:hover {
+                transform: none;
+            }
+            
+            .feature-card:hover {
+                transform: none;
+            }
+        }
+
+        /* Safe area for notched devices */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+            }
+            
+            .navbar {
+                padding-left: max(1rem, env(safe-area-inset-left));
+                padding-right: max(1rem, env(safe-area-inset-right));
+            }
         }
     </style>
 </head>
