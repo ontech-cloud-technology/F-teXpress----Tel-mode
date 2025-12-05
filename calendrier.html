@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <title>Calendrier des Fêtes — Fêtes Express</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -14,116 +14,282 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
     <style>
+        /* ============================================
+           MOBILE-FIRST CALENDAR DESIGN
+           ============================================ */
+        
         :root {
-            --primary: #ff6f61;
-            --secondary: #f9c74f;
-            --bg-dark: #1a0f30;
-            --bg-light: #2c1a4b;
-            --text-color: #ffffff;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --text-color: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
         }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);
             color: var(--text-color);
             min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
         }
+        
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .bg-animated::before,
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+        
+        .bg-animated::before {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            left: -150px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .bg-animated::after {
+            width: 250px;
+            height: 250px;
+            bottom: -125px;
+            right: -125px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(20px, -20px) rotate(120deg); }
+            66% { transform: translate(-15px, 15px) rotate(240deg); }
+        }
+        
         .header-gradient {
-            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        .glass-strong {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+        
         .card {
-            background-color: var(--bg-light);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Calendar Grid - Mobile First */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
+            gap: 0.5rem;
         }
+        
         .calendar-day {
             aspect-ratio: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             position: relative;
-            padding: 4px;
-            background-color: rgba(255, 255, 255, 0.05);
-            min-height: 60px;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            min-height: 50px;
             font-size: 0.875rem;
+            font-weight: 600;
         }
-        .calendar-day:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
+        
+        .calendar-day:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
         }
+        
         .calendar-day.other-month {
             opacity: 0.3;
         }
+        
         .calendar-day.today {
             border: 2px solid var(--primary);
+            background: rgba(99, 102, 241, 0.2);
+            font-weight: 700;
         }
+        
         .calendar-day.has-birthday {
-            background: linear-gradient(135deg, rgba(255, 111, 97, 0.3), rgba(249, 199, 79, 0.3));
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3));
             border: 1px solid var(--primary);
         }
-        .calendar-day.has-birthday:hover {
-            background: linear-gradient(135deg, rgba(255, 111, 97, 0.5), rgba(249, 199, 79, 0.5));
+        
+        .calendar-day.has-birthday:active {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
         }
+        
         .birthday-indicator {
             position: absolute;
             bottom: 4px;
             right: 4px;
             width: 8px;
             height: 8px;
-            background-color: var(--primary);
+            background: var(--primary);
             border-radius: 50%;
+            box-shadow: 0 0 4px var(--primary);
         }
+        
+        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 50;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 1rem;
         }
+        
         .modal-overlay.show {
             display: flex;
         }
+        
         .modal-content {
-            background-color: var(--bg-light);
-            width: 90%;
+            background: var(--bg-card);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            width: 100%;
             max-width: 500px;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
             border-radius: 12px;
-            padding: 32px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            max-height: 80vh;
-            overflow-y: auto;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
         }
-        #mainContent {
-            max-height: 100vh;
-            overflow-y: auto;
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
         }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Select */
         select {
             color: var(--text-color) !important;
-            background-color: var(--bg-dark) !important;
+            background: var(--bg-dark) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 12px !important;
+            padding: 0.75rem !important;
+            min-height: 44px;
         }
+        
         select option {
             color: #000 !important;
-            background-color: #ffffff !important;
+            background: #ffffff !important;
         }
-        @media (max-width: 768px) {
+        
+        /* Desktop Enhancements */
+        @media (min-width: 769px) {
             .calendar-grid {
-                gap: 4px;
+                gap: 0.75rem;
             }
+            
             .calendar-day {
-                padding: 2px;
-                font-size: 0.75rem;
-                min-height: 50px;
+                min-height: 80px;
+                font-size: 1rem;
+                padding: 0.75rem;
+            }
+            
+            .calendar-day:hover {
+                background: rgba(255, 255, 255, 0.1);
+                transform: scale(1.05);
+            }
+            
+            .calendar-day.has-birthday:hover {
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
+            }
+            
+            .modal-content {
+                padding: 2rem;
+            }
+        }
+        
+        /* Safe Area Support */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
             }
         }
 
@@ -165,59 +331,60 @@
 </head>
 
 <body>
+    <!-- Animated Background -->
+    <div class="bg-animated"></div>
+    
     <!-- Écran de chargement -->
-    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
-        <div class="text-xl text-white">Chargement du calendrier...</div>
-        <div class="loading my-4 flex space-x-2">
-            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
-            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
-            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+    <div id="loadingScreen" class="fixed inset-0 flex flex-col justify-center items-center z-50" style="background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);">
+        <div class="text-xl text-white mb-4">Chargement du calendrier...</div>
+        <div class="flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-bounce" style="animation-delay: 0.15s;"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce" style="animation-delay: 0.3s;"></div>
         </div>
     </div>
 
     <!-- Contenu Principal -->
-    <main id="calendarContent" class="hidden flex-grow p-4 md:p-8">
-        <!-- Bouton de retour -->
-        <div class="mb-6">
-            <a id="backButton" href="#" class="inline-flex items-center px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition">
-                <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
-                Retour au Dashboard
-            </a>
-        </div>
-        
-        <header class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+    <main id="calendarContent" class="hidden relative z-10" style="padding: 1rem; padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+        <!-- Header Mobile-First -->
+        <header class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <a id="backButton" href="#" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                    <span class="hidden sm:inline">Retour</span>
+                </a>
+            </div>
+            <h1 class="text-2xl sm:text-3xl md:text-4xl font-black mb-2">
                 Calendrier des <span class="header-gradient">Fêtes</span>
             </h1>
-            <p class="text-gray-400">Tous les anniversaires de la classe 203 • <span id="welcomeName" class="text-gray-500"></span></p>
+            <p class="text-sm sm:text-base text-gray-400">Tous les anniversaires de la classe 203</p>
         </header>
 
-        <!-- Contrôles du Calendrier -->
-        <div class="card p-6 rounded-xl mb-6">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                <button onclick="previousMonth()" class="flex items-center px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">
-                    <i data-lucide="chevron-left" class="w-5 h-5 mr-2"></i>
-                    Mois Précédent
+        <!-- Contrôles du Calendrier - Mobile First -->
+        <div class="glass-strong p-4 sm:p-6 rounded-2xl mb-6">
+            <!-- Navigation Mois - Mobile Optimized -->
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="previousMonth()" class="btn btn-secondary" style="padding: 0.75rem 1rem;">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
                 </button>
                 
-                <div class="text-center">
-                    <h2 id="currentMonthYear" class="text-2xl font-bold header-gradient">Janvier 2025</h2>
-                    <button onclick="goToToday()" class="text-sm text-gray-400 hover:text-white transition mt-2">
+                <div class="text-center flex-1 mx-4">
+                    <h2 id="currentMonthYear" class="text-lg sm:text-2xl font-bold header-gradient">Janvier 2025</h2>
+                    <button onclick="goToToday()" class="text-xs sm:text-sm text-gray-400 mt-1" style="padding: 0.25rem 0.5rem;">
                         Aujourd'hui
                     </button>
                 </div>
                 
-                <button onclick="nextMonth()" class="flex items-center px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">
-                    Mois Suivant
-                    <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>
+                <button onclick="nextMonth()" class="btn btn-secondary" style="padding: 0.75rem 1rem;">
+                    <i data-lucide="chevron-right" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- Sélecteurs Mois/Année -->
-            <div class="flex flex-col md:flex-row gap-4 mt-6">
-                <div class="flex-1">
-                    <label class="block text-sm font-medium mb-2 text-gray-300">Mois</label>
-                    <select id="monthSelect" onchange="changeMonth()" class="w-full p-3 rounded border border-gray-700 bg-bg-dark text-white focus:ring-2 focus:ring-primary">
+            <!-- Sélecteurs Mois/Année - Mobile Stack -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs sm:text-sm font-medium mb-2 text-gray-300">Mois</label>
+                    <select id="monthSelect" onchange="changeMonth()" class="w-full">
                         <option value="0">Janvier</option>
                         <option value="1">Février</option>
                         <option value="2">Mars</option>
@@ -232,9 +399,9 @@
                         <option value="11">Décembre</option>
                     </select>
                 </div>
-                <div class="flex-1">
-                    <label class="block text-sm font-medium mb-2 text-gray-300">Année</label>
-                    <select id="yearSelect" onchange="changeMonth()" class="w-full p-3 rounded border border-gray-700 bg-bg-dark text-white focus:ring-2 focus:ring-primary">
+                <div>
+                    <label class="block text-xs sm:text-sm font-medium mb-2 text-gray-300">Année</label>
+                    <select id="yearSelect" onchange="changeMonth()" class="w-full">
                         <!-- Généré dynamiquement -->
                     </select>
                 </div>
@@ -242,16 +409,16 @@
         </div>
 
         <!-- Calendrier -->
-        <div class="card p-6 rounded-xl">
-            <!-- En-têtes des jours -->
-            <div class="calendar-grid mb-4">
-                <div class="text-center font-bold text-gray-400">Dim</div>
-                <div class="text-center font-bold text-gray-400">Lun</div>
-                <div class="text-center font-bold text-gray-400">Mar</div>
-                <div class="text-center font-bold text-gray-400">Mer</div>
-                <div class="text-center font-bold text-gray-400">Jeu</div>
-                <div class="text-center font-bold text-gray-400">Ven</div>
-                <div class="text-center font-bold text-gray-400">Sam</div>
+        <div class="glass-strong p-4 sm:p-6 rounded-2xl mb-6">
+            <!-- En-têtes des jours - Mobile Optimized -->
+            <div class="calendar-grid mb-3" style="margin-bottom: 0.75rem;">
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Dim</div>
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Lun</div>
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Mar</div>
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Mer</div>
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Jeu</div>
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Ven</div>
+                <div class="text-center font-bold text-gray-400 text-xs sm:text-sm">Sam</div>
             </div>
             
             <!-- Grille du calendrier -->
@@ -260,40 +427,40 @@
             </div>
         </div>
 
-        <!-- Statistiques -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-            <div class="card p-6 rounded-xl text-center">
-                <i data-lucide="cake" class="w-12 h-12 mx-auto mb-3 text-primary"></i>
-                <div class="text-3xl font-bold" id="totalBirthdays">0</div>
-                <div class="text-gray-400 text-sm">Anniversaires Total</div>
+        <!-- Statistiques - Mobile First -->
+        <div class="grid grid-cols-3 gap-3 sm:gap-6">
+            <div class="glass-strong p-4 sm:p-6 rounded-xl text-center">
+                <i data-lucide="cake" class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3" style="color: var(--primary);"></i>
+                <div class="text-xl sm:text-3xl font-bold" id="totalBirthdays">0</div>
+                <div class="text-gray-400 text-xs sm:text-sm mt-1">Total</div>
             </div>
-            <div class="card p-6 rounded-xl text-center">
-                <i data-lucide="calendar-check" class="w-12 h-12 mx-auto mb-3 text-secondary"></i>
-                <div class="text-3xl font-bold" id="thisMonthBirthdays">0</div>
-                <div class="text-gray-400 text-sm">Ce Mois-ci</div>
+            <div class="glass-strong p-4 sm:p-6 rounded-xl text-center">
+                <i data-lucide="calendar-check" class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3" style="color: var(--secondary);"></i>
+                <div class="text-xl sm:text-3xl font-bold" id="thisMonthBirthdays">0</div>
+                <div class="text-gray-400 text-xs sm:text-sm mt-1">Ce Mois</div>
             </div>
-            <div class="card p-6 rounded-xl text-center">
-                <i data-lucide="gift" class="w-12 h-12 mx-auto mb-3 text-primary"></i>
-                <div class="text-3xl font-bold" id="todayBirthdays">0</div>
-                <div class="text-gray-400 text-sm">Aujourd'hui</div>
+            <div class="glass-strong p-4 sm:p-6 rounded-xl text-center">
+                <i data-lucide="gift" class="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3" style="color: var(--primary);"></i>
+                <div class="text-xl sm:text-3xl font-bold" id="todayBirthdays">0</div>
+                <div class="text-gray-400 text-xs sm:text-sm mt-1">Aujourd'hui</div>
             </div>
         </div>
     </main>
 
-    <!-- Modale Détails Anniversaire -->
+    <!-- Modale Détails Anniversaire - Mobile Optimized -->
     <div id="birthdayModal" class="modal-overlay">
         <div class="modal-content">
-            <div class="flex justify-between items-start mb-6">
-                <h3 class="text-2xl font-bold flex items-center">
-                    <i data-lucide="cake" class="w-6 h-6 mr-2 text-primary"></i>
+            <div class="flex justify-between items-start mb-4 sm:mb-6">
+                <h3 class="text-xl sm:text-2xl font-bold flex items-center">
+                    <i data-lucide="cake" class="w-5 h-5 sm:w-6 sm:h-6 mr-2" style="color: var(--primary);"></i>
                     <span id="modalDate">1er Janvier</span>
                 </h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition">
+                <button onclick="closeModal()" class="text-gray-400" style="padding: 0.5rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">
                     <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
             </div>
             
-            <div id="birthdayList" class="space-y-4">
+            <div id="birthdayList" class="space-y-3 sm:space-y-4">
                 <!-- Généré dynamiquement -->
             </div>
         </div>

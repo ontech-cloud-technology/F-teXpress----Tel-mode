@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <title>Accueil — Fête Express</title>
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎉</text></svg>" />
@@ -43,6 +43,7 @@
             min-height: 100vh;
             position: relative;
             overflow-x: hidden;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         /* Animated Background */
@@ -140,45 +141,162 @@
             border-color: rgba(99, 102, 241, 0.3);
         }
 
+        /* ============================================
+           NAVIGATION MOBILE-FIRST - ULTRA MODERNE
+           ============================================ */
+        
+        /* Mobile: Bottom Navigation Bar */
         .sidebar {
-            width: 280px;
-            min-height: calc(100vh - 2rem);
-            transition: transform 0.3s ease;
-            position: relative;
-            z-index: 10;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.3);
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+            border-radius: 0;
         }
 
+        /* Mobile Navigation Items */
         .sidebar-item {
-            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.6);
             border-radius: 12px;
             position: relative;
-            overflow: hidden;
+            min-width: 60px;
+            min-height: 60px;
+            flex: 1;
+            max-width: 80px;
+            border: none;
+            background: transparent;
         }
 
-        .sidebar-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background: linear-gradient(180deg, var(--primary), var(--secondary));
-            transform: scaleY(0);
-            transition: transform 0.3s ease;
+        .sidebar-item i {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 0.25rem;
         }
 
-        .sidebar-item:hover {
-            background-color: rgba(99, 102, 241, 0.1);
-            transform: translateX(4px);
+        .sidebar-item span {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-align: center;
+            line-height: 1.2;
         }
 
+        /* Active state for mobile */
         .sidebar-item.active {
-            background-color: rgba(99, 102, 241, 0.15);
-            border-left: 3px solid var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.15);
         }
 
         .sidebar-item.active::before {
-            transform: scaleY(1);
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 0 0 4px 4px;
+        }
+
+        .sidebar-item:active {
+            transform: scale(0.95);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        /* Hide sidebar header on mobile */
+        .sidebar > div:first-child {
+            display: none;
+        }
+
+        /* Desktop: Sidebar */
+        @media (min-width: 769px) {
+            body {
+                display: flex;
+            }
+
+            .sidebar {
+                position: relative;
+                width: 280px;
+                min-width: 280px;
+                height: auto;
+                min-height: calc(100vh - 2rem);
+                bottom: auto;
+                left: auto;
+                right: auto;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: stretch;
+                border-top: none;
+                border-right: 1px solid var(--border-color);
+                padding: 1.5rem;
+                box-shadow: none;
+                padding-bottom: 1.5rem;
+                border-radius: 16px;
+            }
+
+            .sidebar-item {
+                flex-direction: row;
+                justify-content: flex-start;
+                padding: 0.75rem 1rem;
+                margin: 0.25rem 0;
+                min-width: auto;
+                min-height: auto;
+                max-width: none;
+                flex: none;
+                border-radius: 12px;
+                width: 100%;
+            }
+
+            .sidebar-item i {
+                width: 20px;
+                height: 20px;
+                margin-right: 0.75rem;
+                margin-bottom: 0;
+            }
+
+            .sidebar-item span {
+                font-size: 0.9375rem;
+            }
+
+            .sidebar-item.active::before {
+                top: 0;
+                left: 0;
+                transform: none;
+                width: 3px;
+                height: 100%;
+                border-radius: 0 4px 4px 0;
+            }
+
+            .sidebar-item:hover {
+                background-color: rgba(99, 102, 241, 0.1);
+                transform: translateX(4px);
+            }
+
+            /* Show sidebar header on desktop */
+            .sidebar > div:first-child {
+                display: block;
+            }
         }
 
         .stat-card {
@@ -249,7 +367,7 @@
     </style>
 </head>
 
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
     
     <!-- Animated Background -->
     <div class="bg-animated"></div>
@@ -265,11 +383,12 @@
     </div>
 
     <!-- Contenu principal -->
-    <main id="mainContent" class="hidden flex flex-col md:flex-row gap-6 relative z-10">
+    <main id="mainContent" class="hidden flex flex-col md:flex-row gap-6 relative z-10" style="padding-bottom: 80px;">
         
-        <!-- Sidebar -->
-        <aside class="sidebar glass-strong p-6 rounded-2xl">
-            <div class="mb-6">
+        <!-- Sidebar - Mobile: Bottom Nav, Desktop: Sidebar -->
+        <aside class="sidebar glass-strong">
+            <!-- Desktop Header -->
+            <div class="mb-6" style="display: none;">
                 <a href="accueil-eleve.html" class="flex items-center space-x-3 mb-6 hover:opacity-80 transition">
                     <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <i data-lucide="gift" class="w-5 h-5 text-white"></i>
@@ -281,36 +400,62 @@
                         <p class="text-xs text-gray-400">Propulsé par ONTech-Cloud Technology</p>
                     </div>
                 </a>
-                <nav class="space-y-2">
-                    <a href="accueil-eleve.html" class="sidebar-item active w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 bg-gradient-to-r from-indigo-500/20 to-purple-600/20 border border-indigo-500/30">
-                        <i data-lucide="home" class="w-5 h-5 text-indigo-400"></i>
-                        <span class="font-semibold">Accueil</span>
-                    </a>
-                    <button onclick="navigateToSection('calendrier')" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
-                        <i data-lucide="calendar" class="w-5 h-5"></i>
-                        <span>Calendrier</span>
-                    </button>
-                    <button onclick="navigateToSection('notifications')" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
-                        <i data-lucide="bell" class="w-5 h-5"></i>
-                        <span>Messages</span>
-                        <span id="notificationBadge" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
-                    </button>
-                    <a href="messaging.html" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 relative">
-                        <i data-lucide="message-circle" class="w-5 h-5"></i>
-                        <span>Messagerie</span>
-                    </a>
-                    <a href="progression.html" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
-                        <i data-lucide="target" class="w-5 h-5"></i>
-                        <span>Défis</span>
-                    </a>
-                    <a href="eleve.html?view=settings" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3">
-                        <i data-lucide="settings" class="w-5 h-5"></i>
-                        <span>Paramètres</span>
-                    </a>
-                </nav>
             </div>
             
-            <div class="mt-auto pt-6 border-t border-gray-700">
+            <!-- Mobile: Bottom Navigation -->
+            <a href="accueil-eleve.html" class="sidebar-item active">
+                <i data-lucide="home"></i>
+                <span>Accueil</span>
+            </a>
+            <button onclick="navigateToSection('calendrier')" class="sidebar-item">
+                <i data-lucide="calendar"></i>
+                <span>Calendrier</span>
+            </button>
+            <button onclick="navigateToSection('notifications')" class="sidebar-item relative">
+                <i data-lucide="bell"></i>
+                <span>Messages</span>
+                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center" style="font-size: 0.6rem;">0</span>
+            </button>
+            <a href="progression.html" class="sidebar-item">
+                <i data-lucide="target"></i>
+                <span>Défis</span>
+            </a>
+            <a href="eleve.html?view=settings" class="sidebar-item">
+                <i data-lucide="settings"></i>
+                <span>Paramètres</span>
+            </a>
+            
+            <!-- Desktop: Full Navigation -->
+            <nav class="desktop-nav" style="display: none;">
+                <a href="accueil-eleve.html" class="sidebar-item active">
+                    <i data-lucide="home" class="w-5 h-5 mr-3"></i>
+                    <span class="font-semibold">Accueil</span>
+                </a>
+                <button onclick="navigateToSection('calendrier')" class="sidebar-item">
+                    <i data-lucide="calendar" class="w-5 h-5 mr-3"></i>
+                    <span>Calendrier</span>
+                </button>
+                <button onclick="navigateToSection('notifications')" class="sidebar-item relative">
+                    <i data-lucide="bell" class="w-5 h-5 mr-3"></i>
+                    <span>Messages</span>
+                    <span id="notificationBadgeDesktop" class="hidden ml-auto bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">0</span>
+                </button>
+                <a href="messaging.html" class="sidebar-item">
+                    <i data-lucide="message-circle" class="w-5 h-5 mr-3"></i>
+                    <span>Messagerie</span>
+                </a>
+                <a href="progression.html" class="sidebar-item">
+                    <i data-lucide="target" class="w-5 h-5 mr-3"></i>
+                    <span>Défis</span>
+                </a>
+                <a href="eleve.html?view=settings" class="sidebar-item">
+                    <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                    <span>Paramètres</span>
+                </a>
+            </nav>
+            
+            <!-- Desktop: User Info -->
+            <div class="mt-auto pt-6 border-t border-gray-700" style="display: none;">
                 <div class="glass p-4 rounded-lg">
                     <div class="flex items-center space-x-3 mb-3">
                         <img id="headerProfilePhoto" src="" alt="Photo de profil" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-500 shadow-lg" style="display: none;">
@@ -335,6 +480,31 @@
                 </div>
             </div>
         </aside>
+        
+        <style>
+            /* Show/hide desktop nav based on screen size */
+            @media (min-width: 769px) {
+                .sidebar > div:first-child,
+                .desktop-nav,
+                .sidebar > div:last-child {
+                    display: block !important;
+                }
+                .sidebar > a:not(.desktop-nav a),
+                .sidebar > button:not(.desktop-nav button) {
+                    display: none;
+                }
+                .sidebar {
+                    padding: 1.5rem !important;
+                }
+            }
+            @media (max-width: 768px) {
+                .sidebar > div:first-child,
+                .desktop-nav,
+                .sidebar > div:last-child {
+                    display: none !important;
+                }
+            }
+        </style>
 
         <!-- Contenu principal -->
         <div class="flex-1">

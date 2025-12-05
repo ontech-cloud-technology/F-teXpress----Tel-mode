@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <title>Progression — Fêtes Express</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -14,34 +14,124 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
     <style>
+        /* ============================================
+           MOBILE-FIRST PROGRESSION DESIGN
+           ============================================ */
+        
         :root {
-            --primary: #ff6f61;
-            --secondary: #f9c74f;
-            --bg-dark: #1a0f30;
-            --bg-light: #2c1a4b;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --text-color: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
         }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: white;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);
+            color: var(--text-color);
             min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
         }
+        
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .bg-animated::before,
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+        
+        .bg-animated::before {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            left: -150px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        .bg-animated::after {
+            width: 250px;
+            height: 250px;
+            bottom: -125px;
+            right: -125px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(20px, -20px) rotate(120deg); }
+            66% { transform: translate(-15px, 15px) rotate(240deg); }
+        }
+        
         .header-gradient {
-            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
             -webkit-background-clip: text;
-            background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+        
+        .glass-strong {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+        
         .card {
-            background-color: var(--bg-light);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Progress Bar - Mobile First */
         .progress-bar {
-            height: 30px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             overflow: hidden;
+            position: relative;
         }
+        
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--secondary));
@@ -49,48 +139,99 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (min-width: 769px) {
+            .progress-bar {
+                height: 50px;
+            }
+            
+            .progress-fill {
+                font-size: 1rem;
+            }
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* Safe Area Support */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            }
         }
     </style>
 </head>
 
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8" style="padding-bottom: max(1rem, env(safe-area-inset-bottom));">
+    <!-- Animated Background -->
+    <div class="bg-animated"></div>
+    
     <script src="firebase.js"></script>
     <!-- Système de logging automatique des activités -->
     <script src="js/activity-logger.js"></script>
     <script src="js/progression-system.js"></script>
 
     <!-- Écran de chargement -->
-    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
-        <div class="text-xl text-white">Chargement de la progression...</div>
-        <div class="loading my-4 flex space-x-2">
-            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
-            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
-            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+    <div id="loadingScreen" class="fixed inset-0 flex flex-col justify-center items-center z-50" style="background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);">
+        <div class="text-xl text-white mb-4">Chargement de la progression...</div>
+        <div class="flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-bounce" style="animation-delay: 0.15s;"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce" style="animation-delay: 0.3s;"></div>
         </div>
     </div>
 
     <!-- Contenu principal -->
-    <main id="mainContent" class="hidden">
-        <header class="mb-6 flex items-center justify-between">
+    <main id="mainContent" class="hidden relative z-10">
+        <header class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <button onclick="window.location.href='accueil-eleve.html'" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                    <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+                    <span class="hidden sm:inline">Retour</span>
+                </button>
+            </div>
             <div>
-                <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-black mb-2">
                     <span class="header-gradient">Progression des Messages</span>
                 </h1>
-                <p class="text-gray-400">Suivez votre progression vers l'objectif de 9 personnes consécutives !</p>
+                <p class="text-sm sm:text-base text-gray-400">Suivez votre progression vers l'objectif de 9 personnes consécutives !</p>
             </div>
-            <button onclick="window.location.href='eleve.html'" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
-                <i data-lucide="arrow-left" class="w-5 h-5 inline mr-2"></i>
-                Retour
-            </button>
         </header>
 
-        <!-- Carte de progression principale -->
-        <div class="card p-6 rounded-xl mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-2xl font-bold">Objectif : 9 Personnes Consécutives</h2>
-                <div id="consecutiveCount" class="text-4xl font-bold text-primary">0</div>
+        <!-- Carte de progression principale - Mobile First -->
+        <div class="glass-strong p-4 sm:p-6 rounded-2xl mb-6">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+                <h2 class="text-xl sm:text-2xl font-bold">Objectif : 9 Personnes Consécutives</h2>
+                <div id="consecutiveCount" class="text-3xl sm:text-4xl font-black" style="color: var(--primary);">0</div>
             </div>
             <div class="progress-bar mb-4">
                 <div id="progressFill" class="progress-fill" style="width: 0%">0 / 9</div>
@@ -98,10 +239,10 @@
             <p id="progressMessage" class="text-gray-400 text-sm">Chargement...</p>
         </div>
 
-        <!-- Liste des célébrations -->
-        <div class="card p-6 rounded-xl">
-            <h2 class="text-2xl font-bold mb-4">Détails par Personne</h2>
-            <div id="celebrationsList" class="space-y-4">
+        <!-- Liste des célébrations - Mobile First -->
+        <div class="glass-strong p-4 sm:p-6 rounded-2xl">
+            <h2 class="text-xl sm:text-2xl font-bold mb-4">Détails par Personne</h2>
+            <div id="celebrationsList" class="space-y-3 sm:space-y-4">
                 <p class="text-gray-500 text-center py-8">Chargement...</p>
             </div>
         </div>
