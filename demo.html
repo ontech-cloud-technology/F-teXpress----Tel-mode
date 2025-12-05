@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Démo — Fête Express</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animated::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            left: -250px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-strong {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            min-height: calc(100vh - 80px);
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-item {
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sidebar-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            transform: scaleY(0);
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateX(4px);
+        }
+
+        .sidebar-item.active {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .sidebar-item.active::before {
+            transform: scaleY(1);
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--primary);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        /* Calendar Day */
+        .calendar-day {
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.02);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .calendar-day.has-birthday {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border-color: var(--primary);
+        }
+
+        /* Message Card */
+        .message-card {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .message-card:hover {
+            transform: translateX(4px);
+            border-left-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        /* Stats Card */
+        .stat-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--primary-dark), var(--primary));
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animated"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                        <i data-lucide="cake" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black gradient-text">Fête Express</h1>
+                        <p class="text-xs text-gray-400">Mode Démo</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition flex items-center space-x-2 text-sm">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        <span>Accueil</span>
+                    </a>
+                    <div class="badge">
+                        <i data-lucide="eye" class="w-3 h-3 mr-1"></i>
+                        Démo Interactive
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- Sidebar -->
+            <aside class="sidebar glass-strong p-6 rounded-2xl">
+                <div class="mb-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                            <i data-lucide="user" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white">Élève Démo</h3>
+                            <p class="text-xs text-gray-400">Classe 203</p>
+                        </div>
+                    </div>
+                </div>
+
+                <nav class="space-y-2">
+                    <button onclick="showView('liste')" id="btnListe" class="sidebar-item active w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-white">
+                        <i data-lucide="list" class="w-5 h-5"></i>
+                        <span>Liste</span>
+                    </button>
+                    <button onclick="showView('calendrier')" id="btnCalendrier" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                        <span>Calendrier</span>
+                    </button>
+                    <button onclick="showView('messages')" id="btnMessages" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-300 relative">
+                        <i data-lucide="message-square" class="w-5 h-5"></i>
+                        <span>Messages</span>
+                        <span class="ml-auto bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-2 py-1 rounded-full">3</span>
+                    </button>
+                    <button onclick="showView('defis')" id="btnDefis" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="target" class="w-5 h-5"></i>
+                        <span>Défis</span>
+                    </button>
+                    <button onclick="showView('stats')" id="btnStats" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+                        <span>Statistiques</span>
+                    </button>
+                    <button onclick="showView('favorites')" id="btnFavorites" class="sidebar-item w-full text-left px-4 py-3 rounded-lg flex items-center space-x-3 text-gray-300">
+                        <i data-lucide="heart" class="w-5 h-5"></i>
+                        <span>Favoris</span>
+                    </button>
+                </nav>
+
+                <div class="mt-8 pt-6 border-t border-gray-700">
+                    <div class="glass p-4 rounded-lg">
+                        <p class="text-xs text-gray-400 mb-2">Réputation</p>
+                        <div class="flex items-center space-x-2">
+                            <div class="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full" style="width: 85%"></div>
+                            </div>
+                            <span class="text-sm font-bold text-white">85</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1">
+                <!-- View: Liste -->
+                <section id="viewListe" class="card p-6 fade-in">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-3xl font-black gradient-text">Liste des Anniversaires</h2>
+                        <div class="flex items-center space-x-2">
+                            <button class="glass px-4 py-2 rounded-lg hover:bg-white/10 transition text-sm">
+                                <i data-lucide="filter" class="w-4 h-4 inline-block mr-2"></i>
+                                Filtrer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Birthday Card 1 -->
+                        <div class="card p-5 hover:scale-105 transition-transform">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                        JD
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-white">Jean Dupont</h3>
+                                        <p class="text-xs text-gray-400">15 janvier</p>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-pink-500 transition">
+                                    <i data-lucide="heart" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm text-gray-300">
+                                <i data-lucide="gift" class="w-4 h-4"></i>
+                                <span>3 souhaits</span>
+                            </div>
+                        </div>
+
+                        <!-- Birthday Card 2 -->
+                        <div class="card p-5 hover:scale-105 transition-transform">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
+                                        MS
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-white">Marie Smith</h3>
+                                        <p class="text-xs text-gray-400">22 janvier</p>
+                                    </div>
+                                </div>
+                                <button class="text-pink-500">
+                                    <i data-lucide="heart" class="w-5 h-5 fill-current"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm text-gray-300">
+                                <i data-lucide="gift" class="w-4 h-4"></i>
+                                <span>5 souhaits</span>
+                            </div>
+                        </div>
+
+                        <!-- Birthday Card 3 -->
+                        <div class="card p-5 hover:scale-105 transition-transform">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                        PT
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-white">Pierre Tremblay</h3>
+                                        <p class="text-xs text-gray-400">28 janvier</p>
+                                    </div>
+                                </div>
+                                <button class="text-gray-400 hover:text-pink-500 transition">
+                                    <i data-lucide="heart" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center space-x-2 text-sm text-gray-300">
+                                <i data-lucide="gift" class="w-4 h-4"></i>
+                                <span>2 souhaits</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Calendrier -->
+                <section id="viewCalendrier" class="card p-6 hidden">
+                    <h2 class="text-3xl font-black gradient-text mb-6">Calendrier</h2>
+                    <div class="grid grid-cols-7 gap-2">
+                        <!-- Calendar Header -->
+                        <div class="text-center font-bold text-gray-400 py-2">Lun</div>
+                        <div class="text-center font-bold text-gray-400 py-2">Mar</div>
+                        <div class="text-center font-bold text-gray-400 py-2">Mer</div>
+                        <div class="text-center font-bold text-gray-400 py-2">Jeu</div>
+                        <div class="text-center font-bold text-gray-400 py-2">Ven</div>
+                        <div class="text-center font-bold text-gray-400 py-2">Sam</div>
+                        <div class="text-center font-bold text-gray-400 py-2">Dim</div>
+                        
+                        <!-- Calendar Days -->
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">1</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">2</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">3</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">4</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">5</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">6</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">7</div>
+                        </div>
+                        <div class="calendar-day has-birthday card p-3">
+                            <div class="text-sm font-semibold text-white mb-2">8</div>
+                            <div class="flex items-center space-x-1 text-xs">
+                                <i data-lucide="cake" class="w-3 h-3 text-pink-500"></i>
+                                <span class="text-pink-500 font-semibold">2</span>
+                            </div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">9</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">10</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">11</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">12</div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">13</div>
+                        </div>
+                        <div class="calendar-day has-birthday card p-3">
+                            <div class="text-sm font-semibold text-white mb-2">14</div>
+                            <div class="flex items-center space-x-1 text-xs">
+                                <i data-lucide="cake" class="w-3 h-3 text-pink-500"></i>
+                                <span class="text-pink-500 font-semibold">1</span>
+                            </div>
+                        </div>
+                        <div class="calendar-day card p-3">
+                            <div class="text-sm font-semibold text-gray-400 mb-2">15</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Messages -->
+                <section id="viewMessages" class="card p-6 hidden">
+                    <h2 class="text-3xl font-black gradient-text mb-6">Messages</h2>
+                    <div class="space-y-4">
+                        <div class="message-card card p-5">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                                    JD
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-bold text-white">Jean Dupont</h3>
+                                        <span class="text-xs text-gray-400">Il y a 2h</span>
+                                    </div>
+                                    <p class="text-gray-300 text-sm">Joyeux anniversaire ! 🎉</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="message-card card p-5">
+                            <div class="flex items-start space-x-4">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold text-sm">
+                                    MS
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-bold text-white">Marie Smith</h3>
+                                        <span class="text-xs text-gray-400">Il y a 5h</span>
+                                    </div>
+                                    <p class="text-gray-300 text-sm">Passe une excellente journée ! 🎂</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Défis -->
+                <section id="viewDefis" class="card p-6 hidden">
+                    <h2 class="text-3xl font-black gradient-text mb-6">Défis</h2>
+                    <div class="space-y-4">
+                        <div class="stat-card card p-5">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="font-bold text-white mb-1">Progression</h3>
+                                    <p class="text-sm text-gray-400">7/9 personnes consécutives</p>
+                                </div>
+                                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                    78%
+                                </div>
+                            </div>
+                            <div class="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full" style="width: 78%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Statistiques -->
+                <section id="viewStats" class="card p-6 hidden">
+                    <h2 class="text-3xl font-black gradient-text mb-6">Statistiques</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="stat-card card p-5">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <i data-lucide="message-square" class="w-5 h-5 text-indigo-400"></i>
+                                <h3 class="font-semibold text-gray-300">Messages</h3>
+                            </div>
+                            <p class="text-3xl font-black gradient-text">24</p>
+                        </div>
+                        <div class="stat-card card p-5">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <i data-lucide="heart" class="w-5 h-5 text-pink-400"></i>
+                                <h3 class="font-semibold text-gray-300">Favoris</h3>
+                            </div>
+                            <p class="text-3xl font-black gradient-text">8</p>
+                        </div>
+                        <div class="stat-card card p-5">
+                            <div class="flex items-center space-x-3 mb-2">
+                                <i data-lucide="award" class="w-5 h-5 text-yellow-400"></i>
+                                <h3 class="font-semibold text-gray-300">Réputation</h3>
+                            </div>
+                            <p class="text-3xl font-black gradient-text">85</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- View: Favoris -->
+                <section id="viewFavorites" class="card p-6 hidden">
+                    <h2 class="text-3xl font-black gradient-text mb-6">Mes Favoris</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="card p-5">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
+                                    MS
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white">Marie Smith</h3>
+                                    <p class="text-xs text-gray-400">22 janvier</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Mock data
+        const mockData = {
+            user: {
+                name: "Élève Démo",
+                reputation: 85
+            },
+            birthdays: [
+                { name: "Jean Dupont", date: "15 janvier", wishes: 3 },
+                { name: "Marie Smith", date: "22 janvier", wishes: 5, favorite: true },
+                { name: "Pierre Tremblay", date: "28 janvier", wishes: 2 }
+            ]
+        };
+
+        // View management
+        function showView(viewName) {
+            // Hide all views
+            document.querySelectorAll('[id^="view"]').forEach(view => {
+                view.classList.add('hidden');
+                view.classList.remove('fade-in');
+            });
+
+            // Remove active from all buttons
+            document.querySelectorAll('.sidebar-item').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-300');
+                btn.classList.remove('text-white');
+            });
+
+            // Show selected view
+            const view = document.getElementById(`view${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`);
+            if (view) {
+                view.classList.remove('hidden');
+                view.classList.add('fade-in');
+            }
+
+            // Activate button
+            const btn = document.getElementById(`btn${viewName.charAt(0).toUpperCase() + viewName.slice(1)}`);
+            if (btn) {
+                btn.classList.add('active');
+                btn.classList.remove('text-gray-300');
+                btn.classList.add('text-white');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+            showView('liste');
+        });
+    </script>
+</body>
+</html>
+

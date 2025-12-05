@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Messagerie — Fête Express</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+    <script src="js/messaging-system.js"></script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animated::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            left: -250px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-strong {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* Messaging Layout */
+        .messaging-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        .conversations-sidebar {
+            width: 380px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.6);
+            overflow: hidden;
+        }
+
+        .conversation-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .conversation-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .conversation-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-left: 3px solid var(--primary);
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-bubble.sent {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-bubble.received {
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+        }
+
+        .pinned-message {
+            background: rgba(236, 72, 153, 0.2);
+            border-left: 3px solid var(--accent);
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+
+        .search-input {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .group-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .unread-badge {
+            background: var(--accent);
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .user-search-result {
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 8px;
+        }
+
+        .user-search-result:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .selected-user {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(99, 102, 241, 0.2);
+            padding: 8px 12px;
+            border-radius: 20px;
+            margin: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 10px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animated"></div>
+
+    <div class="messaging-container">
+        <!-- Sidebar des conversations -->
+        <div class="conversations-sidebar">
+            <!-- Header -->
+            <div class="glass-strong p-4 border-b border-white/10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                        <a href="accueil-eleve.html" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition" title="Retour">
+                            <i data-lucide="arrow-left" class="w-5 h-5 text-white"></i>
+                        </a>
+                        <h1 class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                            Messages
+                        </h1>
+                    </div>
+                    <button id="newMessageBtn" class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center hover:scale-110 transition">
+                        <i data-lucide="plus" class="w-5 h-5 text-white"></i>
+                    </button>
+                </div>
+                <div class="flex gap-2 mb-4">
+                    <button id="friendsTab" class="flex-1 px-4 py-2 rounded-lg bg-indigo-500/20 text-white font-medium text-sm transition hover:bg-indigo-500/30">
+                        Amis
+                    </button>
+                    <button id="groupsTab" class="flex-1 px-4 py-2 rounded-lg bg-purple-500/20 text-white font-medium text-sm transition hover:bg-purple-500/30">
+                        Groupes
+                    </button>
+                </div>
+                <input type="text" id="searchConversations" placeholder="Rechercher..." class="search-input">
+            </div>
+
+            <!-- Liste des conversations -->
+            <div id="conversationsList" class="flex-1 overflow-y-auto scrollbar-thin">
+                <!-- Les conversations seront chargées ici -->
+            </div>
+
+            <!-- Footer avec actions -->
+            <div class="glass p-4 border-t border-white/10">
+                <button id="createGroupBtn" class="w-full btn-primary flex items-center justify-center gap-2">
+                    <i data-lucide="users" class="w-4 h-4"></i>
+                    <span>Créer un groupe</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Zone de chat -->
+        <div class="chat-area">
+            <!-- Header du chat -->
+            <div id="chatHeader" class="glass-strong p-4 border-b border-white/10 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div id="chatAvatar" class="user-avatar">?</div>
+                    <div>
+                        <h2 id="chatTitle" class="font-bold text-lg">Sélectionnez une conversation</h2>
+                        <p id="chatSubtitle" class="text-sm text-gray-400"></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="pinMessageBtn" class="p-2 rounded-lg hover:bg-white/10 transition" title="Épingler un message" style="display: none;">
+                        <i data-lucide="pin" class="w-5 h-5"></i>
+                    </button>
+                    <button id="chatMenuBtn" class="p-2 rounded-lg hover:bg-white/10 transition" style="display: none;">
+                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages épinglés -->
+            <div id="pinnedMessages" class="px-4 pt-4" style="display: none;">
+                <!-- Messages épinglés apparaîtront ici -->
+            </div>
+
+            <!-- Zone des messages -->
+            <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 scrollbar-thin">
+                <div class="empty-state">
+                    <div class="empty-state-icon">💬</div>
+                    <h3 class="text-xl font-semibold mb-2">Aucune conversation sélectionnée</h3>
+                    <p class="text-gray-400">Sélectionnez une conversation ou créez-en une nouvelle</p>
+                </div>
+            </div>
+
+            <!-- Zone de saisie -->
+            <div id="messageInputArea" class="glass-strong p-4 border-t border-white/10" style="display: none;">
+                <div class="flex items-end gap-3">
+                    <div class="flex-1">
+                        <textarea id="messageInput" rows="1" placeholder="Tapez votre message..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-400 resize-none focus:outline-none focus:border-indigo-500 transition" style="max-height: 120px;"></textarea>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="pinToggleBtn" class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition" title="Épingler ce message">
+                            <i data-lucide="pin" class="w-5 h-5"></i>
+                        </button>
+                        <button id="sendMessageBtn" class="p-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 transition">
+                            <i data-lucide="send" class="w-5 h-5 text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouveau Message -->
+    <div id="newMessageModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Nouveau message</h2>
+                <button id="closeNewMessageModal" class="p-2 rounded-lg hover:bg-white/10 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <input type="text" id="searchUsersInput" placeholder="Rechercher un utilisateur par nom..." class="search-input mb-4">
+                <div id="selectedUsers" class="flex flex-wrap gap-2 mb-4"></div>
+                <div id="usersSearchResults" class="max-h-60 overflow-y-auto scrollbar-thin"></div>
+            </div>
+            <button id="startConversationBtn" class="w-full btn-primary" disabled>
+                Démarrer la conversation
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Créer Groupe -->
+    <div id="createGroupModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold">Créer un groupe</h2>
+                <button id="closeCreateGroupModal" class="p-2 rounded-lg hover:bg-white/10 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Nom du groupe</label>
+                <input type="text" id="groupNameInput" placeholder="Nom du groupe..." class="search-input mb-4">
+                <label class="block text-sm font-medium mb-2">Description (optionnel)</label>
+                <textarea id="groupDescriptionInput" placeholder="Description..." rows="3" class="search-input mb-4"></textarea>
+                <label class="block text-sm font-medium mb-2">Membres</label>
+                <input type="text" id="searchGroupMembersInput" placeholder="Rechercher des membres..." class="search-input mb-4">
+                <div id="selectedGroupMembers" class="flex flex-wrap gap-2 mb-4"></div>
+                <div id="groupMembersSearchResults" class="max-h-60 overflow-y-auto scrollbar-thin"></div>
+            </div>
+            <button id="createGroupSubmitBtn" class="w-full btn-primary" disabled>
+                Créer le groupe
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let messagingSystem;
+        let currentUserId;
+        let currentUserRole = 'eleve';
+        let currentConversation = null;
+        let currentConversationType = null; // 'private' ou 'group'
+        let selectedUsers = [];
+        let selectedGroupMembers = [];
+        let pinMessageMode = false;
+
+        // Initialisation
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                
+                // Récupérer le rôle de l'utilisateur
+                try {
+                    const userDoc = await firebase.firestore().collection('users').doc(currentUserId).get();
+                    if (userDoc.exists) {
+                        currentUserRole = userDoc.data().role || 'eleve';
+                    }
+                } catch (error) {
+                    console.warn('Erreur lors de la récupération du rôle:', error);
+                }
+                
+                // Mettre à jour le bouton de retour selon le rôle
+                updateBackButton();
+                
+                messagingSystem = new MessagingSystem(currentUserId);
+                await loadConversations();
+                setupEventListeners();
+                setupRealtimeListeners();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Mettre à jour le bouton de retour selon le rôle
+        function updateBackButton() {
+            const backButton = document.querySelector('a[href="accueil-eleve.html"]');
+            if (backButton) {
+                let redirectUrl = 'accueil-eleve.html'; // Par défaut
+                
+                if (currentUserRole === 'admin' || currentUserRole === 'professeur' || currentUserRole === 'teacher') {
+                    redirectUrl = 'admin.html';
+                } else if (currentUserRole === 'comite') {
+                    redirectUrl = 'committee.html';
+                } else if (currentUserRole === 'eleve') {
+                    redirectUrl = 'accueil-eleve.html';
+                }
+                
+                backButton.href = redirectUrl;
+            }
+        }
+
+        // Charger les conversations
+        async function loadConversations() {
+            const conversations = await messagingSystem.getConversations();
+            const listElement = document.getElementById('conversationsList');
+            
+            if (conversations.length === 0) {
+                listElement.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p class="text-gray-400">Aucune conversation</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listElement.innerHTML = conversations.map(conv => {
+                const isGroup = conv.type === 'group';
+                const avatar = isGroup ? 
+                    `<div class="group-avatar">${conv.userName.charAt(0).toUpperCase()}</div>` :
+                    `<div class="user-avatar">${conv.userName.charAt(0).toUpperCase()}</div>`;
+                
+                const unreadBadge = conv.unreadCount > 0 ? 
+                    `<span class="unread-badge">${conv.unreadCount}</span>` : '';
+                
+                const lastMessageTime = conv.lastMessageDate?.toDate ? 
+                    formatTime(conv.lastMessageDate.toDate()) : '';
+
+                return `
+                    <div class="conversation-item" data-id="${conv.userId}" data-type="${conv.type}">
+                        <div class="flex items-center gap-3">
+                            ${avatar}
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-1">
+                                    <h3 class="font-semibold truncate">${conv.userName}</h3>
+                                    ${unreadBadge}
+                                </div>
+                                <p class="text-sm text-gray-400 truncate">${conv.lastMessage || 'Aucun message'}</p>
+                                <p class="text-xs text-gray-500 mt-1">${lastMessageTime}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Ajouter les event listeners
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const id = item.dataset.id;
+                    const type = item.dataset.type;
+                    openConversation(id, type);
+                });
+            });
+        }
+
+        // Ouvrir une conversation
+        async function openConversation(conversationId, type) {
+            currentConversation = conversationId;
+            currentConversationType = type;
+
+            // Mettre à jour l'UI
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.id === conversationId) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Charger les informations de la conversation
+            if (type === 'group') {
+                const groupDoc = await firebase.firestore().collection('groups').doc(conversationId).get();
+                if (groupDoc.exists) {
+                    const groupData = groupDoc.data();
+                    document.getElementById('chatTitle').textContent = groupData.name;
+                    document.getElementById('chatSubtitle').textContent = `${groupData.members?.length || 0} membres`;
+                    document.getElementById('chatAvatar').innerHTML = groupData.name.charAt(0).toUpperCase();
+                    document.getElementById('chatAvatar').className = 'group-avatar';
+                }
+            } else {
+                const userDoc = await firebase.firestore().collection('users').doc(conversationId).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    document.getElementById('chatTitle').textContent = userData.fullName || userData.email;
+                    document.getElementById('chatSubtitle').textContent = userData.role || 'Élève';
+                    document.getElementById('chatAvatar').innerHTML = (userData.fullName || userData.email).charAt(0).toUpperCase();
+                    document.getElementById('chatAvatar').className = 'user-avatar';
+                }
+            }
+
+            // Afficher les boutons
+            document.getElementById('pinMessageBtn').style.display = 'block';
+            document.getElementById('chatMenuBtn').style.display = 'block';
+            document.getElementById('messageInputArea').style.display = 'block';
+
+            // Charger les messages
+            await loadMessages(conversationId, type);
+
+            // Marquer tous les messages non lus de cette conversation comme lus
+            if (type === 'private') {
+                await messagingSystem.markAllAsRead(conversationId);
+                // Recharger les conversations pour mettre à jour les badges
+                await loadConversations();
+            }
+
+            // Charger les messages épinglés
+            await loadPinnedMessages(conversationId, type);
+        }
+
+        // Charger les messages
+        async function loadMessages(conversationId, type) {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+
+            let messages = [];
+            if (type === 'group') {
+                messages = await messagingSystem.getGroupMessages(conversationId);
+            } else {
+                messages = await messagingSystem.getConversation(conversationId);
+            }
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p class="text-gray-400">Aucun message</p>
+                    </div>
+                `;
+                return;
+            }
+
+            messages.forEach(msg => {
+                const isSent = msg.senderId === currentUserId;
+                const time = msg.createdAt?.toDate ? formatTime(msg.createdAt.toDate()) : '';
+                const isPinned = msg.pinned || false;
+
+                const messageElement = document.createElement('div');
+                messageElement.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
+                messageElement.dataset.messageId = msg.id;
+                messageElement.innerHTML = `
+                    ${isPinned ? '<div class="text-xs mb-1 opacity-70">📌 Épinglé</div>' : ''}
+                    <div class="font-medium text-sm mb-1">${msg.senderName || 'Anonyme'}</div>
+                    <div>${msg.message}</div>
+                    <div class="text-xs opacity-70 mt-1">${time}</div>
+                `;
+
+                // Ajouter le menu contextuel pour épingler
+                if (!isPinned) {
+                    messageElement.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        pinMessage(msg.id, conversationId, type);
+                    });
+                }
+
+                container.appendChild(messageElement);
+            });
+
+            // Scroll vers le bas
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Charger les messages épinglés
+        async function loadPinnedMessages(conversationId, type) {
+            const pinnedContainer = document.getElementById('pinnedMessages');
+            const pinnedMessage = await messagingSystem.getPinnedMessage(conversationId, type === 'group');
+
+            if (pinnedMessage) {
+                pinnedContainer.style.display = 'block';
+                pinnedContainer.innerHTML = `
+                    <div class="pinned-message">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="pin" class="w-4 h-4 text-pink-400"></i>
+                                <span class="text-sm font-semibold text-pink-400">Message épinglé</span>
+                            </div>
+                            <button onclick="window.unpinMessageHandler('${conversationId}', ${type === 'group'})" class="text-xs text-gray-400 hover:text-white">
+                                Désépingler
+                            </button>
+                        </div>
+                        <div class="text-sm">${pinnedMessage.message}</div>
+                        <div class="text-xs text-gray-400 mt-1">Par ${pinnedMessage.senderName}</div>
+                    </div>
+                `;
+                lucide.createIcons();
+            } else {
+                pinnedContainer.style.display = 'none';
+            }
+        }
+
+        // Envoyer un message
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const messageText = input.value.trim();
+
+            if (!messageText || !currentConversation) return;
+
+            try {
+                const isGroup = currentConversationType === 'group';
+                await messagingSystem.sendMessage(
+                    currentConversation,
+                    messageText,
+                    isGroup,
+                    pinMessageMode
+                );
+
+                input.value = '';
+                pinMessageMode = false;
+                document.getElementById('pinToggleBtn').classList.remove('bg-pink-500');
+
+                // Recharger les messages
+                await loadMessages(currentConversation, currentConversationType);
+                await loadConversations();
+            } catch (error) {
+                console.error('Erreur lors de l\'envoi:', error);
+                alert('Erreur lors de l\'envoi du message: ' + error.message);
+            }
+        }
+
+        // Épingler un message
+        async function pinMessage(messageId, conversationId, type) {
+            try {
+                await messagingSystem.pinMessage(messageId, conversationId, type === 'group');
+                await loadPinnedMessages(conversationId, type);
+            } catch (error) {
+                console.error('Erreur lors de l\'épinglage:', error);
+            }
+        }
+
+        // Désépingler un message
+        async function unpinMessage(conversationId, isGroup) {
+            try {
+                await messagingSystem.unpinMessage(conversationId, isGroup);
+                await loadPinnedMessages(conversationId, isGroup ? 'group' : 'private');
+            } catch (error) {
+                console.error('Erreur lors du désépinglage:', error);
+            }
+        }
+
+        // Handler global pour le désépinglage
+        window.unpinMessageHandler = function(conversationId, isGroup) {
+            unpinMessage(conversationId, isGroup);
+        };
+
+        // Rechercher des utilisateurs
+        let searchTimeout;
+        document.getElementById('searchUsersInput')?.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const term = e.target.value.trim();
+            
+            if (term.length < 2) {
+                document.getElementById('usersSearchResults').innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                const results = await messagingSystem.searchUsers(term);
+                displayUserSearchResults(results, 'usersSearchResults', (user) => {
+                    if (!selectedUsers.find(u => u.id === user.id)) {
+                        selectedUsers.push(user);
+                        updateSelectedUsers();
+                    }
+                });
+            }, 300);
+        });
+
+        // Rechercher des membres pour groupe
+        document.getElementById('searchGroupMembersInput')?.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const term = e.target.value.trim();
+            
+            if (term.length < 2) {
+                document.getElementById('groupMembersSearchResults').innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                const results = await messagingSystem.searchUsers(term);
+                displayUserSearchResults(results, 'groupMembersSearchResults', (user) => {
+                    if (!selectedGroupMembers.find(u => u.id === user.id)) {
+                        selectedGroupMembers.push(user);
+                        updateSelectedGroupMembers();
+                    }
+                });
+            }, 300);
+        });
+
+        // Afficher les résultats de recherche
+        function displayUserSearchResults(results, containerId, onSelect) {
+            const container = document.getElementById(containerId);
+            
+            if (results.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-4">Aucun résultat</p>';
+                return;
+            }
+
+            container.innerHTML = results.map((user, index) => `
+                <div class="user-search-result" data-index="${index}">
+                    <div class="flex items-center gap-3">
+                        <div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <div class="font-medium">${user.name}</div>
+                            <div class="text-sm text-gray-400">${user.email}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Ajouter les event listeners
+            container.querySelectorAll('.user-search-result').forEach((item, index) => {
+                item.addEventListener('click', () => {
+                    onSelect(results[index]);
+                });
+            });
+        }
+
+        // Sélectionner un utilisateur
+        window.selectUser = function(user) {
+            if (document.getElementById('newMessageModal').classList.contains('active')) {
+                if (!selectedUsers.find(u => u.id === user.id)) {
+                    selectedUsers.push(user);
+                    updateSelectedUsers();
+                }
+            } else if (document.getElementById('createGroupModal').classList.contains('active')) {
+                if (!selectedGroupMembers.find(u => u.id === user.id)) {
+                    selectedGroupMembers.push(user);
+                    updateSelectedGroupMembers();
+                }
+            }
+        };
+
+        // Mettre à jour les utilisateurs sélectionnés
+        function updateSelectedUsers() {
+            const container = document.getElementById('selectedUsers');
+            container.innerHTML = selectedUsers.map(user => `
+                <div class="selected-user">
+                    <span>${user.name}</span>
+                    <button onclick="removeSelectedUser('${user.id}')" class="text-white hover:text-red-400">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            document.getElementById('startConversationBtn').disabled = selectedUsers.length === 0;
+        }
+
+        // Mettre à jour les membres sélectionnés pour groupe
+        function updateSelectedGroupMembers() {
+            const container = document.getElementById('selectedGroupMembers');
+            container.innerHTML = selectedGroupMembers.map(user => `
+                <div class="selected-user">
+                    <span>${user.name}</span>
+                    <button onclick="removeSelectedGroupMember('${user.id}')" class="text-white hover:text-red-400">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            const groupName = document.getElementById('groupNameInput').value.trim();
+            document.getElementById('createGroupSubmitBtn').disabled = groupName.length === 0 || selectedGroupMembers.length === 0;
+        }
+
+        // Retirer un utilisateur sélectionné
+        window.removeSelectedUser = function(userId) {
+            selectedUsers = selectedUsers.filter(u => u.id !== userId);
+            updateSelectedUsers();
+        };
+
+        window.removeSelectedGroupMember = function(userId) {
+            selectedGroupMembers = selectedGroupMembers.filter(u => u.id !== userId);
+            updateSelectedGroupMembers();
+        };
+
+        // Démarrer une conversation
+        document.getElementById('startConversationBtn')?.addEventListener('click', async () => {
+            if (selectedUsers.length === 0) return;
+
+            // Pour l'instant, on prend le premier utilisateur (on peut étendre pour plusieurs)
+            const userId = selectedUsers[0].id;
+            
+            // Ajouter comme ami si ce n'est pas déjà fait
+            try {
+                await messagingSystem.addFriend(userId);
+            } catch (error) {
+                // Ignorer si déjà ami
+            }
+
+            // Fermer le modal
+            document.getElementById('newMessageModal').classList.remove('active');
+            selectedUsers = [];
+            document.getElementById('searchUsersInput').value = '';
+            document.getElementById('usersSearchResults').innerHTML = '';
+
+            // Ouvrir la conversation
+            await openConversation(userId, 'private');
+            await loadConversations();
+        });
+
+        // Créer un groupe
+        document.getElementById('createGroupSubmitBtn')?.addEventListener('click', async () => {
+            const groupName = document.getElementById('groupNameInput').value.trim();
+            const description = document.getElementById('groupDescriptionInput').value.trim();
+            const memberIds = selectedGroupMembers.map(u => u.id);
+
+            if (!groupName || memberIds.length === 0) return;
+
+            try {
+                const groupId = await messagingSystem.createGroup(groupName, memberIds, description);
+                
+                // Fermer le modal
+                document.getElementById('createGroupModal').classList.remove('active');
+                document.getElementById('groupNameInput').value = '';
+                document.getElementById('groupDescriptionInput').value = '';
+                selectedGroupMembers = [];
+                document.getElementById('groupMembersSearchResults').innerHTML = '';
+
+                // Ouvrir la conversation du groupe
+                await openConversation(groupId, 'group');
+                await loadConversations();
+            } catch (error) {
+                console.error('Erreur lors de la création du groupe:', error);
+                alert('Erreur lors de la création du groupe: ' + error.message);
+            }
+        });
+
+        // Event listeners
+        function setupEventListeners() {
+            // Nouveau message
+            document.getElementById('newMessageBtn').addEventListener('click', () => {
+                document.getElementById('newMessageModal').classList.add('active');
+            });
+
+            document.getElementById('closeNewMessageModal').addEventListener('click', () => {
+                document.getElementById('newMessageModal').classList.remove('active');
+                selectedUsers = [];
+                document.getElementById('selectedUsers').innerHTML = '';
+                document.getElementById('searchUsersInput').value = '';
+                document.getElementById('usersSearchResults').innerHTML = '';
+            });
+
+            // Créer groupe
+            document.getElementById('createGroupBtn').addEventListener('click', () => {
+                document.getElementById('createGroupModal').classList.add('active');
+            });
+
+            document.getElementById('closeCreateGroupModal').addEventListener('click', () => {
+                document.getElementById('createGroupModal').classList.remove('active');
+                selectedGroupMembers = [];
+                document.getElementById('selectedGroupMembers').innerHTML = '';
+                document.getElementById('groupNameInput').value = '';
+                document.getElementById('groupDescriptionInput').value = '';
+                document.getElementById('searchGroupMembersInput').value = '';
+                document.getElementById('groupMembersSearchResults').innerHTML = '';
+            });
+
+            // Envoyer message
+            document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+            document.getElementById('messageInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // Auto-resize textarea
+            document.getElementById('messageInput').addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Toggle pin mode
+            document.getElementById('pinToggleBtn').addEventListener('click', () => {
+                pinMessageMode = !pinMessageMode;
+                const btn = document.getElementById('pinToggleBtn');
+                if (pinMessageMode) {
+                    btn.classList.add('bg-pink-500');
+                } else {
+                    btn.classList.remove('bg-pink-500');
+                }
+            });
+
+            // Recherche de conversations
+            document.getElementById('searchConversations').addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    const name = item.querySelector('h3').textContent.toLowerCase();
+                    item.style.display = name.includes(term) ? 'block' : 'none';
+                });
+            });
+
+            // Validation du nom de groupe
+            document.getElementById('groupNameInput')?.addEventListener('input', () => {
+                updateSelectedGroupMembers();
+            });
+        }
+
+        // Écouter les nouveaux messages en temps réel
+        function setupRealtimeListeners() {
+            messagingSystem.onNewMessage((message) => {
+                if (currentConversation && message.senderId === currentConversation) {
+                    loadMessages(currentConversation, currentConversationType);
+                }
+                loadConversations();
+            });
+        }
+
+        // Formatage du temps
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+
+            if (minutes < 1) return 'À l\'instant';
+            if (minutes < 60) return `Il y a ${minutes} min`;
+            if (hours < 24) return `Il y a ${hours}h`;
+            if (days < 7) return `Il y a ${days}j`;
+            
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+
+        // Initialiser les icônes Lucide
+        lucide.createIcons();
+        setInterval(() => lucide.createIcons(), 1000);
+    </script>
+</body>
+</html>
+

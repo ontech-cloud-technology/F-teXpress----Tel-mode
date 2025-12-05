@@ -1,0 +1,784 @@
+<!-- <!DOCTYPE html> -->
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Logs d'Activité — Fêtes Express</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icones Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Intégration Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+            --text-color: #f1f5f9;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--bg-dark);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #475569;
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #64748b;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--bg-light);
+            width: 90%;
+            max-width: 800px;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="text"], input[type="email"], input[type="date"], select {
+            color: var(--text-color) !important;
+            background-color: var(--bg-dark) !important;
+        }
+        
+        input::placeholder {
+            color: #9ca3af !important;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+        
+        select option {
+            color: #000 !important;
+            background-color: #ffffff !important;
+        }
+
+        .role-admin { color: #f87171; font-weight: 700; } 
+        .role-professeur { color: #34d399; font-weight: 700; } 
+        .role-comite { color: #60a5fa; font-weight: 700; } 
+        .role-eleve { color: #fde047; }
+
+        #sidenav {
+            width: 280px;
+            min-width: 280px;
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            margin: 4px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-color);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--text-color);
+            border-left: 3px solid var(--primary);
+        }
+
+        .nav-item.active::before {
+            transform: scaleY(1);
+        }
+
+        @media (max-width: 768px) {
+            #sidenav {
+                display: none;
+            }
+            body {
+                display: block;
+            }
+            .modal-content {
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Menu Latéral de Navigation -->
+    <nav id="sidenav">
+        <div class="px-6 py-6 mb-4 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="shield" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black">
+                        <span class="header-gradient">Fêtes Express</span>
+                    </h2>
+                    <p class="text-xs text-gray-400">Propulsé par ONTech-Cloud Technology</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sections de navigation -->
+        <a href="calendrier.html" class="nav-item">
+            <i data-lucide="calendar" class="w-5 h-5 mr-2"></i>
+            Calendrier des Fêtes
+        </a>
+        <a href="admin.html" class="nav-item">
+            <i data-lucide="shield-check" class="w-5 h-5 mr-3"></i>
+            Dashboard Admin
+        </a>
+        <a href="documentation-enseignante.html" class="nav-item">
+            <i data-lucide="book-open" class="w-5 h-5 mr-3"></i>
+            Documentation
+        </a>
+        <a href="activity-logs.html" class="nav-item active">
+            <i data-lucide="activity" class="w-5 h-5 mr-3"></i>
+            Logs d'Activité
+        </a>
+        <a href="super-admin.html" class="nav-item">
+            <i data-lucide="crown" class="w-5 h-5 mr-3"></i>
+            Gestion des Comptes
+        </a>
+        <a href="send-email.html" class="nav-item">
+            <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+            Envoyer un Email
+        </a>
+        <a href="fetes-tracking.html" class="nav-item">
+            <i data-lucide="trending-up" class="w-5 h-5 mr-3"></i>
+            Suivi des Fêtes
+        </a>
+        <a href="presentation-admin.html" class="nav-item">
+            <i data-lucide="presentation" class="w-5 h-5 mr-3"></i>
+            Présentation
+        </a>
+        
+        <!-- Séparateur et déconnexion -->
+        <div class="border-t border-gray-700 my-2"></div>
+        <a onclick="signOutAndRedirect()" class="nav-item text-red-400 hover:text-white hover:bg-red-900 hover:bg-opacity-20">
+            <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+            Déconnexion
+        </a>
+        
+        <div class="px-6 py-4 mt-4 border-t border-gray-700">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500">Connecté</p>
+                    <p id="welcomeName" class="text-sm font-semibold text-white truncate"></p>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Écran de chargement -->
+    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
+        <div class="text-xl text-white">Vérification des autorisations...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <main id="logsContent" class="hidden flex-grow p-4 md:p-8">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <h1 class="text-3xl md:text-4xl font-extrabold">
+                <span class="header-gradient">Logs d'Activité</span> des Utilisateurs
+            </h1>
+            <button onclick="refreshLogs()" class="mt-4 md:mt-0 flex items-center px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-bg-dark font-semibold transition">
+                <i data-lucide="refresh-ccw" class="w-5 h-5 mr-2"></i>
+                Actualiser
+            </button>
+        </header>
+
+        <!-- Filtres -->
+        <div class="card p-6 rounded-xl mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i data-lucide="filter" class="w-6 h-6 mr-2 text-secondary"></i>
+                Filtres de Recherche
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Utilisateur</label>
+                    <select id="filterUser" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        <option value="">Tous les utilisateurs</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Type d'Action</label>
+                    <select id="filterAction" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        <option value="">Toutes les actions</option>
+                        <option value="login">Connexion</option>
+                        <option value="logout">Déconnexion</option>
+                        <option value="create">Création</option>
+                        <option value="update">Modification</option>
+                        <option value="delete">Suppression</option>
+                        <option value="button_click">Clic Bouton</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Date Début</label>
+                    <input type="date" id="filterDateStart" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Date Fin</label>
+                    <input type="date" id="filterDateEnd" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button onclick="applyFilters()" class="px-4 py-2 rounded btn-primary mr-2">Appliquer Filtres</button>
+                <button onclick="clearFilters()" class="px-4 py-2 rounded btn-secondary">Effacer</button>
+            </div>
+        </div>
+
+        <!-- Table des Logs -->
+        <div class="card p-6 rounded-xl">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i data-lucide="list" class="w-6 h-6 mr-2 text-secondary"></i>
+                Historique des Activités
+            </h2>
+            <div class="overflow-x-auto rounded-lg border border-gray-700">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-bg-dark">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Utilisateur</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Timestamp</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden md:table-cell">IP</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden lg:table-cell">Navigateur</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Détails</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody" class="divide-y divide-gray-800">
+                        <tr><td colspan="6" class="text-center py-4 text-gray-500">Chargement des logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+                <p id="logsCount" class="text-sm text-gray-400">0 logs affichés</p>
+                <div class="flex space-x-2">
+                    <button id="prevPage" onclick="changePage(-1)" disabled class="px-3 py-1 rounded bg-gray-600 text-white disabled:opacity-50">Précédent</button>
+                    <span id="pageInfo" class="px-3 py-1 text-sm">Page 1</span>
+                    <button id="nextPage" onclick="changePage(1)" disabled class="px-3 py-1 rounded bg-gray-600 text-white disabled:opacity-50">Suivant</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modale de Détails -->
+    <div id="detailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 header-gradient">Détails de l'Activité</h3>
+            <div id="detailsContent" class="space-y-4">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="flex justify-end mt-6">
+                <button onclick="closeModal('detailsModal')" class="px-4 py-2 rounded btn-secondary">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inclusion Firebase -->
+    <script src="firebase.js"></script>
+    
+    <!-- Script principal -->
+    <script>
+        // Variables globales
+        const logsTableBody = document.getElementById('logsTableBody');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const logsContent = document.getElementById('logsContent');
+        const welcomeName = document.getElementById('welcomeName');
+        const filterUser = document.getElementById('filterUser');
+        const filterAction = document.getElementById('filterAction');
+        const filterDateStart = document.getElementById('filterDateStart');
+        const filterDateEnd = document.getElementById('filterDateEnd');
+        const logsCount = document.getElementById('logsCount');
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+
+        let allLogs = [];
+        let filteredLogs = [];
+        let currentPage = 1;
+        const logsPerPage = 50;
+
+        // Codes d'actions (décompression)
+        const ACTION_CODES_REVERSE = {
+            'pl': 'page_load',
+            'pu': 'page_unload',
+            'clk': 'button_click',
+            'fs': 'form_submit',
+            'fc': 'form_change',
+            'kp': 'key_press',
+            'scr': 'scroll',
+            'wf': 'window_focus',
+            'wb': 'window_blur',
+            'wr': 'window_resize',
+            'err': 'javascript_error',
+            'upr': 'unhandled_promise_rejection',
+            'su': 'session_update',
+            'lg': 'login',
+            'lo': 'logout',
+            'cr': 'create',
+            'up': 'update',
+            'del': 'delete'
+        };
+
+        // Mapping des champs courts vers longs (décompression)
+        const FIELD_MAP_REVERSE = {
+            'd': 'description',
+            'el': 'elementClicked',
+            'tag': 'tagName',
+            'id': 'id',
+            'cls': 'className',
+            'txt': 'textContent',
+            'href': 'href',
+            'type': 'buttonType',
+            'fid': 'formId',
+            'act': 'formAction',
+            'fd': 'formData',
+            'name': 'elementName',
+            'val': 'newValue',
+            'key': 'key',
+            'kc': 'keyCode',
+            'ctrl': 'ctrlKey',
+            'shift': 'shiftKey',
+            'alt': 'altKey',
+            'y': 'scrollY',
+            'x': 'scrollX',
+            'h': 'documentHeight',
+            'vh': 'viewportHeight',
+            'p': 'page',
+            'ref': 'referrer',
+            'dur': 'sessionDuration',
+            'clk': 'clickCount',
+            'scr': 'scrollCount',
+            'sz': 'newSize',
+            'msg': 'errorMessage',
+            'file': 'errorFile',
+            'line': 'errorLine',
+            'reason': 'errorReason',
+            'top': 'timeOnPage',
+            'em': 'email',
+            'r': 'role',
+            'mod': 'modifiers',
+            'md': 'modifiedData',
+            'loc': 'location',
+            'ua': 'userAgent',
+            'lang': 'language',
+            'res': 'screenResolution',
+            'dev': 'deviceType',
+            'uid': 'userId',
+            'a': 'action',
+            't': 'timestamp'
+        };
+
+        /**
+         * Décompresse un log pour l'affichage
+         */
+        function decompressLog(log) {
+            const decompressed = { ...log };
+            
+            // Décompresser l'action
+            if (log.a && ACTION_CODES_REVERSE[log.a]) {
+                decompressed.action = ACTION_CODES_REVERSE[log.a];
+            } else if (log.a) {
+                decompressed.action = log.a;
+            }
+            
+            // Décompresser les champs
+            for (const [shortKey, longKey] of Object.entries(FIELD_MAP_REVERSE)) {
+                if (log[shortKey] !== undefined) {
+                    decompressed[longKey] = log[shortKey];
+                    if (shortKey !== longKey) {
+                        delete decompressed[shortKey];
+                    }
+                }
+            }
+            
+            // Mapper les anciens champs pour compatibilité
+            if (log.uid && !decompressed.userId) decompressed.userId = log.uid;
+            if (log.a && !decompressed.action) decompressed.action = log.a;
+            if (log.t && !decompressed.timestamp) decompressed.timestamp = log.t;
+            if (log.p && !decompressed.page) decompressed.page = log.p;
+            
+            // Décompresser deviceType
+            if (log.dev === 'm') decompressed.deviceType = 'mobile';
+            else if (log.dev === 'd') decompressed.deviceType = 'desktop';
+            
+            return decompressed;
+        }
+
+        // Fonctions Firebase pour les logs
+        async function getActivityLogs() {
+            try {
+                const snapshot = await db.collection('activity_logs').orderBy('timestamp', 'desc').get();
+                return snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...decompressLog(data)
+                    };
+                });
+            } catch (error) {
+                console.error('Erreur lors de la récupération des logs:', error);
+                return [];
+            }
+        }
+
+        let userMap = {}; // Cache pour les noms d'utilisateurs
+
+        async function getUsersForFilter() {
+            try {
+                const users = await getAllUsers();
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name || user.email;
+                    filterUser.appendChild(option);
+                    // Stocker dans le cache
+                    userMap[user.id] = user.name || user.email;
+                });
+            } catch (error) {
+                console.error('Erreur lors de la récupération des utilisateurs:', error);
+            }
+        }
+
+        function getUserName(userId) {
+            return userMap[userId] || 'Utilisateur inconnu';
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds || seconds <= 0) return 'N/A';
+            
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            let result = '';
+            if (hours > 0) result += `${hours}h `;
+            if (minutes > 0 || hours > 0) result += `${minutes}m `;
+            result += `${secs}s`;
+            
+            return result.trim();
+        }
+
+        // Fonctions d'affichage
+        function renderLogs(logs) {
+            logsTableBody.innerHTML = '';
+            if (logs.length === 0) {
+                logsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-500">Aucun log trouvé.</td></tr>';
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * logsPerPage;
+            const endIndex = startIndex + logsPerPage;
+            const logsToShow = logs.slice(startIndex, endIndex);
+
+            logsToShow.forEach(log => {
+                const row = document.createElement('tr');
+                const userId = log.userId || log.uid || 'N/A';
+                const action = log.action || log.a || 'unknown';
+                const timestamp = log.timestamp || log.t;
+                const userAgent = log.userAgent || log.ua || 'N/A';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm">${getUserName(userId)}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="px-2 py-1 rounded text-xs ${getActionClass(action)}">${getActionLabel(action)}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">${timestamp?.toDate ? new Date(timestamp.toDate()).toLocaleString('fr-FR') : 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm hidden md:table-cell">${log.ip || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm hidden lg:table-cell">${userAgent.substring(0, 50)}${userAgent.length > 50 ? '...' : ''}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="showDetails('${log.id}')" class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs">
+                            Voir
+                        </button>
+                    </td>
+                `;
+                logsTableBody.appendChild(row);
+            });
+
+            updatePagination(logs.length);
+        }
+
+        function getActionClass(action) {
+            const classes = {
+                'login': 'bg-green-600',
+                'logout': 'bg-red-600',
+                'create': 'bg-blue-600',
+                'update': 'bg-yellow-600',
+                'delete': 'bg-red-600',
+                'button_click': 'bg-purple-600'
+            };
+            return classes[action] || 'bg-gray-600';
+        }
+
+        function getActionLabel(action) {
+            const labels = {
+                'login': 'Connexion',
+                'logout': 'Déconnexion',
+                'create': 'Création',
+                'update': 'Modification',
+                'delete': 'Suppression',
+                'button_click': 'Clic Bouton'
+            };
+            return labels[action] || action;
+        }
+
+        function updatePagination(totalLogs) {
+            const totalPages = Math.ceil(totalLogs / logsPerPage);
+            pageInfo.textContent = `Page ${currentPage} sur ${totalPages}`;
+            prevPage.disabled = currentPage === 1;
+            nextPage.disabled = currentPage === totalPages;
+            logsCount.textContent = `${totalLogs} logs trouvés (${filteredLogs.length} après filtrage)`;
+        }
+
+        function changePage(direction) {
+            currentPage += direction;
+            renderLogs(filteredLogs);
+        }
+
+        function showDetails(logId) {
+            const log = allLogs.find(l => l.id === logId);
+            if (!log) return;
+
+            // Décompresser le log pour l'affichage
+            const decompressed = decompressLog(log);
+            const userId = decompressed.userId || log.uid || 'N/A';
+            const action = decompressed.action || log.a || 'unknown';
+            const timestamp = decompressed.timestamp || log.t;
+
+            const detailsContent = document.getElementById('detailsContent');
+            detailsContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><strong>Utilisateur:</strong> ${getUserName(userId)}</div>
+                    <div><strong>UID:</strong> ${userId}</div>
+                    <div><strong>Action:</strong> ${getActionLabel(action)}</div>
+                    <div><strong>Timestamp:</strong> ${timestamp?.toDate ? new Date(timestamp.toDate()).toLocaleString('fr-FR') : 'N/A'}</div>
+                    <div><strong>IP:</strong> ${log.ip || decompressed.ip || 'N/A'}</div>
+                    <div><strong>Navigateur:</strong> ${decompressed.userAgent || log.ua || 'N/A'}</div>
+                    <div><strong>Appareil:</strong> ${decompressed.deviceType || (log.dev === 'm' ? 'mobile' : log.dev === 'd' ? 'desktop' : 'N/A')}</div>
+                    <div><strong>Système d'exploitation:</strong> ${log.os || 'N/A'}</div>
+                    <div><strong>Localisation:</strong> ${decompressed.location || log.loc || 'N/A'}</div>
+                    <div><strong>Page:</strong> ${decompressed.page || log.p || 'N/A'}</div>
+                    <div><strong>Élément cliqué:</strong> ${decompressed.elementClicked || log.el || 'N/A'}</div>
+                    <div><strong>Données modifiées:</strong> ${decompressed.modifiedData || log.md ? (typeof (decompressed.modifiedData || log.md) === 'string' ? decompressed.modifiedData || log.md : JSON.stringify(decompressed.modifiedData || log.md, null, 2)) : 'N/A'}</div>
+                    <div><strong>Durée de session:</strong> ${decompressed.sessionDuration || log.dur ? formatDuration(decompressed.sessionDuration || log.dur) : 'N/A'}</div>
+                    <div><strong>Référent:</strong> ${decompressed.referrer || log.ref || 'N/A'}</div>
+                    <div><strong>Langue:</strong> ${decompressed.language || log.lang || 'N/A'}</div>
+                    <div><strong>Timezone:</strong> ${log.timezone || 'N/A'}</div>
+                    <div><strong>Résolution écran:</strong> ${decompressed.screenResolution || log.res || 'N/A'}</div>
+                    <div><strong>Cookies activés:</strong> ${log.cookiesEnabled !== undefined ? (log.cookiesEnabled ? 'Oui' : 'Non') : 'N/A'}</div>
+                    <div><strong>JavaScript activé:</strong> ${log.jsEnabled !== undefined ? (log.jsEnabled ? 'Oui' : 'Non') : 'N/A'}</div>
+                    <div><strong>Plugins:</strong> ${log.plugins || 'N/A'}</div>
+                    <div><strong>Touchscreen:</strong> ${log.touchScreen !== undefined ? (log.touchScreen ? 'Oui' : 'Non') : 'N/A'}</div>
+                    <div><strong>Batterie:</strong> ${log.bat !== undefined ? `${log.bat}%` : log.batteryLevel || 'N/A'}</div>
+                    <div><strong>Connexion:</strong> ${log.conn || log.connectionSpeed || 'N/A'}</div>
+                    <div><strong>Downlink:</strong> ${log.down || log.connectionDownlink || 'N/A'}</div>
+                    <div><strong>RTT:</strong> ${log.rtt ? `${log.rtt}ms` : (log.connectionRtt ? `${log.connectionRtt}ms` : 'N/A')}</div>
+                    <div><strong>Charge batterie:</strong> ${log.batChg !== undefined ? (log.batChg ? 'Oui' : 'Non') : (log.batteryCharging !== undefined ? (log.batteryCharging ? 'Oui' : 'Non') : 'N/A')}</div>
+                </div>
+                <div class="mt-4"><strong>Description:</strong> ${decompressed.description || log.d || 'N/A'}</div>
+                ${Object.keys(log).length > 0 ? `<div class="mt-4"><strong>Données brutes:</strong> <pre class="text-xs bg-gray-800 p-2 rounded overflow-auto max-h-40">${JSON.stringify(log, null, 2)}</pre></div>` : ''}
+            `;
+            openModal('detailsModal');
+        }
+
+        function applyFilters() {
+            const userFilter = filterUser.value;
+            const actionFilter = filterAction.value;
+            const startDate = filterDateStart.value ? new Date(filterDateStart.value) : null;
+            const endDate = filterDateEnd.value ? new Date(filterDateEnd.value) : null;
+
+            filteredLogs = allLogs.filter(log => {
+                const userId = log.userId || log.uid;
+                const action = log.action || log.a;
+                const timestamp = log.timestamp || log.t;
+                
+                if (userFilter && userId !== userFilter) return false;
+                if (actionFilter) {
+                    // Décompresser l'action pour la comparaison
+                    const decompressedAction = ACTION_CODES_REVERSE[action] || action;
+                    if (decompressedAction !== actionFilter) return false;
+                }
+                if (startDate && timestamp?.toDate && timestamp.toDate() < startDate) return false;
+                if (endDate && timestamp?.toDate && timestamp.toDate() > endDate) return false;
+                return true;
+            });
+
+            currentPage = 1;
+            renderLogs(filteredLogs);
+        }
+
+        function clearFilters() {
+            filterUser.value = '';
+            filterAction.value = '';
+            filterDateStart.value = '';
+            filterDateEnd.value = '';
+            filteredLogs = [...allLogs];
+            currentPage = 1;
+            renderLogs(filteredLogs);
+        }
+
+        function refreshLogs() {
+            loadLogs();
+        }
+
+        async function loadLogs() {
+            loadingScreen.style.display = 'flex';
+            try {
+                allLogs = await getActivityLogs();
+                filteredLogs = [...allLogs];
+                renderLogs(filteredLogs);
+            } catch (error) {
+                console.error('Erreur lors du chargement des logs:', error);
+                logsTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Erreur lors du chargement des logs.</td></tr>';
+            }
+            loadingScreen.style.display = 'none';
+        }
+
+        // Fonctions utilitaires
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Fonction de déconnexion
+        window.signOutAndRedirect = function() {
+            signOutUser().then(() => {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            });
+        };
+
+        // Initialisation
+        async function checkAdminAuth() {
+            loadingScreen.style.display = 'flex';
+            
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Vérifier que l'email est exactement admin@ontech.com
+            if (user.email !== 'admin@ontech.com') {
+                // Rediriger sans alerte pour ne pas révéler l'existence de la page
+                window.location.href = 'eleve.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            const role = userData.role;
+            
+            welcomeName.textContent = `${userData.name || userData.email || 'Admin'} (${role})`;
+
+            loadingScreen.style.display = 'none';
+            logsContent.classList.remove('hidden');
+            await getUsersForFilter();
+            await loadLogs();
+        }
+
+        // Démarrage
+        checkAdminAuth();
+
+        // Initialiser Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

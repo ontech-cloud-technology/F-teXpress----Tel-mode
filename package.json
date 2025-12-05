@@ -1,0 +1,33 @@
+{
+  "name": "projet-aniversaire",
+  "version": "1.0.0",
+  "description": "Système de gestion des anniversaires",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'Build complete'",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "version:patch": "./create-tag.sh patch",
+    "version:minor": "./create-tag.sh minor",
+    "version:major": "./create-tag.sh major",
+    "version": "cat VERSION",
+    "convert-pptx": "node convert-pptx-to-slides.js",
+    "install-and-convert": "./install-and-convert.sh",
+    "import-csv": "node import-fetexpress-csv.js",
+    "remove-duplicates": "node remove-duplicates-celebrations.js",
+    "create-missing-accounts": "node create-missing-user-accounts.js",
+    "reset-passwords": "node reset-all-passwords.js"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "firebase-admin": "^13.6.0"
+  },
+  "keywords": [
+    "anniversaire"
+  ],
+  "author": "",
+  "license": "ISC"
+}

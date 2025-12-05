@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importer Élèves depuis PDF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a0f30 0%, #0a041c 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
+            <h1 class="text-3xl font-bold text-white mb-6">📥 Importer les Élèves depuis le PDF</h1>
+            
+            <div class="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4 mb-6">
+                <p class="text-blue-200 font-semibold">ℹ️ Instructions :</p>
+                <ol class="text-blue-100 text-sm mt-2 list-decimal list-inside space-y-1">
+                    <li>Ouvrez le PDF "Anniversaires_203_01-12-2025.pdf"</li>
+                    <li>Copiez tout le texte du PDF (Ctrl+A puis Ctrl+C)</li>
+                    <li>Collez le texte dans la zone ci-dessous</li>
+                    <li>Cliquez sur "Analyser et Créer les Comptes"</li>
+                </ol>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-white mb-2 font-semibold">Collez le contenu du PDF ici :</label>
+                <textarea 
+                    id="pdfContent" 
+                    class="w-full h-64 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-mono text-sm"
+                    placeholder="Collez ici le texte copié du PDF..."
+                ></textarea>
+            </div>
+
+            <button 
+                id="processBtn" 
+                onclick="processAndCreateAccounts()"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+            >
+                Analyser et Créer les Comptes
+            </button>
+
+            <div id="status" class="mb-6 text-white"></div>
+            <div id="preview" class="mb-6 hidden">
+                <h2 class="text-xl font-bold text-white mb-4">Aperçu des données extraites :</h2>
+                <div id="previewContent" class="bg-white/5 rounded-lg p-4 max-h-96 overflow-y-auto"></div>
+            </div>
+            <div id="results" class="space-y-2 max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        const TEMP_PASSWORD = 'Login123';
+
+        // Parser le texte du PDF pour extraire les informations des élèves
+        function parsePDFContent(text) {
+            const students = [];
+            
+            // Diviser par les numéros d'élèves (#1, #2, etc.)
+            const studentBlocks = text.split(/(?=#\d+)/);
+            
+            for (const block of studentBlocks) {
+                if (!block.trim()) continue;
+                
+                // Extraire le numéro
+                const numberMatch = block.match(/#(\d+)/);
+                if (!numberMatch) continue;
+                
+                const student = {
+                    number: parseInt(numberMatch[1]),
+                    fullName: '',
+                    birthday: '',
+                    fileNumber: '',
+                    classNumber: '',
+                    gender: ''
+                };
+                
+                // Extraire le nom complet (généralement après le #)
+                const nameLines = block.split('\n').filter(l => {
+                    const trimmed = l.trim();
+                    return trimmed && 
+                           !trimmed.match(/^#\d+$/) &&
+                           !trimmed.match(/Fiche:/) &&
+                           !trimmed.match(/Classe:/) &&
+                           !trimmed.match(/Genre:/) &&
+                           !trimmed.match(/Ø/) &&
+                           !trimmed.match(/^\d+\/\d+\/\d+/) &&
+                           trimmed.length > 2;
+                });
+                
+                if (nameLines.length > 0) {
+                    // Prendre les premières lignes qui semblent être le nom
+                    const nameParts = nameLines.slice(0, 2).map(l => l.trim()).filter(l => l);
+                    student.fullName = nameParts.join(' ').trim();
+                }
+                
+                // Extraire la date de naissance
+                const dateMatch = block.match(/Ø[^]*?(\d{1,2})\/(\d{1,2})\/(\d{2,4})/) || 
+                                 block.match(/(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{2,4})/);
+                if (dateMatch) {
+                    let day = dateMatch[1].padStart(2, '0');
+                    let month = dateMatch[2].padStart(2, '0');
+                    let year = dateMatch[3];
+                    
+                    // Convertir l'année à 4 chiffres si nécessaire
+                    if (year.length === 2) {
+                        year = '20' + year;
+                    }
+                    
+                    student.birthday = `${year}-${month}-${day}`;
+                }
+                
+                // Extraire le numéro de fiche (prendre le dernier trouvé, car il peut y en avoir plusieurs)
+                const ficheMatches = block.matchAll(/Fiche:\s*(\d+)/g);
+                const fiches = Array.from(ficheMatches).map(m => m[1]);
+                if (fiches.length > 0) {
+                    // Prendre le dernier numéro de fiche trouvé
+                    student.fileNumber = fiches[fiches.length - 1];
+                }
+                
+                // Extraire le numéro de classe (prendre le dernier trouvé)
+                const classMatches = block.matchAll(/Classe:\s*(\d+)/g);
+                const classes = Array.from(classMatches).map(m => m[1]);
+                if (classes.length > 0) {
+                    student.classNumber = classes[classes.length - 1];
+                }
+                
+                // Extraire le genre (prendre le dernier trouvé)
+                const genderMatches = block.matchAll(/Genre:\s*([MF])/g);
+                const genders = Array.from(genderMatches).map(m => m[1]);
+                if (genders.length > 0) {
+                    student.gender = genders[genders.length - 1];
+                }
+                
+                // Ne garder que les élèves avec un numéro de fiche
+                if (student.fileNumber) {
+                    students.push(student);
+                }
+            }
+            
+            return students;
+        }
+
+        // Afficher l'aperçu des données
+        function showPreview(students) {
+            const previewDiv = document.getElementById('preview');
+            const previewContent = document.getElementById('previewContent');
+            
+            if (students.length === 0) {
+                previewDiv.classList.add('hidden');
+                return;
+            }
+            
+            previewDiv.classList.remove('hidden');
+            previewContent.innerHTML = `
+                <div class="text-green-200 mb-4 font-bold">
+                    ✅ ${students.length} élève(s) trouvé(s)
+                </div>
+                <table class="w-full text-sm text-white">
+                    <thead>
+                        <tr class="border-b border-white/20">
+                            <th class="text-left p-2">#</th>
+                            <th class="text-left p-2">Nom</th>
+                            <th class="text-left p-2">Date</th>
+                            <th class="text-left p-2">Fiche</th>
+                            <th class="text-left p-2">Classe</th>
+                            <th class="text-left p-2">Genre</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${students.map(s => `
+                            <tr class="border-b border-white/10">
+                                <td class="p-2">${s.number}</td>
+                                <td class="p-2">${s.fullName || 'N/A'}</td>
+                                <td class="p-2">${s.birthday || 'N/A'}</td>
+                                <td class="p-2">${s.fileNumber || 'N/A'}</td>
+                                <td class="p-2">${s.classNumber || 'N/A'}</td>
+                                <td class="p-2">${s.gender || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        async function processAndCreateAccounts() {
+            const pdfContent = document.getElementById('pdfContent').value.trim();
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const processBtn = document.getElementById('processBtn');
+            
+            if (!pdfContent) {
+                statusDiv.innerHTML = '<p class="text-red-400">❌ Veuillez coller le contenu du PDF.</p>';
+                return;
+            }
+
+            // Vérifier l'authentification
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                statusDiv.innerHTML = '<p class="text-red-400">❌ Vous devez être connecté pour exécuter ce script.</p>';
+                return;
+            }
+
+            // Vérifier que l'utilisateur est admin
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
+                if (userData.role !== 'admin') {
+                    statusDiv.innerHTML = '<p class="text-red-400">❌ Seuls les administrateurs peuvent exécuter ce script.</p>';
+                    return;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<p class="text-red-400">❌ Erreur lors de la vérification des permissions.</p>';
+                return;
+            }
+
+            processBtn.disabled = true;
+            processBtn.textContent = 'Analyse en cours...';
+            statusDiv.innerHTML = '<p class="text-blue-400">🔄 Analyse du contenu du PDF...</p>';
+            resultsDiv.innerHTML = '';
+
+            try {
+                // Sauvegarder les credentials de l'admin pour se reconnecter après
+                const currentUser = firebase.auth().currentUser;
+                const adminEmail = currentUser.email;
+                
+                // Demander le mot de passe de l'admin pour pouvoir se reconnecter après
+                const adminPassword = prompt('Pour créer les comptes, une déconnexion temporaire est nécessaire.\n\nVeuillez entrer votre mot de passe administrateur pour permettre la reconnexion automatique :');
+                if (!adminPassword) {
+                    statusDiv.innerHTML = '<p class="text-red-400">❌ Opération annulée. Le mot de passe est requis pour créer les comptes.</p>';
+                    processBtn.disabled = false;
+                    processBtn.textContent = 'Analyser et Créer les Comptes';
+                    return;
+                }
+                
+                // Parser le contenu
+                const students = parsePDFContent(pdfContent);
+                
+                if (students.length === 0) {
+                    statusDiv.innerHTML = '<p class="text-red-400">❌ Aucun élève trouvé dans le texte. Vérifiez que vous avez bien copié tout le contenu du PDF.</p>';
+                    processBtn.disabled = false;
+                    processBtn.textContent = 'Analyser et Créer les Comptes';
+                    return;
+                }
+
+                // Afficher l'aperçu
+                showPreview(students);
+
+                statusDiv.innerHTML = `<p class="text-yellow-400">⚠️ ${students.length} élève(s) trouvé(s). Création des comptes en cours...</p>`;
+
+                let createdCount = 0;
+                let updatedCount = 0;
+                let errorCount = 0;
+                const errors = [];
+
+                // Se déconnecter temporairement pour pouvoir créer des comptes
+                statusDiv.innerHTML += '<p class="text-blue-400">🔄 Déconnexion temporaire pour créer les comptes...</p>';
+                await firebase.auth().signOut();
+
+                // Créer les comptes
+                for (const student of students) {
+                    if (!student.fileNumber) {
+                        errorCount++;
+                        errors.push({ 
+                            name: student.fullName || `#${student.number}`, 
+                            error: 'Numéro de fiche manquant' 
+                        });
+                        resultsDiv.innerHTML += `
+                            <div class="bg-red-500/20 border border-red-500/50 rounded p-2 text-red-200">
+                                ❌ ${student.fullName || `#${student.number}`}: Numéro de fiche manquant
+                            </div>
+                        `;
+                        continue;
+                    }
+
+                    try {
+                        const email = `${student.fileNumber}@cslaval.qc.ca`;
+                        
+                        // Vérifier si le compte existe déjà dans Firestore
+                        const existingUsers = await firebase.firestore()
+                            .collection('users')
+                            .where('email', '==', email)
+                            .limit(1)
+                            .get();
+
+                        let uid;
+                        let isNew = false;
+
+                        if (!existingUsers.empty) {
+                            // Compte existe déjà dans Firestore
+                            uid = existingUsers.docs[0].id;
+                            await firebase.firestore().collection('users').doc(uid).update({
+                                fullName: student.fullName,
+                                email: email,
+                                role: 'eleve',
+                                birthday: student.birthday || null,
+                                fileNumber: student.fileNumber,
+                                classNumber: student.classNumber || null,
+                                gender: student.gender || null,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            updatedCount++;
+                            resultsDiv.innerHTML += `
+                                <div class="bg-yellow-500/20 border border-yellow-500/50 rounded p-2 text-yellow-200">
+                                    🔄 Mis à jour: ${student.fullName} (${email})
+                                </div>
+                            `;
+                        } else {
+                            // Vérifier si le compte existe dans Auth
+                            let accountExistsInAuth = false;
+                            try {
+                                // Essayer de se connecter pour vérifier si le compte existe
+                                await firebase.auth().signInWithEmailAndPassword(email, TEMP_PASSWORD);
+                                uid = firebase.auth().currentUser.uid;
+                                await firebase.auth().signOut();
+                                accountExistsInAuth = true;
+                            } catch (authError) {
+                                if (authError.code === 'auth/user-not-found') {
+                                    // Le compte n'existe pas, on va le créer
+                                    accountExistsInAuth = false;
+                                } else if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-login-credentials') {
+                                    // Le compte existe mais avec un autre mot de passe
+                                    // On ne peut pas le réinitialiser côté client, on crée juste dans Firestore
+                                    accountExistsInAuth = true;
+                                    // On va créer un document Firestore avec un UID temporaire
+                                    // L'utilisateur devra se connecter avec son mot de passe actuel
+                                    uid = null; // On va générer un ID temporaire
+                                } else {
+                                    throw authError;
+                                }
+                            }
+
+                            if (!accountExistsInAuth) {
+                                // Créer un nouveau compte dans Firebase Auth
+                                try {
+                                    const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, TEMP_PASSWORD);
+                                    uid = userCredential.user.uid;
+                                    isNew = true;
+                                    // Se déconnecter immédiatement car createUserWithEmailAndPassword nous connecte automatiquement
+                                    await firebase.auth().signOut();
+                                } catch (createError) {
+                                    if (createError.code === 'auth/email-already-in-use') {
+                                        // Le compte existe déjà, essayer de se connecter avec le mot de passe temporaire
+                                        try {
+                                            await firebase.auth().signInWithEmailAndPassword(email, TEMP_PASSWORD);
+                                            uid = firebase.auth().currentUser.uid;
+                                            await firebase.auth().signOut();
+                                        } catch (signInError) {
+                                            // Le compte existe mais avec un autre mot de passe
+                                            // On ne peut pas récupérer l'UID sans le bon mot de passe
+                                            // Créer juste dans Firestore - l'utilisateur devra se connecter avec son mot de passe actuel
+                                            // On va chercher l'UID via Firestore si possible, sinon créer un nouveau document
+                                            uid = null; // On va créer sans UID pour l'instant
+                                        }
+                                    } else {
+                                        throw createError;
+                                    }
+                                }
+                            } else if (!uid) {
+                                // Le compte existe dans Auth mais on ne peut pas récupérer l'UID
+                                // Créer un document Firestore - l'utilisateur devra se connecter avec son mot de passe actuel
+                                uid = null; // On va créer sans UID pour l'instant
+                            }
+                            
+                            // Si on n'a pas d'UID, créer un document Firestore avec un ID généré
+                            // Note: Ce document ne sera pas lié à un compte Auth, mais l'utilisateur pourra se connecter avec son email
+                            if (!uid) {
+                                uid = firebase.firestore().collection('users').doc().id;
+                            }
+
+                            // Créer le document dans Firestore
+                            await firebase.firestore().collection('users').doc(uid).set({
+                                fullName: student.fullName,
+                                email: email,
+                                role: 'eleve',
+                                birthday: student.birthday || null,
+                                fileNumber: student.fileNumber,
+                                classNumber: student.classNumber || null,
+                                gender: student.gender || null,
+                                status: 'active',
+                                disabled: false,
+                                profileCompleted: false,
+                                needsPasswordChange: true,
+                                reputation: 100,
+                                accountType: 'standard',
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+
+                            createdCount++;
+                            resultsDiv.innerHTML += `
+                                <div class="bg-green-500/20 border border-green-500/50 rounded p-2 text-green-200">
+                                    ✅ Créé: ${student.fullName} (${email})
+                                </div>
+                            `;
+                        }
+
+                        // Créer ou mettre à jour l'entrée dans celebrations
+                        const celebrationsRef = firebase.firestore().collection('celebrations');
+                        const existingCelebration = await celebrationsRef
+                            .where('fileNumber', '==', student.fileNumber)
+                            .limit(1)
+                            .get();
+
+                        const celebrationData = {
+                            fullName: student.fullName,
+                            email: email,
+                            fileNumber: student.fileNumber,
+                            birthday: student.birthday || null,
+                            classNumber: student.classNumber || null,
+                            gender: student.gender || null,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+
+                        if (!existingCelebration.empty) {
+                            await existingCelebration.docs[0].ref.update(celebrationData);
+                        } else {
+                            await celebrationsRef.add({
+                                ...celebrationData,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        }
+
+                    } catch (error) {
+                        errorCount++;
+                        errors.push({ 
+                            name: student.fullName || `#${student.number}`, 
+                            error: error.message 
+                        });
+                        resultsDiv.innerHTML += `
+                            <div class="bg-red-500/20 border border-red-500/50 rounded p-2 text-red-200">
+                                ❌ Erreur pour ${student.fullName || `#${student.number}`}: ${error.message}
+                            </div>
+                        `;
+                        console.error(`Erreur pour ${student.fullName}:`, error);
+                    }
+                }
+
+                // Se reconnecter en tant qu'admin
+                statusDiv.innerHTML += '<p class="text-blue-400">🔄 Reconnexion en tant qu\'administrateur...</p>';
+                try {
+                    await firebase.auth().signInWithEmailAndPassword(adminEmail, adminPassword);
+                    statusDiv.innerHTML += '<p class="text-green-400">✅ Reconnexion réussie</p>';
+                } catch (reconnectError) {
+                    statusDiv.innerHTML += `<p class="text-yellow-400">⚠️ Erreur lors de la reconnexion: ${reconnectError.message}. Veuillez vous reconnecter manuellement.</p>`;
+                }
+
+                // Résumé final
+                statusDiv.innerHTML = `
+                    <div class="mt-4 p-4 bg-blue-500/20 border border-blue-500/50 rounded-lg">
+                        <p class="text-blue-200 font-bold text-lg">📊 Résumé de l'importation :</p>
+                        <p class="text-blue-100 mt-2">✅ Comptes créés : ${createdCount}</p>
+                        <p class="text-blue-100">🔄 Comptes mis à jour : ${updatedCount}</p>
+                        <p class="text-blue-100">❌ Erreurs : ${errorCount}</p>
+                        <p class="text-blue-100">📝 Total traité : ${students.length}</p>
+                    </div>
+                `;
+
+                if (errors.length > 0) {
+                    resultsDiv.innerHTML += `
+                        <div class="mt-4 p-4 bg-red-500/20 border border-red-500/50 rounded-lg">
+                            <p class="text-red-200 font-bold">Erreurs détaillées :</p>
+                            ${errors.map(e => `<p class="text-red-100 text-sm mt-1">${e.name}: ${e.error}</p>`).join('')}
+                        </div>
+                    `;
+                }
+
+            } catch (error) {
+                console.error('Erreur lors du traitement:', error);
+                statusDiv.innerHTML = `<p class="text-red-400">❌ Erreur : ${error.message}</p>`;
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = 'Analyser et Créer les Comptes';
+            }
+        }
+
+        // Vérifier l'authentification au chargement
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+                document.getElementById('status').innerHTML = `
+                    <p class="text-red-400">❌ Vous devez être connecté pour utiliser ce script.</p>
+                    <p class="text-white mt-2">Redirection vers la page de connexion...</p>
+                `;
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
+

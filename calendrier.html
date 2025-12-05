@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendrier des Fêtes — Fêtes Express</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+            --text-color: #ffffff;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            padding: 4px;
+            background-color: rgba(255, 255, 255, 0.05);
+            min-height: 60px;
+            font-size: 0.875rem;
+        }
+        .calendar-day:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+        .calendar-day.today {
+            border: 2px solid var(--primary);
+        }
+        .calendar-day.has-birthday {
+            background: linear-gradient(135deg, rgba(255, 111, 97, 0.3), rgba(249, 199, 79, 0.3));
+            border: 1px solid var(--primary);
+        }
+        .calendar-day.has-birthday:hover {
+            background: linear-gradient(135deg, rgba(255, 111, 97, 0.5), rgba(249, 199, 79, 0.5));
+        }
+        .birthday-indicator {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary);
+            border-radius: 50%;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--bg-light);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        #mainContent {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        select {
+            color: var(--text-color) !important;
+            background-color: var(--bg-dark) !important;
+        }
+        select option {
+            color: #000 !important;
+            background-color: #ffffff !important;
+        }
+        @media (max-width: 768px) {
+            .calendar-grid {
+                gap: 4px;
+            }
+            .calendar-day {
+                padding: 2px;
+                font-size: 0.75rem;
+                min-height: 50px;
+            }
+        }
+
+        /* Footer */
+        .site-footer {
+            background: linear-gradient(135deg, #1a0f30, #2c1a4b);
+            color: #9ca3af;
+            padding: 2rem 0 1rem;
+            margin-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .site-footer a {
+            color: #9ca3af;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .site-footer a:hover {
+            color: #ffffff;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .footer-copyright {
+            text-align: center;
+            font-size: 0.875rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Écran de chargement -->
+    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
+        <div class="text-xl text-white">Chargement du calendrier...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu Principal -->
+    <main id="calendarContent" class="hidden flex-grow p-4 md:p-8">
+        <!-- Bouton de retour -->
+        <div class="mb-6">
+            <a id="backButton" href="#" class="inline-flex items-center px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white transition">
+                <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                Retour au Dashboard
+            </a>
+        </div>
+        
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+                Calendrier des <span class="header-gradient">Fêtes</span>
+            </h1>
+            <p class="text-gray-400">Tous les anniversaires de la classe 203 • <span id="welcomeName" class="text-gray-500"></span></p>
+        </header>
+
+        <!-- Contrôles du Calendrier -->
+        <div class="card p-6 rounded-xl mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <button onclick="previousMonth()" class="flex items-center px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">
+                    <i data-lucide="chevron-left" class="w-5 h-5 mr-2"></i>
+                    Mois Précédent
+                </button>
+                
+                <div class="text-center">
+                    <h2 id="currentMonthYear" class="text-2xl font-bold header-gradient">Janvier 2025</h2>
+                    <button onclick="goToToday()" class="text-sm text-gray-400 hover:text-white transition mt-2">
+                        Aujourd'hui
+                    </button>
+                </div>
+                
+                <button onclick="nextMonth()" class="flex items-center px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">
+                    Mois Suivant
+                    <i data-lucide="chevron-right" class="w-5 h-5 ml-2"></i>
+                </button>
+            </div>
+
+            <!-- Sélecteurs Mois/Année -->
+            <div class="flex flex-col md:flex-row gap-4 mt-6">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Mois</label>
+                    <select id="monthSelect" onchange="changeMonth()" class="w-full p-3 rounded border border-gray-700 bg-bg-dark text-white focus:ring-2 focus:ring-primary">
+                        <option value="0">Janvier</option>
+                        <option value="1">Février</option>
+                        <option value="2">Mars</option>
+                        <option value="3">Avril</option>
+                        <option value="4">Mai</option>
+                        <option value="5">Juin</option>
+                        <option value="6">Juillet</option>
+                        <option value="7">Août</option>
+                        <option value="8">Septembre</option>
+                        <option value="9">Octobre</option>
+                        <option value="10">Novembre</option>
+                        <option value="11">Décembre</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Année</label>
+                    <select id="yearSelect" onchange="changeMonth()" class="w-full p-3 rounded border border-gray-700 bg-bg-dark text-white focus:ring-2 focus:ring-primary">
+                        <!-- Généré dynamiquement -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Calendrier -->
+        <div class="card p-6 rounded-xl">
+            <!-- En-têtes des jours -->
+            <div class="calendar-grid mb-4">
+                <div class="text-center font-bold text-gray-400">Dim</div>
+                <div class="text-center font-bold text-gray-400">Lun</div>
+                <div class="text-center font-bold text-gray-400">Mar</div>
+                <div class="text-center font-bold text-gray-400">Mer</div>
+                <div class="text-center font-bold text-gray-400">Jeu</div>
+                <div class="text-center font-bold text-gray-400">Ven</div>
+                <div class="text-center font-bold text-gray-400">Sam</div>
+            </div>
+            
+            <!-- Grille du calendrier -->
+            <div id="calendarGrid" class="calendar-grid">
+                <!-- Généré dynamiquement -->
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div class="card p-6 rounded-xl text-center">
+                <i data-lucide="cake" class="w-12 h-12 mx-auto mb-3 text-primary"></i>
+                <div class="text-3xl font-bold" id="totalBirthdays">0</div>
+                <div class="text-gray-400 text-sm">Anniversaires Total</div>
+            </div>
+            <div class="card p-6 rounded-xl text-center">
+                <i data-lucide="calendar-check" class="w-12 h-12 mx-auto mb-3 text-secondary"></i>
+                <div class="text-3xl font-bold" id="thisMonthBirthdays">0</div>
+                <div class="text-gray-400 text-sm">Ce Mois-ci</div>
+            </div>
+            <div class="card p-6 rounded-xl text-center">
+                <i data-lucide="gift" class="w-12 h-12 mx-auto mb-3 text-primary"></i>
+                <div class="text-3xl font-bold" id="todayBirthdays">0</div>
+                <div class="text-gray-400 text-sm">Aujourd'hui</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modale Détails Anniversaire -->
+    <div id="birthdayModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex justify-between items-start mb-6">
+                <h3 class="text-2xl font-bold flex items-center">
+                    <i data-lucide="cake" class="w-6 h-6 mr-2 text-primary"></i>
+                    <span id="modalDate">1er Janvier</span>
+                </h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div id="birthdayList" class="space-y-4">
+                <!-- Généré dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Inclusion du fichier firebase.js -->
+    <script src="firebase.js"></script>
+    <!-- Système de logging automatique des activités -->
+    <script src="js/activity-logger.js"></script>
+    
+    <script>
+        const loadingScreen = document.getElementById('loadingScreen');
+        const calendarContent = document.getElementById('calendarContent');
+        const welcomeName = document.getElementById('welcomeName');
+        const calendarGrid = document.getElementById('calendarGrid');
+        const currentMonthYear = document.getElementById('currentMonthYear');
+        const monthSelect = document.getElementById('monthSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        const birthdayModal = document.getElementById('birthdayModal');
+        const modalDate = document.getElementById('modalDate');
+        const birthdayList = document.getElementById('birthdayList');
+        const backButton = document.getElementById('backButton');
+
+        let currentDate = new Date();
+        let allCelebrations = [];
+        const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                           'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+
+        // Vérifier l'authentification
+        async function checkAuth() {
+            loadingScreen.style.display = 'flex';
+            
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            const role = userData.role;
+            
+            welcomeName.textContent = `${userData.name} (${role})`;
+
+            // Définir le lien de retour selon le rôle
+            if (role === 'admin') {
+                backButton.href = 'admin.html';
+            } else if (role === 'comite') {
+                backButton.href = 'committee.html';
+            } else if (role === 'professeur' || role === 'teacher') {
+                backButton.href = 'admin.html';
+            } else {
+                backButton.href = 'eleve.html';
+            }
+
+            loadingScreen.style.display = 'none';
+            calendarContent.classList.remove('hidden');
+            
+            // Charger les célébrations
+            loadCelebrations();
+            initializeYearSelect();
+            renderCalendar();
+            lucide.createIcons();
+        }
+
+        // Charger les célébrations depuis Firestore
+        function loadCelebrations() {
+            firebase.firestore().collection('celebrations').onSnapshot(snapshot => {
+                allCelebrations = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                renderCalendar();
+                updateStatistics();
+            }, error => {
+                console.error("Erreur lors du chargement:", error);
+            });
+        }
+
+        // Initialiser le sélecteur d'année
+        function initializeYearSelect() {
+            const currentYear = new Date().getFullYear();
+            yearSelect.innerHTML = '';
+            for (let year = currentYear - 5; year <= currentYear + 5; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // Obtenir les anniversaires pour une date spécifique
+        function getBirthdaysForDate(day, month) {
+            return allCelebrations.filter(celeb => {
+                if (!celeb.birthday) return false;
+                const parts = celeb.birthday.split('-');
+                if (parts.length !== 3) return false;
+                const celebMonth = parseInt(parts[1]) - 1;
+                const celebDay = parseInt(parts[2]);
+                return celebMonth === month && celebDay === day;
+            });
+        }
+
+        // Rendre le calendrier
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            currentMonthYear.textContent = `${monthNames[month]} ${year}`;
+            monthSelect.value = month;
+            yearSelect.value = year;
+            
+            calendarGrid.innerHTML = '';
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+            
+            const today = new Date();
+            const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+            
+            // Jours du mois précédent
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = daysInPrevMonth - i;
+                const dayEl = createDayElement(day, month - 1, year, true);
+                calendarGrid.appendChild(dayEl);
+            }
+            
+            // Jours du mois actuel
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = isCurrentMonth && today.getDate() === day;
+                const dayEl = createDayElement(day, month, year, false, isToday);
+                calendarGrid.appendChild(dayEl);
+            }
+            
+            // Jours du mois suivant
+            const remainingDays = 42 - (firstDay + daysInMonth);
+            for (let day = 1; day <= remainingDays; day++) {
+                const dayEl = createDayElement(day, month + 1, year, true);
+                calendarGrid.appendChild(dayEl);
+            }
+            
+            lucide.createIcons();
+        }
+
+        // Créer un élément jour
+        function createDayElement(day, month, year, isOtherMonth, isToday = false) {
+            const div = document.createElement('div');
+            div.className = 'calendar-day';
+            if (isOtherMonth) div.classList.add('other-month');
+            if (isToday) div.classList.add('today');
+            
+            const birthdays = getBirthdaysForDate(day, month);
+            if (birthdays.length > 0) {
+                div.classList.add('has-birthday');
+            }
+            
+            div.innerHTML = `
+                <div class="text-lg font-bold">${day}</div>
+                ${birthdays.length > 0 ? `<div class="text-xs text-primary mt-1">🎂 ${birthdays.length}</div>` : ''}
+            `;
+            
+            if (birthdays.length > 0) {
+                div.onclick = () => showBirthdayDetails(day, month, year, birthdays);
+            }
+            
+            return div;
+        }
+
+        // Afficher les détails des anniversaires
+        function showBirthdayDetails(day, month, year, birthdays) {
+            const dateStr = `${day} ${monthNames[month]} ${year}`;
+            modalDate.textContent = dateStr;
+            
+            birthdayList.innerHTML = '';
+            birthdays.forEach(person => {
+                const card = document.createElement('div');
+                card.className = 'card p-4 rounded-lg';
+                
+                const age = year - parseInt(person.birthday.split('-')[0]);
+                
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-lg mb-2">${person.fullName}</h4>
+                            <div class="space-y-1 text-sm text-gray-400">
+                                ${age > 0 ? `<p><i data-lucide="cake" class="w-4 h-4 inline mr-2"></i>${age} ans</p>` : ''}
+                                ${person.fileNumber ? `<p><i data-lucide="file-text" class="w-4 h-4 inline mr-2"></i>Fiche: ${person.fileNumber}</p>` : ''}
+                                ${person.classNumber ? `<p><i data-lucide="school" class="w-4 h-4 inline mr-2"></i>Classe: ${person.classNumber}</p>` : ''}
+                                ${person.gender ? `<p><i data-lucide="user" class="w-4 h-4 inline mr-2"></i>Genre: ${person.gender === 'F' ? 'Féminin' : person.gender === 'M' ? 'Masculin' : 'Autre'}</p>` : ''}
+                                ${person.extraInfo ? `<p class="mt-2 italic">${person.extraInfo}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-4xl ml-4">🎉</div>
+                    </div>
+                `;
+                birthdayList.appendChild(card);
+            });
+            
+            birthdayModal.classList.add('show');
+            lucide.createIcons();
+        }
+
+        // Fermer la modale
+        function closeModal() {
+            birthdayModal.classList.remove('show');
+        }
+
+        // Navigation
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function goToToday() {
+            currentDate = new Date();
+            renderCalendar();
+        }
+
+        function changeMonth() {
+            const month = parseInt(monthSelect.value);
+            const year = parseInt(yearSelect.value);
+            currentDate = new Date(year, month, 1);
+            renderCalendar();
+        }
+
+        // Mettre à jour les statistiques
+        function updateStatistics() {
+            const total = allCelebrations.length;
+            document.getElementById('totalBirthdays').textContent = total;
+            
+            const currentMonth = currentDate.getMonth();
+            const thisMonth = allCelebrations.filter(celeb => {
+                if (!celeb.birthday) return false;
+                const parts = celeb.birthday.split('-');
+                return parseInt(parts[1]) - 1 === currentMonth;
+            }).length;
+            document.getElementById('thisMonthBirthdays').textContent = thisMonth;
+            
+            const today = new Date();
+            const todayBirthdays = allCelebrations.filter(celeb => {
+                if (!celeb.birthday) return false;
+                const parts = celeb.birthday.split('-');
+                return parseInt(parts[1]) - 1 === today.getMonth() && 
+                       parseInt(parts[2]) === today.getDate();
+            }).length;
+            document.getElementById('todayBirthdays').textContent = todayBirthdays;
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkAuth();
+        });
+    </script>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+            <div class="footer-links">
+                <a href="privacy-policy.html">Politique de Confidentialité</a>
+                <span style="color: #4b5563;">•</span>
+                <a href="data-policy.html">Gestion des Données</a>
+                <span style="color: #4b5563;">•</span>
+                <a href="terms.html">Conditions d'Utilisation</a>
+            </div>
+            <div class="footer-copyright">
+                <p style="margin: 0;">© 2025 <strong>ONTech-cloud Technology</strong> • Fêtes Express • Tous droits réservés</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

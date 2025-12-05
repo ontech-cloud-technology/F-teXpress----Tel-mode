@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documentation — Fête Express</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Bibliothèques pour PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="firebase.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1a1f3a 50%, #0f172a 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+        }
+        
+        .section {
+            margin-bottom: 35px;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #6366f1;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-content {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 25px;
+            border-radius: 16px;
+            border-left: 4px solid #6366f1;
+            line-height: 1.8;
+        }
+        
+        .section-content p {
+            margin-bottom: 15px;
+            color: #e2e8f0;
+        }
+        
+        .section-content ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .section-content li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+            color: #e2e8f0;
+        }
+        
+        .section-content li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #6366f1;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        
+        .btn-download {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .btn-download:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.6);
+        }
+        
+        .btn-back {
+            background: rgba(100, 116, 139, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-back:hover {
+            background: rgba(100, 116, 139, 0.5);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6366f1;
+        }
+        
+        @media print {
+            .btn-download, .btn-back {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen" style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+        <div style="text-align: center;">
+            <div style="border: 4px solid rgba(99, 102, 241, 0.3); border-top: 4px solid #6366f1; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+            <p style="color: #cbd5e1;">Vérification de l'accès...</p>
+        </div>
+    </div>
+    
+    <div id="content" style="display: none;">
+        <div class="container" id="documentationContent">
+            <button onclick="window.location.href='admin.html'" class="btn-back">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                Retour à l'administration
+            </button>
+            
+            <div class="header">
+                <h1>📚 Documentation Fête Express</h1>
+                <p>Guide simple pour l'enseignante</p>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="info" class="w-6 h-6"></i>
+                    Qu'est-ce que Fête Express ?
+                </div>
+                <div class="section-content">
+                    <p><strong>Fête Express</strong> est une plateforme web simple et amusante pour gérer et célébrer les anniversaires des élèves de votre classe.</p>
+                    <p>Les élèves peuvent voir les anniversaires à venir, envoyer des messages d'anniversaire, et participer à des activités amusantes.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="users" class="w-6 h-6"></i>
+                    Les Rôles dans le Système
+                </div>
+                <div class="section-content">
+                    <ul>
+                        <li><strong>Élève :</strong> Peut voir les anniversaires, envoyer des messages, et participer aux activités</li>
+                        <li><strong>Professeur :</strong> Peut gérer les anniversaires et voir les statistiques (comme vous)</li>
+                        <li><strong>Admin :</strong> Accès complet à toutes les fonctionnalités</li>
+                        <li><strong>Comité :</strong> Peut organiser des activités spéciales</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="message-circle" class="w-6 h-6"></i>
+                    Les Messages d'Anniversaire
+                </div>
+                <div class="section-content">
+                    <p>Les élèves peuvent envoyer des messages d'anniversaire à leurs camarades :</p>
+                    <ul>
+                        <li><strong>Messages secrets :</strong> Seulement visibles par la personne qui reçoit (tous les messages sont privés)</li>
+                    </ul>
+                    <p>Les messages peuvent être envoyés jusqu'à 1 semaine avant l'anniversaire.</p>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="target" class="w-6 h-6"></i>
+                    Les Défis et Activités
+                </div>
+                <div class="section-content">
+                    <p>Le système propose des défis amusants pour encourager la participation :</p>
+                    
+                    <div class="highlight-box" style="margin-top: 20px; margin-bottom: 20px;">
+                        <p><strong>🎯 Le Défi de Progression (9 Personnes Consécutives)</strong></p>
+                        <p style="margin-top: 15px;"><strong>Comment ça marche concrètement :</strong></p>
+                        <p>Les anniversaires sont classés par ordre chronologique (du plus proche au plus lointain).</p>
+                        <p style="margin-top: 10px;"><strong>Exemple simple :</strong></p>
+                        <p>Si les anniversaires sont :</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>1. Marie (15 janvier)</li>
+                            <li>2. Pierre (20 janvier)</li>
+                            <li>3. Sophie (25 janvier)</li>
+                            <li>4. Luc (1er février)</li>
+                            <li>... et ainsi de suite</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>L'objectif :</strong> Quand <strong>TOUS les élèves</strong> de la classe ont envoyé un message à une même personne, le compteur augmente de 1.</p>
+                        <p style="margin-top: 10px;"><strong>Ce qui se passe :</strong></p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>✅ Si <strong>tous les élèves</strong> envoient un message à Marie (1ère personne) → Le compteur passe à 1</li>
+                            <li>✅ Si <strong>tous les élèves</strong> envoient ensuite un message à Pierre (2ème personne) → Le compteur passe à 2</li>
+                            <li>✅ Si <strong>tous les élèves</strong> envoient ensuite un message à Sophie (3ème personne) → Le compteur passe à 3</li>
+                            <li>❌ Si une personne dans la séquence n'a <strong>pas reçu de message de tous les élèves</strong> → Le compteur se réinitialise à zéro</li>
+                            <li>🎉 Quand le compteur atteint 9 personnes consécutives → Le défi est réussi pour toute la classe !</li>
+                            <li>🏆 <strong>Récompense :</strong> Quand 9 personnes consécutives sont atteintes, les activités sont gagnées !</li>
+                        </ul>
+                        <p style="margin-top: 15px;"><strong>Pourquoi ce défi ?</strong></p>
+                        <p>Cela encourage <strong>tous les élèves</strong> à participer et à ne pas oublier les anniversaires de leurs camarades. C'est un défi collectif qui crée de la cohésion dans la classe !</p>
+                        <p style="margin-top: 10px;"><strong>💡 Important :</strong> Les activités proposées dans le système sont débloquées et gagnées lorsque la classe atteint l'objectif de 9 personnes consécutives. C'est une récompense collective pour toute la classe !</p>
+                    </div>
+                    
+                    <p style="margin-top: 20px;"><strong>Autres activités :</strong></p>
+                    <ul>
+                        <li><strong>Vote d'activités :</strong> Les élèves peuvent voter pour les activités qu'ils préfèrent</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="award" class="w-6 h-6"></i>
+                    Système de Réputation et Surveillance des Messages
+                </div>
+                <div class="section-content">
+                    <p><strong>Le système de réputation :</strong></p>
+                    <ul>
+                        <li>Chaque élève commence avec une <strong>réputation de 100/100</strong></li>
+                        <li>La réputation reflète le comportement de l'élève dans le système</li>
+                        <li>Les comportements positifs maintiennent ou augmentent la réputation</li>
+                        <li>Les comportements inappropriés réduisent automatiquement la réputation</li>
+                    </ul>
+                    
+                    <div class="highlight-box" style="margin-top: 20px; margin-bottom: 20px;">
+                        <p><strong>🔍 Surveillance Automatique des Messages</strong></p>
+                        <p style="margin-top: 15px;">Le système dispose d'un <strong>filtre automatique</strong> qui surveille tous les messages envoyés :</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>✅ <strong>Plus de 200 mots interdits</strong> sont détectés automatiquement</li>
+                            <li>✅ Le filtre fonctionne même si les élèves essaient de contourner (variations, accents, caractères spéciaux, etc.)</li>
+                            <li>✅ Si un élève essaie d'envoyer un message avec un mot interdit, le message est <strong>BLOQUÉ</strong> et ne peut pas être envoyé</li>
+                            <li>✅ Le message bloqué est automatiquement enregistré dans un journal pour que vous puissiez le consulter</li>
+                        </ul>
+                    </div>
+
+                    <p style="margin-top: 20px;"><strong>Conséquences en cas de message inapproprié :</strong></p>
+                    <ul>
+                        <li>❌ <strong>Perte de 5 points de réputation</strong> à chaque tentative d'envoi d'un message inapproprié</li>
+                        <li>📝 Le message est enregistré dans le journal des messages bloqués (accessible dans le tableau de bord admin)</li>
+                        <li>⚠️ <strong>Si la réputation tombe en dessous de 50/100</strong> : L'élève ne peut plus envoyer de messages jusqu'à ce que sa réputation remonte</li>
+                        <li>🚫 <strong>Si la réputation tombe en dessous de 20/100</strong> : L'élève risque de devenir "spectateur" et d'être exclu des activités et de la progression</li>
+                    </ul>
+
+                    <div class="highlight-box" style="margin-top: 20px; margin-bottom: 20px;">
+                        <p><strong>👨‍🏫 Gestion par les Administrateurs</strong></p>
+                        <p style="margin-top: 15px;">Dans le tableau de bord admin, vous pouvez :</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>📊 <strong>Voir la réputation de chaque élève</strong> dans la section "Réputation & Statuts"</li>
+                            <li>🔍 <strong>Consulter tous les messages bloqués</strong> avec les détails (qui, quand, pourquoi)</li>
+                            <li>✏️ <strong>Ajuster manuellement la réputation</strong> d'un élève si nécessaire</li>
+                            <li>🔓 <strong>Débloquer un élève</strong> ou modifier son statut (actif, bloqué, spectateur)</li>
+                            <li>📈 <strong>Suivre l'historique</strong> des modifications de réputation</li>
+                        </ul>
+                    </div>
+
+                    <p style="margin-top: 20px;"><strong>💡 Avantages du système :</strong></p>
+                    <ul>
+                        <li>🛡️ <strong>Protection automatique 24h/24</strong> : Le système fonctionne en continu, sans intervention nécessaire</li>
+                        <li>📚 <strong>Pédagogique</strong> : Encourage les bons comportements et décourage les comportements inappropriés</li>
+                        <li>⚖️ <strong>Équitable</strong> : Tous les élèves sont soumis aux mêmes règles</li>
+                        <li>🔐 <strong>Sécurisé</strong> : Tous les messages sont validés avant d'être envoyés</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="shield" class="w-6 h-6"></i>
+                    La Sécurité et la Confidentialité
+                </div>
+                <div class="section-content">
+                    <ul>
+                        <li>Tous les élèves doivent se connecter avec leur compte</li>
+                        <li>Les messages sont modérés et sécurisés</li>
+                        <li>Les professeurs et admins peuvent voir toutes les activités</li>
+                        <li>Les données sont stockées de manière sécurisée</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                    Paramètres Importants
+                </div>
+                <div class="section-content">
+                    <p><strong>Dans le tableau de bord admin, vous pouvez :</strong></p>
+                    <ul>
+                        <li>Voir tous les anniversaires de la classe</li>
+                        <li>Ajouter, modifier ou supprimer des anniversaires</li>
+                        <li>Voir les statistiques de participation</li>
+                        <li>Gérer les profils des élèves</li>
+                        <li>Voir les messages envoyés (pour modération si nécessaire)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">
+                    <i data-lucide="help-circle" class="w-6 h-6"></i>
+                    Besoin d'Aide ?
+                </div>
+                <div class="section-content">
+                    <p>Si vous avez des questions ou rencontrez un problème :</p>
+                    <ul>
+                        <li>Vérifiez que vous êtes bien connectée avec votre compte professeur</li>
+                        <li>Assurez-vous que les élèves ont bien complété leur profil</li>
+                        <li>Contactez l'administrateur technique si nécessaire</li>
+                    </ul>
+                    <div class="highlight-box">
+                        <p><strong>✨ Rappel :</strong> Cette plateforme est conçue pour être simple et intuitive. Si quelque chose semble compliqué, n'hésitez pas à demander de l'aide !</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="downloadPDF()" class="btn-download" id="btnDownload">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            Télécharger en PDF
+        </button>
+        
+        <div id="loading" class="loading">
+            <p>Génération du PDF en cours...</p>
+        </div>
+    </div>
+    
+    <script>
+        let currentUserId = null;
+        let currentUserRole = null;
+        
+        // Vérifier l'accès
+        async function checkAccess() {
+            try {
+                const user = firebase.auth().currentUser;
+                if (!user) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                currentUserId = user.uid;
+                
+                // Récupérer le rôle de l'utilisateur
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                if (!userDoc.exists) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                const userData = userDoc.data();
+                currentUserRole = userData.role;
+                
+                // Vérifier que l'utilisateur est admin ou professeur
+                const isAdmin = currentUserRole === 'admin';
+                const isProfessor = currentUserRole === 'professeur' || currentUserRole === 'teacher';
+                
+                if (!isAdmin && !isProfessor) {
+                    alert('Accès refusé. Cette page est réservée aux administrateurs et professeurs.');
+                    window.location.href = 'eleve.html';
+                    return;
+                }
+                
+                // Afficher le contenu
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                lucide.createIcons();
+                
+            } catch (error) {
+                console.error('Erreur lors de la vérification:', error);
+                alert('Erreur lors de la vérification de l\'accès.');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Télécharger en PDF
+        async function downloadPDF() {
+            const btnDownload = document.getElementById('btnDownload');
+            const loading = document.getElementById('loading');
+            
+            btnDownload.style.display = 'none';
+            loading.style.display = 'block';
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                // Configuration
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 20;
+                const maxWidth = pageWidth - (margin * 2);
+                let yPosition = margin;
+                
+                // Fonction pour ajouter une nouvelle page si nécessaire
+                function checkNewPage(requiredHeight) {
+                    if (yPosition + requiredHeight > pageHeight - margin) {
+                        doc.addPage();
+                        yPosition = margin;
+                    }
+                }
+                
+                // Titre principal
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text('Documentation Fête Express', margin, yPosition);
+                yPosition += 8;
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Guide simple pour l\'enseignante', margin, yPosition);
+                yPosition += 15;
+                
+                // Sections (sans emojis pour compatibilité PDF)
+                const sections = [
+                    {
+                        title: 'Qu\'est-ce que Fête Express ?',
+                        content: [
+                            'Fête Express est une plateforme web simple et amusante pour gérer et célébrer les anniversaires des élèves de votre classe.',
+                            'Les élèves peuvent voir les anniversaires à venir, envoyer des messages d\'anniversaire, et participer à des activités amusantes.'
+                        ]
+                    },
+                    {
+                        title: 'Les Rôles dans le Système',
+                        content: [
+                            '• Élève : Peut voir les anniversaires, envoyer des messages, et participer aux activités',
+                            '• Professeur : Peut gérer les anniversaires et voir les statistiques (comme vous)',
+                            '• Admin : Accès complet à toutes les fonctionnalités',
+                            '• Comité : Peut organiser des activités spéciales'
+                        ]
+                    },
+                    {
+                        title: 'Les Messages d\'Anniversaire',
+                        content: [
+                            'Les élèves peuvent envoyer des messages d\'anniversaire à leurs camarades :',
+                            '• Messages secrets : Seulement visibles par la personne qui reçoit (tous les messages sont privés)',
+                            '',
+                            'Les messages peuvent être envoyés jusqu\'à 1 semaine avant l\'anniversaire.'
+                        ]
+                    },
+                    {
+                        title: 'Système de Réputation et Surveillance des Messages',
+                        content: [
+                            'LE SYSTÈME DE RÉPUTATION',
+                            '',
+                            'Chaque élève commence avec une réputation de 100/100.',
+                            'La réputation reflète le comportement de l\'élève dans le système.',
+                            'Les comportements positifs maintiennent ou augmentent la réputation.',
+                            'Les comportements inappropriés réduisent automatiquement la réputation.',
+                            '',
+                            'SURVEILLANCE AUTOMATIQUE DES MESSAGES',
+                            '',
+                            'Le système dispose d\'un filtre automatique qui surveille tous les messages envoyés :',
+                            '• Plus de 200 mots interdits sont détectés automatiquement',
+                            '• Le filtre fonctionne même si les élèves essaient de contourner (variations, accents, caractères spéciaux)',
+                            '• Si un élève essaie d\'envoyer un message avec un mot interdit, le message est BLOQUÉ',
+                            '• Le message bloqué est automatiquement enregistré dans un journal',
+                            '',
+                            'CONSÉQUENCES EN CAS DE MESSAGE INAPPROPRIÉ',
+                            '',
+                            '• Perte de 5 points de réputation à chaque tentative d\'envoi d\'un message inapproprié',
+                            '• Le message est enregistré dans le journal des messages bloqués (accessible dans le tableau de bord admin)',
+                            '• Si la réputation tombe en dessous de 50/100 : L\'élève ne peut plus envoyer de messages',
+                            '• Si la réputation tombe en dessous de 20/100 : L\'élève risque de devenir "spectateur"',
+                            '',
+                            'GESTION PAR LES ADMINISTRATEURS',
+                            '',
+                            'Dans le tableau de bord admin, vous pouvez :',
+                            '• Voir la réputation de chaque élève dans la section "Réputation & Statuts"',
+                            '• Consulter tous les messages bloqués avec les détails (qui, quand, pourquoi)',
+                            '• Ajuster manuellement la réputation d\'un élève si nécessaire',
+                            '• Débloquer un élève ou modifier son statut (actif, bloqué, spectateur)',
+                            '• Suivre l\'historique des modifications de réputation',
+                            '',
+                            'AVANTAGES DU SYSTÈME',
+                            '',
+                            '• Protection automatique 24h/24 : Le système fonctionne en continu',
+                            '• Pédagogique : Encourage les bons comportements',
+                            '• Équitable : Tous les élèves sont soumis aux mêmes règles',
+                            '• Sécurisé : Tous les messages sont validés avant d\'être envoyés'
+                        ]
+                    },
+                    {
+                        title: 'Les Défis et Activités',
+                        content: [
+                            'Le système propose des défis amusants pour encourager la participation :',
+                            '',
+                            'LE DEFI DE PROGRESSION (9 Personnes Consécutives)',
+                            '',
+                            'Comment ça marche concrètement :',
+                            'Les anniversaires sont classés par ordre chronologique (du plus proche au plus lointain).',
+                            '',
+                            'Exemple simple :',
+                            'Si les anniversaires sont :',
+                            '  1. Marie (15 janvier)',
+                            '  2. Pierre (20 janvier)',
+                            '  3. Sophie (25 janvier)',
+                            '  4. Luc (1er février)',
+                            '  ... et ainsi de suite',
+                            '',
+                            'L\'objectif :',
+                            'Quand TOUS les élèves de la classe ont envoyé un message à une même personne, le compteur augmente de 1.',
+                            '',
+                            'Ce qui se passe :',
+                            '  ✓ Si tous les élèves envoient un message à Marie (1ère personne), le compteur passe à 1',
+                            '  ✓ Si tous les élèves envoient ensuite un message à Pierre (2ème personne), le compteur passe à 2',
+                            '  ✓ Si tous les élèves envoient ensuite un message à Sophie (3ème personne), le compteur passe à 3',
+                            '  ✗ Si une personne dans la séquence n\'a pas reçu de message de tous les élèves, le compteur se réinitialise à zéro',
+                            '  ✓ Quand le compteur atteint 9 personnes consécutives, le défi est réussi pour toute la classe',
+                            '  ✓ Récompense : Quand 9 personnes consécutives sont atteintes, les activités sont gagnées',
+                            '',
+                            'Pourquoi ce défi ?',
+                            'Cela encourage tous les élèves à participer et à ne pas oublier les anniversaires de leurs camarades. C\'est un défi collectif qui crée de la cohésion dans la classe !',
+                            '',
+                            'IMPORTANT :',
+                            'Les activités proposées dans le système sont débloquées et gagnées lorsque la classe atteint l\'objectif de 9 personnes consécutives. C\'est une récompense collective pour toute la classe !',
+                            '',
+                            'Autres activités :',
+                            '• Vote d\'activités : Les élèves peuvent voter pour les activités qu\'ils préfèrent'
+                        ]
+                    },
+                    {
+                        title: 'La Sécurité et la Confidentialité',
+                        content: [
+                            '• Tous les élèves doivent se connecter avec leur compte',
+                            '• Les messages sont modérés et sécurisés',
+                            '• Les professeurs et admins peuvent voir toutes les activités',
+                            '• Les données sont stockées de manière sécurisée'
+                        ]
+                    },
+                    {
+                        title: 'Paramètres Importants',
+                        content: [
+                            'Dans le tableau de bord admin, vous pouvez :',
+                            '• Voir tous les anniversaires de la classe',
+                            '• Ajouter, modifier ou supprimer des anniversaires',
+                            '• Voir les statistiques de participation',
+                            '• Gérer les profils des élèves',
+                            '• Voir les messages envoyés (pour modération si nécessaire)'
+                        ]
+                    },
+                    {
+                        title: 'Besoin d\'Aide ?',
+                        content: [
+                            'Si vous avez des questions ou rencontrez un problème :',
+                            '• Vérifiez que vous êtes bien connectée avec votre compte professeur',
+                            '• Assurez-vous que les élèves ont bien complété leur profil',
+                            '• Contactez l\'administrateur technique si nécessaire',
+                            '',
+                            'RAPPEL : Cette plateforme est conçue pour être simple et intuitive. Si quelque chose semble compliqué, n\'hésitez pas à demander de l\'aide !'
+                        ]
+                    }
+                ];
+                
+                // Ajouter chaque section
+                sections.forEach((section, index) => {
+                    checkNewPage(20);
+                    
+                    // Espace avant la section
+                    if (index > 0) {
+                        yPosition += 10;
+                    }
+                    
+                    // Titre de section
+                    doc.setFontSize(14);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(0, 0, 0);
+                    const titleLines = doc.splitTextToSize(section.title, maxWidth);
+                    titleLines.forEach(line => {
+                        checkNewPage(8);
+                        doc.text(line, margin, yPosition);
+                        yPosition += 7;
+                    });
+                    yPosition += 5;
+                    
+                    // Contenu
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(0, 0, 0);
+                    
+                    section.content.forEach(line => {
+                        const trimmedLine = line.trim();
+                        
+                        if (trimmedLine === '') {
+                            yPosition += 5;
+                            return;
+                        }
+                        
+                        checkNewPage(8);
+                        
+                        // Nettoyer le texte
+                        let cleanText = trimmedLine.replace(/→/g, '->');
+                        
+                        const textLines = doc.splitTextToSize(cleanText, maxWidth);
+                        textLines.forEach(l => {
+                            checkNewPage(7);
+                            doc.text(l, margin, yPosition);
+                            yPosition += 7;
+                        });
+                    });
+                });
+                
+                // Pied de page
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(9);
+                    doc.setTextColor(100, 100, 100);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(
+                        `Page ${i} sur ${pageCount}`,
+                        pageWidth / 2,
+                        pageHeight - 10,
+                        { align: 'center' }
+                    );
+                }
+                
+                // Enregistrer le PDF
+                doc.save('Documentation-Fete-Express.pdf');
+                
+            } catch (error) {
+                console.error('Erreur lors de la génération du PDF:', error);
+                alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
+            } finally {
+                btnDownload.style.display = 'flex';
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Vérifier l'accès au chargement
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                checkAccess();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+</body>
+</html>
+

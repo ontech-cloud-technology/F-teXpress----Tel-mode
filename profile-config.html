@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Configuration du Profil — Fête Express</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <!-- Scripts nécessaires -->
+    <script src="firebase.js"></script>
+    <!-- Système de logging automatique des activités -->
+    <script src="js/activity-logger.js"></script>
+    <script src="js/theme-manager.js"></script>
+    <script src="js/supabase-storage.js"></script>
+    <script src="js/wishlist-system.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-light) 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 2rem 0;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        input[type="text"], input[type="password"], textarea {
+            color: white !important;
+            background-color: var(--bg-dark) !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #9ca3af !important;
+        }
+        .question-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .question-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4a5568;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .progress-bar {
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-4xl mx-auto px-4">
+        <!-- En-tête avec barre de progression -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold mb-4">
+                Configuration de <span class="header-gradient">Mon Profil</span>
+            </h1>
+            <div class="mb-4">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <p class="text-sm text-gray-400 mt-2">
+                    Étape <span id="currentStep">1</span> sur <span id="totalSteps">9</span>
+                </p>
+            </div>
+        </div>
+
+        <form id="profileConfigForm">
+            <!-- ÉTAPE 1: Mot de passe -->
+            <div class="step active" id="step1">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="lock" class="w-6 h-6 mr-2"></i>
+                        Sécurité - Définir un Mot de Passe
+                    </h2>
+                    
+                    <!-- Changement de mot de passe -->
+                    <div class="mb-6">
+                        <!-- Champ username caché pour l'accessibilité -->
+                        <input type="text" name="username" autocomplete="username" style="position: absolute; left: -9999px;" tabindex="-1" aria-hidden="true">
+                        
+                        <label class="block text-sm font-semibold mb-2">Nouveau mot de passe</label>
+                        <input type="password" id="newPassword" name="new-password" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-2" placeholder="Minimum 6 caractères" autocomplete="new-password">
+                        <input type="password" id="confirmPassword" name="confirm-password" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="Confirmer le mot de passe" autocomplete="new-password">
+                        <p class="text-xs text-gray-400 mt-2">Le mot de passe doit contenir au moins 6 caractères</p>
+                        <div class="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-3 text-sm mt-3">
+                            <p class="flex items-start">
+                                <i data-lucide="info" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"></i>
+                                <span>Si vous avez déjà un mot de passe, vous pouvez laisser ces champs vides et passer à l'étape suivante.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 2: Règles et Conditions d'Utilisation (COMPLÈTE) -->
+            <div class="step" id="step2">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="shield-check" class="w-6 h-6 mr-2"></i>
+                        Règles et Conditions d'Utilisation
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-6">Fête Express — Système de Gestion des Anniversaires</p>
+                    
+                    <div class="space-y-6 mb-6">
+                        <!-- Section Respect et Courtoisie -->
+                        <div class="bg-bg-dark p-4 rounded-lg border border-gray-700">
+                            <h3 class="text-lg font-bold mb-3 flex items-center text-primary">
+                                <i data-lucide="shield-check" class="w-5 h-5 mr-2"></i>
+                                Respect et Courtoisie
+                            </h3>
+                            <ul class="list-disc list-inside space-y-2 text-sm text-gray-300 ml-4">
+                                <li>Utilisez un langage respectueux et approprié dans tous vos messages</li>
+                                <li>Traitez tous les membres de la communauté avec dignité et respect</li>
+                                <li>Évitez tout contenu offensant, discriminatoire ou inapproprié</li>
+                                <li>Respectez la vie privée des autres utilisateurs</li>
+                            </ul>
+                        </div>
+
+                        <!-- Section Messages et Communication -->
+                        <div class="bg-bg-dark p-4 rounded-lg border border-gray-700">
+                            <h3 class="text-lg font-bold mb-3 flex items-center text-primary">
+                                <i data-lucide="message-square" class="w-5 h-5 mr-2"></i>
+                                Messages et Communication
+                            </h3>
+                            <ul class="list-disc list-inside space-y-2 text-sm text-gray-300 ml-4">
+                                <li>Les messages doivent être positifs et bienveillants</li>
+                                <li>Un seul message par personne et par anniversaire</li>
+                                <li>Tous les messages sont privés et restent confidentiels</li>
+                            </ul>
+                        </div>
+
+                        <!-- Section Participation et Engagement -->
+                        <div class="bg-bg-dark p-4 rounded-lg border border-gray-700">
+                            <h3 class="text-lg font-bold mb-3 flex items-center text-primary">
+                                <i data-lucide="users" class="w-5 h-5 mr-2"></i>
+                                Participation et Engagement
+                            </h3>
+                            <ul class="list-disc list-inside space-y-2 text-sm text-gray-300 ml-4">
+                                <li>Participez activement aux célébrations d'anniversaires</li>
+                                <li>Respectez le système de progression et de récompenses</li>
+                                <li>Participez aux votes d'activités de manière responsable</li>
+                                <li>Respectez les décisions prises collectivement</li>
+                            </ul>
+                        </div>
+
+                        <!-- Section Confidentialité et Sécurité -->
+                        <div class="bg-bg-dark p-4 rounded-lg border border-gray-700">
+                            <h3 class="text-lg font-bold mb-3 flex items-center text-primary">
+                                <i data-lucide="lock" class="w-5 h-5 mr-2"></i>
+                                Confidentialité et Sécurité
+                            </h3>
+                            <ul class="list-disc list-inside space-y-2 text-sm text-gray-300 ml-4">
+                                <li>Ne partagez pas vos identifiants de connexion</li>
+                                <li>Protégez vos informations personnelles</li>
+                                <li>Signalez tout comportement suspect aux administrateurs</li>
+                                <li>Respectez la confidentialité des informations partagées</li>
+                            </ul>
+                        </div>
+
+                        <!-- Section Conséquences -->
+                        <div class="bg-red-900 bg-opacity-20 border border-red-500 p-4 rounded-lg">
+                            <h3 class="text-lg font-bold mb-3 flex items-center text-red-400">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 mr-2"></i>
+                                Conséquences en Cas de Non-Respect
+                            </h3>
+                            <div class="space-y-3 text-sm text-gray-300">
+                                <div>
+                                    <strong class="text-red-400">Perte de Réputation :</strong> L'utilisation de mots interdits ou de comportements inappropriés réduit automatiquement votre réputation dans le système.
+                                </div>
+                                <div>
+                                    <strong class="text-red-400">Blocage Temporaire :</strong> Si votre réputation devient trop faible, vous pourrez être temporairement empêché d'envoyer des messages.
+                                </div>
+                                <div>
+                                    <strong class="text-red-400">Statut Spectateur :</strong> En cas de violations répétées, vous pourrez être retiré du système actif et devenir un simple spectateur, sans participation aux activités ni à la progression.
+                                </div>
+                                <div>
+                                    <strong class="text-red-400">Sanctions Administratives :</strong> Les administrateurs se réservent le droit de prendre des mesures supplémentaires en cas de comportement grave ou répété.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Système de Réputation -->
+                        <div class="bg-yellow-900 bg-opacity-20 border border-yellow-500 p-4 rounded-lg">
+                            <h3 class="text-lg font-bold mb-3 flex items-center text-yellow-400">
+                                <i data-lucide="award" class="w-5 h-5 mr-2"></i>
+                                Système de Réputation
+                            </h3>
+                            <p class="text-sm text-gray-300 mb-3">Chaque utilisateur commence avec une réputation de <strong class="text-yellow-400">100 points</strong>. Cette réputation peut augmenter ou diminuer selon votre comportement :</p>
+                            <ul class="list-disc list-inside space-y-2 text-sm text-gray-300 ml-4">
+                                <li><strong>Comportement positif :</strong> Maintien ou augmentation de la réputation</li>
+                                <li><strong>Mots interdits :</strong> Réduction automatique de la réputation</li>
+                                <li><strong>Réputation &lt; 50 :</strong> Risque de blocage des messages</li>
+                                <li><strong>Réputation &lt; 20 :</strong> Risque de devenir spectateur</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Checkbox d'acceptation -->
+                    <div class="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-4">
+                        <label class="flex items-start cursor-pointer">
+                            <input type="checkbox" id="acceptRules" required class="mt-1 mr-3 w-5 h-5 rounded border-gray-700 bg-bg-dark text-primary focus:ring-primary">
+                            <span class="text-sm">
+                                <strong>Je comprends et j'accepte les règles et conditions d'utilisation de Fête Express.</strong> 
+                                Je m'engage à respecter ces règles et je comprends les conséquences en cas de non-respect, 
+                                notamment la perte de réputation, le blocage temporaire ou le statut de spectateur.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 3: Photo de profil et Thème -->
+            <div class="step" id="step3">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="user" class="w-6 h-6 mr-2"></i>
+                        Photo de Profil et Préférences
+                    </h2>
+                    
+                    <!-- Photo de profil -->
+                    <div class="mb-6 text-center">
+                        <div class="relative inline-block">
+                            <img id="profilePhotoPreview" src="" alt="Photo de profil" class="w-32 h-32 rounded-full object-cover border-4 border-primary mx-auto mb-4" style="display: none;">
+                            <div id="profilePhotoPlaceholder" class="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-4xl mx-auto mb-4 border-4 border-primary">
+                                <i data-lucide="user" class="w-16 h-16 text-white"></i>
+                            </div>
+                            <label for="profilePhotoInput" class="absolute bottom-0 right-0 bg-primary hover:bg-opacity-90 text-white p-2 rounded-full cursor-pointer transition">
+                                <i data-lucide="camera" class="w-5 h-5"></i>
+                                <input type="file" id="profilePhotoInput" accept="image/*" class="hidden">
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-4">Clique sur l'icône caméra pour changer ta photo</p>
+                        <div id="photoUploadStatus" class="hidden"></div>
+                    </div>
+
+                    <!-- Thème -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold mb-2">Thème de l'application</label>
+                        <div class="flex items-center justify-between p-4 bg-bg-dark rounded-lg border border-gray-700">
+                            <div>
+                                <p class="font-semibold mb-1">Mode sombre / clair</p>
+                                <p class="text-sm text-gray-400">Choisir entre le mode sombre et clair</p>
+                            </div>
+                            <button type="button" onclick="toggleTheme()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                <i data-lucide="sun" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 4-7: Questions du profil (divisées en groupes de 5) -->
+            <!-- Les questions seront ajoutées dans les étapes suivantes -->
+            <div class="step" id="step4">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="heart" class="w-6 h-6 mr-2"></i>
+                        À propos de toi (1/4)
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-6">Remplis ces questions pour que les autres te connaissent mieux !</p>
+                    
+                    <!-- Questions 1-5 -->
+                    <div class="space-y-4" id="questionsGroup1"></div>
+                </div>
+            </div>
+
+            <div class="step" id="step5">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="star" class="w-6 h-6 mr-2"></i>
+                        À propos de toi (2/4)
+                    </h2>
+                    <div class="space-y-4" id="questionsGroup2"></div>
+                </div>
+            </div>
+
+            <div class="step" id="step6">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="sparkles" class="w-6 h-6 mr-2"></i>
+                        À propos de toi (3/4)
+                    </h2>
+                    <div class="space-y-4" id="questionsGroup3"></div>
+                </div>
+            </div>
+
+            <div class="step" id="step7">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="zap" class="w-6 h-6 mr-2"></i>
+                        À propos de toi (4/4)
+                    </h2>
+                    <div class="space-y-4" id="questionsGroup4"></div>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 8: Souhaits de cadeau -->
+            <div class="step" id="step8">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="gift" class="w-6 h-6 mr-2"></i>
+                        Liste de Souhaits
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-4">Ajoute tes souhaits d'anniversaire ici. Les autres pourront les voir si tu le permets.</p>
+                    
+                    <div class="mb-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="wishInput" placeholder="Ex: Un nouveau livre, des écouteurs..." class="flex-1 px-4 py-2 rounded-lg bg-bg-dark border border-gray-700 text-white focus:outline-none focus:border-primary transition">
+                            <button type="button" onclick="addWish()" class="px-6 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 p-4 bg-bg-dark rounded-lg border border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="font-semibold mb-1">Rendre ma liste visible</p>
+                                <p class="text-sm text-gray-400">Les autres élèves pourront voir tes souhaits</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="wishlistVisibility" class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="wishlistContent" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 9: 10 autres informations -->
+            <div class="step" id="step9">
+                <div class="card p-6 rounded-xl mb-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center">
+                        <i data-lucide="info" class="w-6 h-6 mr-2"></i>
+                        Informations Supplémentaires
+                    </h2>
+                    <p class="text-gray-400 text-sm mb-6">Partage encore plus d'informations sur toi !</p>
+                    
+                    <div class="space-y-4" id="additionalInfo"></div>
+                </div>
+            </div>
+
+            <!-- Messages d'erreur -->
+            <div id="errorBox" class="bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-3 text-sm hidden mb-6">
+                <p id="errorMsg" class="flex items-start">
+                    <i data-lucide="alert-circle" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"></i>
+                    <span></span>
+                </p>
+            </div>
+
+            <!-- Boutons de navigation -->
+            <div class="flex justify-between mb-8">
+                <button type="button" id="prevBtn" onclick="previousStep()" class="px-6 py-3 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition flex items-center hidden">
+                    <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                    Précédent
+                </button>
+                <div class="flex items-center gap-4 ml-auto">
+                    <button type="button" id="skipBtn" onclick="skipProfileSetup()" class="px-6 py-3 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white font-bold transition flex items-center hidden">
+                        <i data-lucide="skip-forward" class="w-5 h-5 mr-2"></i>
+                        Passer le Formulaire
+                    </button>
+                    <button type="button" id="nextBtn" onclick="nextStep()" class="px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-bold hover:opacity-90 transition flex items-center">
+                        Suivant
+                        <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                    </button>
+                    <button type="submit" id="submitBtn" class="px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-bold hover:opacity-90 transition flex items-center hidden">
+                        <i data-lucide="save" class="w-5 h-5 mr-2"></i>
+                        Terminer la Configuration
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Overlay de succès -->
+    <div id="successOverlay" class="fixed inset-0 bg-black bg-opacity-90 hidden items-center justify-center z-50">
+        <div class="text-center">
+            <div class="mb-4">
+                <i data-lucide="check-circle" class="w-20 h-20 text-green-400 mx-auto"></i>
+            </div>
+            <h2 class="text-3xl font-bold mb-2">Configuration terminée !</h2>
+            <p class="text-gray-400">Redirection en cours...</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const TOTAL_STEPS = 9;
+        let currentStep = 1;
+        let supabaseStorage = null;
+        let wishlistSystem = null;
+        let profilePhotoUrl = null;
+        let wishes = [];
+        let wishlistIsPublic = false;
+
+        // Questions du profil (20 questions)
+        const profileQuestions = [
+            { key: 'crushSecret', label: 'Ton crush secret (si tu veux le partager 😏)', placeholder: 'Tu peux garder ça secret si tu veux...', encrypted: true },
+            { key: 'meilleurAmi', label: 'Ton meilleur ami(e)', placeholder: 'Qui est ton meilleur pote ?' },
+            { key: 'animalPrefere', label: 'Ton animal préféré', placeholder: 'Chien, chat, panda, licorne...' },
+            { key: 'platPrefere', label: 'Ton plat préféré', placeholder: 'Pizza, poutine, sushi...' },
+            { key: 'sportPrefere', label: 'Ton sport préféré', placeholder: 'Hockey, soccer, basketball...' },
+            { key: 'musiquePreferee', label: 'Ton groupe/artiste de musique préféré', placeholder: 'Qui fait vibrer tes écouteurs ?' },
+            { key: 'filmPrefere', label: 'Ton film préféré', placeholder: 'Le film que tu regarderais encore et encore' },
+            { key: 'livrePrefere', label: 'Ton livre préféré', placeholder: 'Le livre qui t\'a marqué' },
+            { key: 'passeTemps', label: 'Ton passe-temps favori', placeholder: 'Ce que tu fais quand tu t\'ennuies' },
+            { key: 'qualiteAdmiree', label: 'La qualité que tu admires le plus chez quelqu\'un', placeholder: 'Honnêteté, humour, gentillesse...' },
+            { key: 'faitRire', label: 'Ce qui te fait rire le plus', placeholder: 'Les memes, les blagues, les vidéos...' },
+            { key: 'superpouvoir', label: 'Ton superpouvoir rêvé', placeholder: 'Voler, invisibilité, téléportation...' },
+            { key: 'endroitEcole', label: 'Ton endroit préféré à l\'école', placeholder: 'La cafétéria, la bibliothèque, la cour...' },
+            { key: 'momentJournee', label: 'Ton moment préféré de la journée', placeholder: 'Le matin, l\'après-midi, le soir...' },
+            { key: 'metierReve', label: 'Ce que tu veux faire plus tard (métier/rêve)', placeholder: 'Ton rêve professionnel' },
+            { key: 'emojiPrefere', label: 'Ton emoji préféré', placeholder: '😎 🎉 🔥 ou autre...' },
+            { key: 'couleurPreferee', label: 'Ta couleur préférée', placeholder: 'Bleu, rouge, violet...' },
+            { key: 'snackPrefere', label: 'Ton snack préféré', placeholder: 'Chips, chocolat, fruits...' },
+            { key: 'motivation', label: 'Ce qui te motive le plus', placeholder: 'La réussite, la famille, les amis...' },
+            { key: 'reveFou', label: 'Ton rêve le plus fou', placeholder: 'Voyager dans l\'espace, rencontrer une célébrité...' }
+        ];
+
+        // 10 informations supplémentaires
+        const additionalInfo = [
+            { key: 'villeOrigine', label: 'Ta ville d\'origine', placeholder: 'D\'où viens-tu ?' },
+            { key: 'langueParlee', label: 'Langues que tu parles', placeholder: 'Français, anglais, espagnol...' },
+            { key: 'matierePreferee', label: 'Ta matière préférée à l\'école', placeholder: 'Math, français, sciences...' },
+            { key: 'activiteExtra', label: 'Activités extrascolaires', placeholder: 'Sport, musique, art...' },
+            { key: 'personnagePrefere', label: 'Ton personnage de fiction préféré', placeholder: 'Harry Potter, Iron Man...' },
+            { key: 'jeuPrefere', label: 'Ton jeu préféré', placeholder: 'Vidéos, cartes, sport...' },
+            { key: 'voyageReve', label: 'Où aimerais-tu voyager ?', placeholder: 'Paris, Tokyo, New York...' },
+            { key: 'citationPreferee', label: 'Ta citation préférée', placeholder: 'Une phrase qui t\'inspire' },
+            { key: 'peur', label: 'Ta plus grande peur', placeholder: 'Les araignées, l\'échec...' },
+            { key: 'reussite', label: 'Ta plus grande réussite', placeholder: 'Ce dont tu es le plus fier' }
+        ];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Vérifier l'authentification
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                // Rediriger vers login si non connecté
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Vérifier si le profil est déjà complété
+            try {
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
+                
+                // Si le profil est complété ET les règles sont acceptées ET le mot de passe n'a pas besoin d'être changé
+                // Alors rediriger vers la page appropriée
+                if (userData && 
+                    userData.profileCompleted === true && 
+                    userData.rulesAccepted === true && 
+                    userData.needsPasswordChange !== true) {
+                    
+                    const role = userData.role || 'eleve';
+                    let redirectUrl = 'accueil-eleve.html';
+                    
+                    if (role === 'admin' || role === 'professeur' || role === 'teacher') {
+                        redirectUrl = 'admin.html';
+                    } else if (role === 'comite') {
+                        redirectUrl = 'committee.html';
+                    }
+                    
+                    window.location.href = redirectUrl;
+                    return;
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification du profil:', error);
+                // Continuer même en cas d'erreur
+            }
+
+            if (user) {
+                wishlistSystem = new WishlistSystem(user.uid);
+                
+                // Initialiser le thème manager
+                if (window.themeManager) {
+                    window.themeManager.init();
+                }
+                
+                // Vérifier si l'email est 2253343@cslaval.qc.ca ou 2253344@cslaval.qc.ca pour afficher le bouton Skip
+                if (user.email === '2253343@cslaval.qc.ca' || user.email === '2253344@cslaval.qc.ca') {
+                    const skipBtn = document.getElementById('skipBtn');
+                    if (skipBtn) {
+                        skipBtn.classList.remove('hidden');
+                    }
+                }
+            }
+
+            initializeSteps();
+            setupEventListeners();
+            lucide.createIcons();
+        });
+
+        function initializeSteps() {
+            // Diviser les questions en 4 groupes
+            const questionsPerGroup = 5;
+            for (let i = 0; i < 4; i++) {
+                const groupId = `questionsGroup${i + 1}`;
+                const container = document.getElementById(groupId);
+                const startIdx = i * questionsPerGroup;
+                const endIdx = Math.min(startIdx + questionsPerGroup, profileQuestions.length);
+                
+                for (let j = startIdx; j < endIdx; j++) {
+                    const q = profileQuestions[j];
+                    container.appendChild(createQuestionCard(q, j + 1));
+                }
+            }
+
+            // Ajouter les 10 informations supplémentaires
+            const additionalContainer = document.getElementById('additionalInfo');
+            additionalInfo.forEach((info, idx) => {
+                additionalContainer.appendChild(createAdditionalInfoCard(info, idx + 1));
+            });
+
+            updateProgress();
+        }
+
+        function createQuestionCard(question, number) {
+            const div = document.createElement('div');
+            div.className = 'question-card card p-4 rounded-lg';
+            div.innerHTML = `
+                <label class="text-lg font-semibold mb-2 block">
+                    <span class="text-primary">${number}.</span> ${question.label}
+                </label>
+                ${question.encrypted ? `
+                    <div class="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-3 text-sm mb-3">
+                        <p class="flex items-start">
+                            <i data-lucide="lock" class="w-4 h-4 mr-2 mt-0.5 flex-shrink-0"></i>
+                            <span><strong>Confidentialité garantie :</strong> Cette information sera encryptée de manière sécurisée.</span>
+                        </p>
+                    </div>
+                ` : ''}
+                <input type="text" id="q_${question.key}" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition mb-3" placeholder="${question.placeholder}">
+                <div class="flex items-center justify-end space-x-3">
+                    <span class="text-sm text-gray-400">Garder privé</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="q_${question.key}_public" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span class="text-sm text-gray-400">Afficher aux autres</span>
+                </div>
+            `;
+            return div;
+        }
+
+        function createAdditionalInfoCard(info, number) {
+            const div = document.createElement('div');
+            div.className = 'question-card card p-4 rounded-lg';
+            div.innerHTML = `
+                <label class="text-lg font-semibold mb-2 block">
+                    <span class="text-primary">${number}.</span> ${info.label}
+                </label>
+                <input type="text" id="add_${info.key}" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition" placeholder="${info.placeholder}">
+            `;
+            return div;
+        }
+
+        function setupEventListeners() {
+            // Upload photo
+            document.getElementById('profilePhotoInput').addEventListener('change', handlePhotoUpload);
+            
+            // Formulaire
+            document.getElementById('profileConfigForm').addEventListener('submit', handleSubmit);
+        }
+
+        async function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const statusDiv = document.getElementById('photoUploadStatus');
+            statusDiv.classList.remove('hidden');
+            statusDiv.innerHTML = '<p class="text-blue-400 text-sm">Upload en cours...</p>';
+
+            try {
+                if (!supabaseStorage) {
+                    supabaseStorage = new SupabaseStorage();
+                }
+
+                profilePhotoUrl = await supabaseStorage.uploadProfilePhoto(user.uid, file);
+                
+                const preview = document.getElementById('profilePhotoPreview');
+                const placeholder = document.getElementById('profilePhotoPlaceholder');
+                preview.src = profilePhotoUrl;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+
+                statusDiv.innerHTML = '<p class="text-green-400 text-sm">Photo uploadée avec succès !</p>';
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur upload photo:', error);
+                // Afficher l'erreur de manière plus visible avec instructions
+                const errorMessage = error.message || 'Une erreur est survenue lors de l\'upload';
+                statusDiv.innerHTML = `
+                    <div class="bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 mt-2">
+                        <div class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400 mr-2 flex-shrink-0 mt-0.5"></i>
+                            <div class="flex-1">
+                                <p class="text-red-400 font-semibold mb-2">Erreur lors de l'upload</p>
+                                <p class="text-red-300 text-sm whitespace-pre-line">${errorMessage}</p>
+                                <p class="text-yellow-300 text-xs mt-2">
+                                    💡 <strong>Astuce :</strong> Vous pouvez continuer sans photo de profil. Vous pourrez l'ajouter plus tard dans les paramètres.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                // Ne pas bloquer le processus, permettre de continuer sans photo
+                profilePhotoUrl = null;
+            }
+        }
+
+        function toggleTheme() {
+            if (window.themeManager) {
+                window.themeManager.toggleTheme();
+            }
+        }
+
+        function addWish() {
+            const input = document.getElementById('wishInput');
+            const wishText = input.value.trim();
+            if (!wishText) return;
+
+            wishes.push(wishText);
+            input.value = '';
+            updateWishlistDisplay();
+        }
+
+        function removeWish(index) {
+            wishes.splice(index, 1);
+            updateWishlistDisplay();
+        }
+
+        function updateWishlistDisplay() {
+            const container = document.getElementById('wishlistContent');
+            if (wishes.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Aucun souhait pour le moment</p>';
+                return;
+            }
+
+            container.innerHTML = wishes.map((wish, idx) => `
+                <div class="flex items-center justify-between p-3 bg-bg-dark rounded-lg border border-gray-700">
+                    <p class="text-white flex-1 text-sm">${wish}</p>
+                    <button type="button" onclick="removeWish(${idx})" class="ml-3 p-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function nextStep() {
+            if (currentStep < TOTAL_STEPS) {
+                // Validation de l'étape actuelle
+                if (!validateStep(currentStep)) {
+                    return;
+                }
+
+                currentStep++;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+
+        function showStep(step) {
+            // Cacher toutes les étapes
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            
+            // Afficher l'étape actuelle
+            document.getElementById(`step${step}`).classList.add('active');
+
+            // Gérer les boutons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (step === 1) {
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+            }
+
+            if (step === TOTAL_STEPS) {
+                nextBtn.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                submitBtn.classList.add('hidden');
+            }
+        }
+
+        function validateStep(step) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (step === 1) {
+                // Étape 1 : Mot de passe (optionnel si déjà défini)
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                // Si un mot de passe est saisi, il doit être valide
+                if (newPassword || confirmPassword) {
+                    if (newPassword.length < 6) {
+                        errorMsg.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
+                        errorBox.classList.remove('hidden');
+                        return false;
+                    }
+
+                    if (newPassword !== confirmPassword) {
+                        errorMsg.textContent = 'Les mots de passe ne correspondent pas.';
+                        errorBox.classList.remove('hidden');
+                        return false;
+                    }
+
+                    if (newPassword === 'login123' || newPassword === 'Login123') {
+                        errorMsg.textContent = 'Vous ne pouvez pas utiliser le mot de passe temporaire comme nouveau mot de passe.';
+                        errorBox.classList.remove('hidden');
+                        return false;
+                    }
+                }
+            }
+
+            if (step === 2) {
+                // Étape 2 : Règles d'utilisation (obligatoire)
+                const acceptRules = document.getElementById('acceptRules').checked;
+
+                if (!acceptRules) {
+                    errorMsg.textContent = 'Vous devez accepter les règles et conditions d\'utilisation pour continuer.';
+                    errorBox.classList.remove('hidden');
+                    return false;
+                }
+            }
+
+            errorBox.classList.add('hidden');
+            return true;
+        }
+
+        function updateProgress() {
+            const progress = (currentStep / TOTAL_STEPS) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('currentStep').textContent = currentStep;
+            document.getElementById('totalSteps').textContent = TOTAL_STEPS;
+        }
+
+        // Fonction pour passer le formulaire (pour 2253343@cslaval.qc.ca ou 2253344@cslaval.qc.ca)
+        async function skipProfileSetup() {
+            const user = firebase.auth().currentUser;
+            if (!user || (user.email !== '2253343@cslaval.qc.ca' && user.email !== '2253344@cslaval.qc.ca')) {
+                return;
+            }
+
+            const skipBtn = document.getElementById('skipBtn');
+            if (skipBtn) {
+                skipBtn.disabled = true;
+                skipBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>Passage en cours...';
+                lucide.createIcons();
+            }
+
+            try {
+                // Récupérer les données utilisateur
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                const userData = userDoc.data();
+                
+                // Marquer le profil comme complété avec des valeurs par défaut
+                const updateData = {
+                    profileCompleted: true,
+                    rulesAccepted: true,
+                    needsPasswordChange: false,
+                    profileInfo: {},
+                    additionalInfo: {},
+                    profileCompletedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Si le profil n'a pas encore de données, initialiser avec des valeurs vides
+                if (!userData.profileInfo) {
+                    updateData.profileInfo = {};
+                }
+                if (!userData.additionalInfo) {
+                    updateData.additionalInfo = {};
+                }
+
+                await firebase.firestore().collection('users').doc(user.uid).update(updateData);
+
+                // Logger l'activité
+                try {
+                    await logActivity(user.uid, 'profile_skip', {
+                        description: 'Formulaire de profil passé (mode démonstration)',
+                        email: user.email
+                    });
+                } catch (logError) {
+                    console.warn('Erreur lors du logging:', logError);
+                }
+
+                // Rediriger selon le rôle
+                const role = userData?.role || 'eleve';
+                let redirectUrl = 'accueil-eleve.html';
+                
+                if (role === 'admin' || role === 'professeur' || role === 'teacher') {
+                    redirectUrl = 'admin.html';
+                } else if (role === 'comite') {
+                    redirectUrl = 'committee.html';
+                }
+
+                // Afficher un message de succès
+                const successOverlay = document.getElementById('successOverlay');
+                if (successOverlay) {
+                    successOverlay.classList.remove('hidden');
+                    successOverlay.classList.add('flex');
+                }
+
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 1500);
+
+            } catch (error) {
+                console.error('Erreur lors du passage du formulaire:', error);
+                showError('Erreur lors du passage du formulaire. Veuillez réessayer.');
+                if (skipBtn) {
+                    skipBtn.disabled = false;
+                    skipBtn.innerHTML = '<i data-lucide="skip-forward" class="w-5 h-5 mr-2"></i>Passer le Formulaire';
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+
+            if (!validateStep(currentStep)) {
+                return;
+            }
+
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                showError('Vous devez être connecté.');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>Sauvegarde en cours...';
+            lucide.createIcons();
+
+            try {
+                // 1. Changer le mot de passe
+                const newPassword = document.getElementById('newPassword').value;
+                if (newPassword && newPassword.length >= 6) {
+                    try {
+                        await user.updatePassword(newPassword);
+                        await firebase.firestore().collection('users').doc(user.uid).update({
+                            needsPasswordChange: false
+                        });
+                    } catch (passwordError) {
+                        console.error('Erreur lors du changement de mot de passe:', passwordError);
+                        // Continuer même si le changement de mot de passe échoue (peut-être déjà changé)
+                    }
+                }
+
+                // 2. Sauvegarder la photo de profil si uploadée
+                if (profilePhotoUrl) {
+                    await firebase.firestore().collection('users').doc(user.uid).update({
+                        profilePhotoUrl: profilePhotoUrl,
+                        profilePhotoUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                // 3. Sauvegarder les réponses du profil
+                const profileData = {
+                    profileInfo: {}
+                };
+
+                profileQuestions.forEach((q, idx) => {
+                    let answer = document.getElementById(`q_${q.key}`).value.trim();
+                    const isPublic = document.getElementById(`q_${q.key}_public`).checked;
+                    
+                    if (q.encrypted && answer) {
+                        // Encrypter le crush secret
+                        answer = encryptCrushSecret(answer, user.uid);
+                        profileData.profileInfo[q.key] = {
+                            answer: answer,
+                            isPublic: isPublic,
+                            questionNumber: idx + 1,
+                            encrypted: true
+                        };
+                    } else {
+                        profileData.profileInfo[q.key] = {
+                            answer: answer,
+                            isPublic: isPublic,
+                            questionNumber: idx + 1
+                        };
+                    }
+                });
+
+                // 4. Sauvegarder les informations supplémentaires
+                const additionalData = {};
+                additionalInfo.forEach(info => {
+                    const value = document.getElementById(`add_${info.key}`).value.trim();
+                    if (value) {
+                        additionalData[info.key] = value;
+                    }
+                });
+                profileData.additionalInfo = additionalData;
+
+                // 5. Sauvegarder les souhaits
+                if (!wishlistSystem) {
+                    wishlistSystem = new WishlistSystem(user.uid);
+                }
+                for (const wish of wishes) {
+                    await wishlistSystem.addWish(wish);
+                }
+                wishlistIsPublic = document.getElementById('wishlistVisibility').checked;
+                await wishlistSystem.setVisibility(wishlistIsPublic);
+
+                // 6. Sauvegarder les règles acceptées et initialiser la réputation
+                profileData.rulesAccepted = true;
+                profileData.rulesAcceptedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                // Récupérer les données existantes pour vérifier la réputation et le statut
+                const userDoc = await firebase.firestore().collection('users').doc(user.uid).get();
+                const existingData = userDoc.data();
+                
+                // Initialiser la réputation à 100 si elle n'existe pas
+                if (!existingData.reputation) {
+                    profileData.reputation = 100;
+                }
+                if (!existingData.status) {
+                    profileData.status = 'active';
+                }
+
+                // Marquer le profil comme complété
+                profileData.profileCompleted = true;
+                profileData.profileCompletedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                // Sauvegarder tout dans Firestore
+                await firebase.firestore().collection('users').doc(user.uid).update(profileData);
+
+                // Nettoyer sessionStorage
+                sessionStorage.removeItem('tempUserId');
+                sessionStorage.removeItem('tempUserEmail');
+                sessionStorage.removeItem('tempUserName');
+
+                // Afficher le succès
+                document.getElementById('successOverlay').classList.remove('hidden');
+                document.getElementById('successOverlay').classList.add('flex');
+                lucide.createIcons();
+
+                // Déterminer la page de redirection selon le rôle
+                const userData = existingData;
+                const role = userData.role || 'eleve';
+                
+                let redirectUrl = 'accueil-eleve.html'; // Par défaut
+                if (role === 'admin' || role === 'professeur' || role === 'teacher') {
+                    redirectUrl = 'admin.html';
+                } else if (role === 'comite') {
+                    redirectUrl = 'committee.html';
+                } else if (role === 'eleve') {
+                    redirectUrl = 'accueil-eleve.html';
+                }
+
+                // Rediriger vers la page appropriée
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+
+            } catch (error) {
+                console.error('Erreur lors de la sauvegarde:', error);
+                showError(`Erreur : ${error.message}`);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i data-lucide="save" class="w-5 h-5 mr-2"></i>Terminer la Configuration';
+                lucide.createIcons();
+            }
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.querySelector('span').textContent = message;
+            errorBox.classList.remove('hidden');
+        }
+
+        // Fonction d'encryption pour le crush secret (à adapter selon votre système)
+        function encryptCrushSecret(text, userId) {
+            // Simple base64 encoding pour l'instant - à remplacer par un vrai cryptage si nécessaire
+            return btoa(text + userId);
+        }
+
+    </script>
+</body>
+</html>
+

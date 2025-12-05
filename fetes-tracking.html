@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suivi des Fêtes — Fête Express</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #ff6f61;
+            --secondary: #f9c74f;
+            --bg-dark: #1a0f30;
+            --bg-light: #2c1a4b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+        }
+        .header-gradient {
+            background-image: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: var(--bg-light);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: var(--bg-light);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 800px;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+    <script src="firebase.js"></script>
+    <!-- Système de logging automatique des activités -->
+    <script src="js/activity-logger.js"></script>
+    <script src="js/progression-system.js"></script>
+
+    <!-- Écran de chargement -->
+    <div id="loadingScreen" class="fixed inset-0 bg-bg-dark flex flex-col justify-center items-center z-50">
+        <div class="text-xl text-white">Chargement du suivi...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-secondary animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-primary animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <main id="mainContent" class="hidden">
+        <header class="mb-6 flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-extrabold mb-2">
+                    <span class="header-gradient">Suivi des Fêtes</span>
+                </h1>
+                <p class="text-gray-400">Suivez qui a envoyé des messages à chaque personne</p>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="loadTracking()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 inline mr-2"></i>
+                    Actualiser
+                </button>
+                <button onclick="window.location.href='admin.html'" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                    <i data-lucide="arrow-left" class="w-5 h-5 inline mr-2"></i>
+                    Retour Admin
+                </button>
+            </div>
+        </header>
+
+        <!-- Résumé de progression -->
+        <div class="card p-6 rounded-xl mb-6">
+            <h2 class="text-2xl font-bold mb-4">Résumé de Progression</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-4">
+                    <div class="text-sm text-gray-400 mb-1">Personnes Consécutives</div>
+                    <div id="consecutiveCount" class="text-3xl font-bold text-blue-400">0</div>
+                </div>
+                <div class="bg-green-900 bg-opacity-30 border border-green-500 rounded-lg p-4">
+                    <div class="text-sm text-gray-400 mb-1">Fêtes Complétées</div>
+                    <div id="completedCount" class="text-3xl font-bold text-green-400">0</div>
+                </div>
+                <div class="bg-yellow-900 bg-opacity-30 border border-yellow-500 rounded-lg p-4">
+                    <div class="text-sm text-gray-400 mb-1">Total Élèves</div>
+                    <div id="totalStudents" class="text-3xl font-bold text-yellow-400">0</div>
+                </div>
+            </div>
+            <div id="notificationAlert" class="mt-4 hidden p-4 bg-green-900 bg-opacity-30 border border-green-500 rounded-lg">
+                <div class="flex items-center">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-green-400 mr-2"></i>
+                    <div>
+                        <div class="font-bold text-green-400">🎉 Objectif atteint !</div>
+                        <div class="text-sm text-gray-300">9 personnes consécutives ont reçu des messages de tous les élèves !</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des fêtes -->
+        <div class="card p-6 rounded-xl">
+            <h2 class="text-2xl font-bold mb-4">Détails par Fête</h2>
+            <div id="celebrationsList" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">Chargement...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal pour voir les messages -->
+    <div id="messagesModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-2xl font-bold" id="modalTitle">Messages</h3>
+                <button onclick="closeMessagesModal()" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="messagesList" class="space-y-3 max-h-96 overflow-y-auto">
+                <p class="text-gray-500 text-center py-8">Chargement des messages...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = null;
+        let allCelebrationsData = [];
+
+        // Vérifier l'authentification
+        async function checkAuth() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const mainContent = document.getElementById('mainContent');
+
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe();
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            const role = userData.role;
+            const isAdmin = role === 'admin';
+            const isProfessor = role === 'professeur' || role === 'teacher';
+            
+            if (!isAdmin && !isProfessor) {
+                alert('Accès refusé. Cette page est réservée aux administrateurs et professeurs.');
+                window.location.href = 'admin.html';
+                return;
+            }
+
+            currentUserId = user.uid;
+            loadingScreen.classList.add('hidden');
+            mainContent.classList.remove('hidden');
+            
+            loadTracking();
+        }
+
+        // Charger le suivi
+        async function loadTracking() {
+            try {
+                const progression = await calculateProgression();
+                
+                // Mettre à jour les résumés
+                document.getElementById('consecutiveCount').textContent = progression.consecutiveCount;
+                document.getElementById('totalStudents').textContent = progression.totalStudents;
+                
+                const completedCount = progression.allCelebrations.filter(item => item.completion.complete).length;
+                document.getElementById('completedCount').textContent = completedCount;
+                
+                // Afficher l'alerte si objectif atteint
+                const notificationAlert = document.getElementById('notificationAlert');
+                if (progression.consecutiveCount >= 9) {
+                    notificationAlert.classList.remove('hidden');
+                } else {
+                    notificationAlert.classList.add('hidden');
+                }
+                
+                // Stocker les données
+                allCelebrationsData = progression.allCelebrations;
+                
+                // Afficher les célébrations
+                displayCelebrations(progression.allCelebrations);
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement du suivi:', error);
+                alert('Erreur lors du chargement du suivi');
+            }
+        }
+
+        // Afficher les célébrations
+        function displayCelebrations(celebrations) {
+            const container = document.getElementById('celebrationsList');
+            
+            if (celebrations.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Aucune célébration trouvée.</p>';
+                return;
+            }
+            
+            container.innerHTML = celebrations.map((item, index) => {
+                const celeb = item.celebration;
+                const completion = item.completion;
+                const isComplete = completion.complete;
+                const percentage = completion.totalStudents > 0 
+                    ? (completion.sentMessages / completion.totalStudents) * 100 
+                    : 0;
+                
+                return `
+                    <div class="border border-gray-700 rounded-lg p-4 ${isComplete ? 'bg-green-900 bg-opacity-20 border-green-500' : 'bg-gray-800 bg-opacity-20'}">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg">${celeb.fullName || 'N/A'}</h3>
+                                <p class="text-sm text-gray-400">
+                                    ${celeb.birthday ? new Date(celeb.birthday).toLocaleDateString('fr-FR') : 'Date inconnue'} 
+                                    ${celeb.fileNumber ? `• ${celeb.fileNumber}` : ''}
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <div class="text-sm text-gray-400">Messages reçus</div>
+                                    <div class="text-xl font-bold ${isComplete ? 'text-green-400' : 'text-yellow-400'}">
+                                        ${completion.sentMessages} / ${completion.totalStudents}
+                                    </div>
+                                </div>
+                                <button onclick="showMessages('${celeb.id}', '${celeb.fullName}')" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition">
+                                    <i data-lucide="message-square" class="w-4 h-4 inline mr-2"></i>
+                                    Voir Messages
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between text-sm mb-2">
+                                <span class="text-gray-400">Progression</span>
+                                <span class="text-gray-400">${Math.round(percentage)}%</span>
+                            </div>
+                            <div class="w-full bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-primary to-secondary h-2 rounded-full transition-all" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                        ${completion.missingStudents.length > 0 ? `
+                            <div class="mt-3 text-sm text-gray-400">
+                                <strong>Élèves manquants (${completion.missingStudents.length}):</strong>
+                                <div class="mt-1 flex flex-wrap gap-2">
+                                    ${completion.missingStudents.map(student => `
+                                        <span class="px-2 py-1 bg-red-900 bg-opacity-30 border border-red-500 rounded text-red-300">
+                                            ${student.fullName || student.email || 'Inconnu'}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        // Afficher les messages d'une célébration
+        async function showMessages(celebrationId, celebrationName) {
+            const modal = document.getElementById('messagesModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const messagesList = document.getElementById('messagesList');
+            
+            modalTitle.textContent = `Messages pour ${celebrationName}`;
+            messagesList.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement des messages...</p>';
+            
+            modal.classList.add('active');
+            
+            try {
+                const messages = await getMessagesForCelebration(celebrationId);
+                
+                if (messages.length === 0) {
+                    messagesList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucun message reçu.</p>';
+                    lucide.createIcons();
+                    return;
+                }
+                
+                // Récupérer les informations des expéditeurs
+                const messagesWithSenders = await Promise.all(messages.map(async (msg) => {
+                    const senderDoc = await firebase.firestore().collection('users').doc(msg.senderId).get();
+                    const senderData = senderDoc.exists ? senderDoc.data() : null;
+                    return { ...msg, senderData };
+                }));
+                
+                messagesList.innerHTML = messagesWithSenders.map(msg => {
+                    const senderName = msg.senderData ? msg.senderData.fullName : msg.senderName || 'Anonyme';
+                    const senderRole = msg.senderData ? msg.senderData.role : 'unknown';
+                    const isPublic = msg.isPublic;
+                    const createdAt = msg.createdAt ? msg.createdAt.toDate() : new Date();
+                    
+                    return `
+                        <div class="border border-gray-700 rounded-lg p-4 bg-purple-900 bg-opacity-20">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold">${senderName}</span>
+                                    <span class="text-xs px-2 py-1 rounded ${senderRole === 'eleve' ? 'bg-yellow-900 text-yellow-300' : 'bg-gray-700 text-gray-300'}">
+                                        ${senderRole === 'eleve' ? 'Élève' : senderRole}
+                                    </span>
+                                    <span class="text-xs px-2 py-1 rounded bg-purple-900 text-purple-300">
+                                        Privé
+                                    </span>
+                                </div>
+                                <span class="text-xs text-gray-400">${createdAt.toLocaleString('fr-FR')}</span>
+                            </div>
+                            <p class="text-gray-300">${msg.message}</p>
+                        </div>
+                    `;
+                }).join('');
+                
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des messages:', error);
+                messagesList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des messages.</p>';
+            }
+        }
+
+        // Fermer le modal
+        function closeMessagesModal() {
+            const modal = document.getElementById('messagesModal');
+            modal.classList.remove('active');
+        }
+
+        // Initialiser
+        checkAuth();
+    </script>
+</body>
+</html>
+

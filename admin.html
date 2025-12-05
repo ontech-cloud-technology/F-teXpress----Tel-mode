@@ -1,0 +1,2969 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard — Fête Express</title>
+    <!-- Chargement de Tailwind CSS pour un style moderne et responsive -->
+    <!-- NOTE: CDN utilisé pour le développement. Pour la production, installer Tailwind via npm -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Icones Lucide pour le côté moderne -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Intégration des dépendances Firebase CDN V9 COMPAT -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    
+    <!-- Bibliothèques pour Import/Export -->
+    <!-- SheetJS pour lire les fichiers Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- jsPDF pour générer des PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas pour capturer du HTML en image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Configuration Tailwind pour la police Inter et le thème sombre -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Définition des variables de thème */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-light: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --text-color: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animated {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bg-animated::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            top: -250px;
+            left: -250px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-animated::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            bottom: -200px;
+            right: -200px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-strong {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .header-gradient {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(71, 85, 105, 0.6);
+            backdrop-filter: blur(10px);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 116, 139, 0.8);
+            transform: translateY(-1px);
+        }
+        
+        /* Modales */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg-card);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 500px;
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* CORRECTION CRITIQUE DU STYLE DES INPUTS ET SELECT */
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        select {
+            color: var(--text-color) !important; 
+            background-color: var(--bg-dark) !important;
+        }
+        
+        /* Placeholder pour les inputs */
+        input::placeholder {
+            color: #9ca3af !important;
+        }
+        
+        /* Style spécifique pour input date */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+        
+        /* Garantir que les options du menu déroulant ont un texte lisible sur fond blanc */
+        select option {
+            color: #000 !important; /* Texte noir */
+            background-color: #ffffff !important; /* Fond blanc */
+        }
+        
+        /* Styles des Rôles */
+        .role-admin { color: #f87171; font-weight: 700; } 
+        .role-professeur { color: #34d399; font-weight: 700; } 
+        .role-comite { color: #60a5fa; font-weight: 700; } 
+        .role-eleve { color: #fde047; } 
+
+        /* Styles du menu latéral (SideNav) */
+        #sidenav {
+            width: 280px;
+            min-width: 280px;
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 24px 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            margin: 4px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text-color);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--text-color);
+            border-left: 3px solid var(--primary);
+        }
+
+        .nav-item.active::before {
+            transform: scaleY(1);
+        }
+        /* Style actif pour les onglets de section */
+        .section-tab {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .section-tab:hover {
+            color: var(--primary);
+            border-bottom-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .section-tab.active-tab {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Responsive design pour mobile */
+        @media (max-width: 768px) {
+            #sidenav {
+                display: none; 
+            }
+            body {
+                display: block;
+            }
+            .modal-content {
+                margin: 20px;
+            }
+        }
+        /* Style actif pour les filtres */
+        .active-filter {
+            box-shadow: 0 0 0 2px var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--primary-dark), var(--primary));
+        }
+
+        
+        /* Styles Bootstrap pour les alertes */
+        .alert {
+            position: relative;
+            padding: 1rem 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+        }
+        
+        .alert-primary {
+            color: #084298;
+            background-color: #cfe2ff;
+            border-color: #b6d4fe;
+        }
+        
+        .alert-secondary {
+            color: #41464b;
+            background-color: #e2e3e5;
+            border-color: #d3d6d8;
+        }
+        
+        .alert-success {
+            color: #0f5132;
+            background-color: #d1e7dd;
+            border-color: #badbcc;
+        }
+        
+        .alert-danger {
+            color: #842029;
+            background-color: #f8d7da;
+            border-color: #f5c2c7;
+        }
+        
+        .alert-warning {
+            color: #664d03;
+            background-color: #fff3cd;
+            border-color: #ffecb5;
+        }
+        
+        .alert-info {
+            color: #055160;
+            background-color: #cff4fc;
+            border-color: #b6effb;
+        }
+        
+        .alert-light {
+            color: #636464;
+            background-color: #fefefe;
+            border-color: #fdfdfe;
+        }
+        
+        .alert-dark {
+            color: #141619;
+            background-color: #d3d3d4;
+            border-color: #bcbebf;
+        }
+        
+        /* Mode sombre pour les alertes */
+        [data-theme="dark"] .alert-primary,
+        body:not([data-theme="light"]) .alert-primary {
+            color: #cfe2ff;
+            background-color: rgba(13, 110, 253, 0.2);
+            border-color: rgba(13, 110, 253, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-secondary,
+        body:not([data-theme="light"]) .alert-secondary {
+            color: #e2e3e5;
+            background-color: rgba(108, 117, 125, 0.2);
+            border-color: rgba(108, 117, 125, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-success,
+        body:not([data-theme="light"]) .alert-success {
+            color: #d1e7dd;
+            background-color: rgba(25, 135, 84, 0.2);
+            border-color: rgba(25, 135, 84, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-danger,
+        body:not([data-theme="light"]) .alert-danger {
+            color: #f8d7da;
+            background-color: rgba(220, 53, 69, 0.2);
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-warning,
+        body:not([data-theme="light"]) .alert-warning {
+            color: #fff3cd;
+            background-color: rgba(255, 193, 7, 0.2);
+            border-color: rgba(255, 193, 7, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-info,
+        body:not([data-theme="light"]) .alert-info {
+            color: #cff4fc;
+            background-color: rgba(13, 202, 240, 0.2);
+            border-color: rgba(13, 202, 240, 0.4);
+        }
+        
+        [data-theme="dark"] .alert-light,
+        body:not([data-theme="light"]) .alert-light {
+            color: #fefefe;
+            background-color: rgba(248, 249, 250, 0.1);
+            border-color: rgba(248, 249, 250, 0.2);
+        }
+        
+        [data-theme="dark"] .alert-dark,
+        body:not([data-theme="light"]) .alert-dark {
+            color: #d3d3d4;
+            background-color: rgba(33, 37, 41, 0.3);
+            border-color: rgba(33, 37, 41, 0.5);
+        }
+        
+        .alert-heading {
+            margin-bottom: 0.5rem;
+        }
+        
+        .alert-link {
+            font-weight: 700;
+            text-decoration: underline;
+        }
+        
+        .alert-primary .alert-link {
+            color: #06357a;
+        }
+        
+        .alert-secondary .alert-link {
+            color: #2d2e30;
+        }
+        
+        .alert-success .alert-link {
+            color: #0a3622;
+        }
+        
+        .alert-danger .alert-link {
+            color: #6a1a21;
+        }
+        
+        .alert-warning .alert-link {
+            color: #533f03;
+        }
+        
+        .alert-info .alert-link {
+            color: #04414d;
+        }
+        
+        .alert-light .alert-link {
+            color: #51585a;
+        }
+        
+        .alert-dark .alert-link {
+            color: #0f1113;
+        }
+    </style>
+</head>
+
+<body>
+    
+    <!-- Menu Latéral de Navigation (SideNav) -->
+    <nav id="sidenav">
+        <div class="px-6 py-6 mb-4 border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="shield" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black">
+                        <span class="header-gradient">Fêtes Express</span>
+                    </h2>
+                    <p class="text-xs text-gray-400">Propulsé par ONTech-Cloud Technology</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sections de navigation -->
+        <a href="calendrier.html" class="nav-item">
+            <i data-lucide="calendar" class="w-5 h-5 mr-2"></i>
+            Calendrier des Fêtes
+        </a>
+        <a href="admin.html" class="nav-item active">
+            <i data-lucide="shield-check" class="w-5 h-5 mr-3"></i>
+            Dashboard Admin
+        </a>
+        <a href="demo-admin.html" class="nav-item" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(239, 68, 68, 0.2)); border-left: 3px solid #f59e0b;">
+            <i data-lucide="sparkles" class="w-5 h-5 mr-3"></i>
+            🎭 Mode Démo
+        </a>
+        <a href="documentation-enseignante.html" class="nav-item">
+            <i data-lucide="book-open" class="w-5 h-5 mr-3"></i>
+            Documentation
+        </a>
+        <a href="activity-logs.html" class="nav-item">
+            <i data-lucide="activity" class="w-5 h-5 mr-3"></i>
+            Logs d'Activité
+        </a>
+        <a href="super-admin.html" id="superAdminLink" class="nav-item" style="display: none;">
+            <i data-lucide="crown" class="w-5 h-5 mr-3"></i>
+            Gestion des Comptes
+        </a>
+        <a href="messaging.html" class="nav-item">
+            <i data-lucide="message-circle" class="w-5 h-5"></i>
+            <span>Messagerie</span>
+        </a>
+        <a href="send-email.html" class="nav-item">
+            <i data-lucide="mail" class="w-5 h-5 mr-3"></i>
+            Envoyer un Email
+        </a>
+        <a href="fetes-tracking.html" class="nav-item">
+            <i data-lucide="trending-up" class="w-5 h-5 mr-3"></i>
+            Suivi des Fêtes
+        </a>
+        <a href="presentation-admin.html" class="nav-item">
+            <i data-lucide="presentation" class="w-5 h-5 mr-3"></i>
+            Présentation
+        </a>
+        
+        <!-- Séparateur et déconnexion -->
+        <div class="border-t border-gray-700 my-2"></div>
+        <a onclick="signOutAndRedirect()" class="nav-item text-red-400 hover:text-white hover:bg-red-900 hover:bg-opacity-20">
+            <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+            Déconnexion
+        </a>
+        
+        <div class="px-6 py-4 mt-4 border-t border-gray-700">
+            <div class="flex items-center space-x-3 mb-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <i data-lucide="user" class="w-5 h-5 text-white"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs text-gray-500">Connecté</p>
+                    <p id="welcomeName" class="text-sm font-semibold text-white truncate"></p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Animated Background -->
+    <div class="bg-animated"></div>
+    
+    <!-- Écran de chargement/Autorisation -->
+    <div id="loadingScreen" class="fixed inset-0 flex flex-col justify-center items-center z-50" style="background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f3a 50%, var(--bg-dark) 100%);">
+        <div class="text-xl text-white mb-4">Vérification des autorisations...</div>
+        <div class="loading my-4 flex space-x-2">
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-bounce delay-150"></div>
+            <div class="w-4 h-4 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 animate-bounce delay-300"></div>
+        </div>
+    </div>
+
+    <!-- Contenu principal du Tableau de Bord -->
+    <main id="adminContent" class="hidden flex-grow p-4 md:p-8 relative z-10">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center fade-in">
+            <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <i data-lucide="shield" class="w-7 h-7 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl md:text-4xl font-black">
+                        <span class="header-gradient">Tableau de Bord</span>
+                    </h1>
+                    <p class="text-sm text-gray-400 mt-1">Gestion Administrateur / Enseignant</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation/Onglets Admin pour les sections -->
+        <div class="flex border-b border-gray-700 mb-6 space-x-4 overflow-x-auto">
+            <button onclick="changeSection('celebrations')" id="tab-celebrations" class="px-4 py-2 border-b-2 font-semibold transition section-tab text-gray-400 hover:text-white border-transparent whitespace-nowrap active-tab">
+                <i data-lucide="gift" class="w-4 h-4 inline-block mr-2"></i>
+                Personnes & Célébrations
+            </button>
+            <button onclick="changeSection('activities')" id="tab-activities" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
+                <i data-lucide="vote" class="w-4 h-4 inline-block mr-2"></i>
+                Activités & Votes
+            </button>
+            <button onclick="changeSection('profiles')" id="tab-profiles" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
+                <i data-lucide="user-circle" class="w-4 h-4 inline-block mr-2"></i>
+                Tous les Profils
+            </button>
+            <button onclick="changeSection('reputation')" id="tab-reputation" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
+                <i data-lucide="award" class="w-4 h-4 inline-block mr-2"></i>
+                Réputation & Statuts
+            </button>
+            <button onclick="changeSection('announcements')" id="tab-announcements" class="px-4 py-2 text-gray-400 hover:text-white border-b-2 border-transparent transition section-tab whitespace-nowrap">
+                <i data-lucide="megaphone" class="w-4 h-4 inline-block mr-2"></i>
+                Annonces
+            </button>
+        </div>
+
+        <!-- Section 1: Gestion des Célébrations -->
+        <section id="section-celebrations">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- COLONNE GAUCHE: Formulaire d'Ajout -->
+                <div class="card p-6 rounded-xl lg:col-span-1 h-fit">
+                    <h2 class="text-2xl font-bold mb-6 flex items-center header-gradient">
+                        <i data-lucide="plus-circle" class="w-6 h-6 mr-2"></i>
+                        Ajouter une Personne/Fête
+                    </h2>
+                    <form id="addCelebrationForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Nom Complet *</label>
+                            <input type="text" id="celeb_fullName" placeholder="Ex: Jean Dupont" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Date de Naissance / Fête *</label>
+                            <input type="date" id="celeb_birthday" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Numéro de Fiche</label>
+                            <input type="text" id="celeb_fileNumber" placeholder="Ex: 2030014" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Numéro de Classe</label>
+                            <input type="text" id="celeb_classNumber" placeholder="Ex: 14" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Genre</label>
+                            <select id="celeb_gender" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                                <option value="" disabled selected>Sélectionner le Genre</option>
+                                <option value="F">Féminin</option>
+                                <option value="M">Masculin</option>
+                                <option value="A">Autre / Non spécifié</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2 text-gray-300">Information Supplémentaire</label>
+                            <input type="text" id="celeb_extraInfo" placeholder="Autre chose..." class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white">
+                        </div>
+                        
+                        <!-- Case à cocher pour créer un compte utilisateur -->
+                        <div class="border-t border-gray-700 pt-4 mt-4">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="celeb_createAccount" class="w-5 h-5 rounded border-gray-600 text-primary focus:ring-2 focus:ring-primary">
+                                <div>
+                                    <span class="text-sm font-medium text-white">Créer un compte utilisateur automatiquement</span>
+                                    <p class="text-xs text-gray-400 mt-1">Email: [Numéro de Fiche]@cslaval.qc.ca • Rôle: Élève • Mot de passe initial: Login123</p>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" id="celebSaveBtn" class="w-full p-3 rounded btn-primary font-semibold mt-6 flex items-center justify-center">
+                            <i data-lucide="save" class="w-5 h-5 mr-2"></i>
+                            Sauvegarder la Personne
+                        </button>
+                        <p id="celebMsg" class="text-sm text-center pt-2 hidden"></p>
+                    </form>
+                </div>
+                
+                <!-- COLONNE DROITE: Liste des Célébrations et I/O -->
+                <div class="lg:col-span-2">
+                    <div class="card p-6 rounded-xl mb-6">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="folder-sync" class="w-6 h-6 mr-2 text-secondary"></i>
+                            Outils d'Import/Export
+                        </h3>
+                        <p class="text-sm text-gray-400 mb-4">Importez un fichier Excel ou exportez la liste complète en PDF moderne</p>
+                        
+                        <!-- Input file caché pour l'import -->
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden">
+                        
+                        <div class="flex flex-wrap gap-4">
+                            <button onclick="triggerFileInput()" class="flex-1 min-w-[150px] flex items-center justify-center px-4 py-3 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold transition">
+                                <i data-lucide="upload" class="w-5 h-5 mr-2"></i>
+                                Importer Excel/CSV
+                            </button>
+                            <button onclick="exportToPDF()" class="flex-1 min-w-[150px] flex items-center justify-center px-4 py-3 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition">
+                                <i data-lucide="file-down" class="w-5 h-5 mr-2"></i>
+                                Exporter en PDF
+                            </button>
+                        </div>
+                        <p id="ioMsg" class="text-sm mt-4 hidden">Message I/O...</p>
+                    </div>
+
+                    <div class="card p-6 rounded-xl">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i data-lucide="list-checks" class="w-5 h-5 mr-2 text-secondary"></i>
+                            Liste Complète des Personnes
+                        </h3>
+                        <div class="overflow-x-auto rounded-lg border border-gray-700">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead class="bg-bg-dark">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nom (Fiche/Classe)</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Fête/Anniv.</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden sm:table-cell">Genre</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider hidden md:table-cell">Info Supp.</th>
+                                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="celebrationListBody" class="divide-y divide-gray-800">
+                                    <tr><td colspan="5" class="text-center py-4 text-gray-500">Aucune personne enregistrée.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Section 3 (TODO) -->
+        <!-- Section 3: Activités & Votes -->
+        <section id="section-activities" class="card p-6 rounded-xl hidden">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i data-lucide="vote" class="w-6 h-6 mr-2"></i>
+                Gestion des Activités & Votes
+            </h2>
+
+            <!-- Contrôles de vote -->
+            <div class="mb-8 p-6 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
+                <h3 class="text-xl font-bold mb-4">Contrôles de Vote</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-lg font-semibold">Vote Initial</label>
+                            <p class="text-sm text-gray-400">Permet aux élèves de voter pour leurs activités préférées</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleInitialVote" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="text-lg font-semibold">Vote Final</label>
+                            <p class="text-sm text-gray-400">Active le vote final pour choisir l'activité définitive</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleFinalVote" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gestion des activités -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Liste des Activités</h3>
+                    <button onclick="openAddActivityModal()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-bg-dark font-semibold transition flex items-center">
+                        <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                        Ajouter une Activité
+                    </button>
+                </div>
+                <div id="activitiesList" class="space-y-3">
+                    <p class="text-gray-500 text-center py-8">Chargement des activités...</p>
+                </div>
+            </div>
+
+            <!-- Résultats de vote -->
+            <div class="mt-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">Résultats des Votes</h3>
+                    <div class="flex space-x-2">
+                        <button onclick="loadVoteResults(false)" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                            Vote Initial
+                        </button>
+                        <button onclick="loadVoteResults(true)" class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                            Vote Final
+                        </button>
+                    </div>
+                </div>
+                <div id="voteResultsContainer">
+                    <p class="text-gray-500 text-center py-8">Sélectionnez un type de vote pour voir les résultats</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Profils des Utilisateurs -->
+        <section id="section-profiles" class="card p-6 rounded-xl hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <i data-lucide="user-circle" class="w-6 h-6 mr-2"></i>
+                    Tous les Profils
+                </h2>
+                <div class="mt-4 md:mt-0 flex items-center space-x-4">
+                    <button onclick="viewMyProfile()" class="px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition flex items-center">
+                        <i data-lucide="user" class="w-4 h-4 mr-2"></i>
+                        Mon Profil
+                    </button>
+                    <div class="flex items-center space-x-3 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg px-4 py-2">
+                        <label class="text-sm font-semibold">Visibilité des profils</label>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="toggleProfileVisibility" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                        <span id="profileVisibilityStatus" class="text-sm text-gray-400">Désactivé</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-4">
+                    Cliquez sur un utilisateur pour voir ses informations complètes. Les informations privées sont visibles uniquement pour les administrateurs. Tous les utilisateurs sont affichés (élèves, invités, admins, etc.).
+                </p>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-gray-700">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-bg-dark">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nom</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Rôle</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Profil Complété</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profilesTableBody" class="divide-y divide-gray-800">
+                        <tr><td colspan="5" class="text-center py-4 text-gray-500">Chargement des profils...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section Réputation & Statuts -->
+        <section id="section-reputation" class="card p-6 rounded-xl hidden">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i data-lucide="award" class="w-6 h-6 mr-2"></i>
+                Gestion de la Réputation et des Statuts
+            </h2>
+            
+            <div class="mb-6 p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
+                <h3 class="font-bold mb-2 flex items-center">
+                    <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                    Informations sur le système
+                </h3>
+                <ul class="text-sm space-y-1 text-gray-300">
+                    <li>• <strong>Réputation :</strong> Chaque utilisateur commence avec 100 points</li>
+                    <li>• <strong>Réputation &lt; 50 :</strong> Blocage automatique de l'envoi de messages</li>
+                    <li>• <strong>Réputation &lt; 20 :</strong> Risque de devenir spectateur</li>
+                    <li>• <strong>Statut "Bloqué" :</strong> L'utilisateur ne peut plus envoyer de messages</li>
+                    <li>• <strong>Statut "Spectateur" :</strong> L'utilisateur est exclu de la progression et des votes</li>
+                </ul>
+            </div>
+
+            <!-- Barre de recherche -->
+            <div class="mb-6">
+                <input 
+                    type="text" 
+                    id="reputationSearchInput" 
+                    placeholder="Rechercher par nom, email ou numéro de fiche..." 
+                    class="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition"
+                />
+            </div>
+
+            <!-- Tableau des utilisateurs avec réputation -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="border-b border-gray-700">
+                            <th class="px-4 py-3 font-semibold">Nom</th>
+                            <th class="px-4 py-3 font-semibold">Email</th>
+                            <th class="px-4 py-3 font-semibold">Réputation</th>
+                            <th class="px-4 py-3 font-semibold">Statut</th>
+                            <th class="px-4 py-3 font-semibold text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reputationTableBody">
+                        <tr>
+                            <td colspan="5" class="text-center py-8 text-gray-500">Chargement...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section Annonces -->
+        <section id="section-announcements" class="card p-6 rounded-xl hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <h2 class="text-2xl font-bold mb-4 md:mb-0 flex items-center">
+                    <i data-lucide="megaphone" class="w-6 h-6 mr-2"></i>
+                    Gestion des Annonces
+                </h2>
+                <button onclick="openCreateAnnouncementModal()" class="flex items-center px-4 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white font-semibold transition">
+                    <i data-lucide="plus" class="w-5 h-5 mr-2"></i>
+                    Créer une Annonce
+                </button>
+            </div>
+
+            <div class="alert alert-info mb-6" role="alert">
+                <h4 class="alert-heading flex items-center mb-2">
+                    <i data-lucide="info" class="w-5 h-5 mr-2"></i>
+                    Informations
+                </h4>
+                <p class="mb-0">
+                    Créez des annonces publiques (visibles par tous) ou ciblez des utilisateurs spécifiques. Utilisez les priorités pour attirer l'attention sur les messages importants.
+                </p>
+            </div>
+
+            <!-- Liste des annonces -->
+            <div id="announcementsList" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">Chargement des annonces...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modale de Modification de Réputation -->
+    <div id="reputationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 flex items-center">
+                <i data-lucide="award" class="w-6 h-6 mr-2"></i>
+                Modifier la Réputation et le Statut
+            </h3>
+            <form id="reputationForm">
+                <input type="hidden" id="repUserId">
+                
+                <div class="mb-4 p-4 bg-gray-800 rounded-lg">
+                    <p class="text-sm text-gray-400 mb-1">Nom</p>
+                    <p class="font-semibold" id="repUserName"></p>
+                </div>
+                
+                <div class="mb-4 p-4 bg-gray-800 rounded-lg">
+                    <p class="text-sm text-gray-400 mb-1">Email</p>
+                    <p class="font-semibold text-sm" id="repUserEmail"></p>
+                </div>
+                
+                <div class="mb-4 p-4 bg-gray-800 rounded-lg">
+                    <p class="text-sm text-gray-400 mb-1">Réputation actuelle</p>
+                    <p class="font-semibold text-xl" id="repCurrentReputation"></p>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="repNewReputation" class="block text-sm font-medium mb-2">Nouvelle Réputation (0-100)</label>
+                    <input 
+                        type="number" 
+                        id="repNewReputation" 
+                        min="0" 
+                        max="100" 
+                        required
+                        class="w-full p-3 rounded-lg bg-bg-dark border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary text-white"
+                    />
+                    <p class="text-xs text-gray-400 mt-1">La réputation détermine les permissions de l'utilisateur</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="repStatus" class="block text-sm font-medium mb-2">Statut</label>
+                    <select 
+                        id="repStatus" 
+                        class="w-full p-3 rounded-lg bg-bg-dark border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary text-white"
+                    >
+                        <option value="active">Actif</option>
+                        <option value="blocked">Bloqué (ne peut pas envoyer de messages)</option>
+                        <option value="spectator">Spectateur (exclu de la progression et des votes)</option>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">
+                        <strong>Actif:</strong> Utilisateur normal<br>
+                        <strong>Bloqué:</strong> Ne peut pas envoyer de messages<br>
+                        <strong>Spectateur:</strong> Exclu de toutes les activités
+                    </p>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+                    <button type="button" onclick="closeModal('reputationModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                    <button type="submit" class="px-4 py-2 rounded btn-primary">Sauvegarder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale des Messages Bloqués -->
+    <div id="blockedMessagesModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <h3 class="text-2xl font-bold mb-6 flex items-center">
+                <i data-lucide="alert-triangle" class="w-6 h-6 mr-2 text-red-400"></i>
+                Messages Bloqués
+            </h3>
+            
+            <div class="mb-6 p-4 bg-gray-800 rounded-lg">
+                <p class="text-sm text-gray-400 mb-1">Utilisateur</p>
+                <p class="font-semibold text-lg" id="blockedMessagesUserName"></p>
+                <p class="text-sm text-gray-400" id="blockedMessagesUserEmail"></p>
+                <div class="mt-3 pt-3 border-t border-gray-700">
+                    <p class="text-sm">
+                        <span class="text-gray-400">Total de messages bloqués:</span>
+                        <span class="font-semibold text-red-400 ml-2" id="blockedMessagesCount">0</span>
+                    </p>
+                </div>
+            </div>
+
+            <div id="blockedMessagesList" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">Chargement...</p>
+            </div>
+
+            <div class="flex justify-end mt-6 pt-4 border-t border-gray-700">
+                <button onclick="closeModal('blockedMessagesModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modale d'Ajout/Édition d'Activité -->
+    <div id="addActivityModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-6 flex items-center header-gradient">
+                <i data-lucide="plus" class="w-6 h-6 mr-2"></i>
+                <span id="activityModalTitle">Ajouter une Activité</span>
+            </h3>
+            <form id="addActivityForm">
+                <input type="hidden" id="activityId">
+                <div class="space-y-4">
+                    <div>
+                        <label for="activityName" class="block text-sm font-medium mb-2 text-gray-300">Nom de l'Activité *</label>
+                        <input type="text" id="activityName" required class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Ex: Sortie au cinéma">
+                    </div>
+                    <div>
+                        <label for="activityDescription" class="block text-sm font-medium mb-2 text-gray-300">Description</label>
+                        <textarea id="activityDescription" rows="3" class="w-full p-3 rounded border border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary transition text-white" placeholder="Description de l'activité..."></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-4 mt-6 pt-4 border-t border-gray-700">
+                    <button type="button" onclick="closeModal('addActivityModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                    <button type="submit" id="activitySaveBtn" class="px-4 py-2 rounded btn-primary flex items-center">
+                        <i data-lucide="check" class="w-4 h-4 mr-2"></i>
+                        Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modale de Confirmation de Suppression Utilisateur -->
+    <div id="deleteConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Confirmer la Suppression</h3>
+            <p class="text-gray-400 mb-6">Êtes-vous sûr de vouloir supprimer <strong id="userToDeleteName" class="text-white"></strong> ? Cette action est irréversible et supprime l'accès au tableau de bord.</p>
+            <input type="hidden" id="deleteUserId">
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeModal('deleteConfirmModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                <button type="button" onclick="deleteUserConfirmed()" id="deleteConfirmBtn" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition">
+                    Oui, Supprimer Définitivement
+                </button>
+            </div>
+            <div id="deleteError" class="text-sm text-red-400 mt-3 hidden"></div>
+        </div>
+    </div>
+    
+    <!-- Modale de Confirmation de Suppression Célébration -->
+    <div id="deleteCelebConfirmModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Confirmer la Suppression de la Célébration</h3>
+            <p class="text-gray-400 mb-6">Êtes-vous sûr de vouloir supprimer la fête de <strong id="celebToDeleteName" class="text-white"></strong> ?</p>
+            <input type="hidden" id="deleteCelebId">
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeModal('deleteCelebConfirmModal')" class="px-4 py-2 rounded bg-gray-600 hover:bg-gray-700 transition">Annuler</button>
+                <button type="button" onclick="deleteCelebrationConfirmed()" id="deleteCelebConfirmBtn" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition">
+                    Oui, Supprimer
+                </button>
+            </div>
+            <div id="deleteCelebError" class="text-sm text-red-400 mt-3 hidden"></div>
+        </div>
+    </div>
+
+
+    <!-- Inclusion du fichier firebase.js -->
+    <script src="firebase.js"></script>
+    <!-- Système de logging automatique des activités -->
+    <script src="js/activity-logger.js"></script>
+    <!-- Système d'annonces -->
+    <script src="js/announcements-system.js"></script>
+    <script src="js/vote-system.js"></script>
+    
+    <!-- Script principal -->
+    <script>
+        // Fonctions supplémentaires pour les célébrations
+        
+        /** Ajoute un document de célébration */
+        async function addCelebration(data) {
+            return db.collection('celebrations').add(data);
+        }
+        
+        /** Supprime un document de célébration */
+        async function deleteCelebration(id) {
+            return db.collection('celebrations').doc(id).delete();
+        }
+        
+        /** Configure l'écouteur en temps réel pour la collection 'celebrations' */
+        function listenForCelebrations(renderCallback) {
+            const q = db.collection('celebrations').orderBy('birthday', 'asc'); 
+
+            console.log("Setting up Firestore listener for celebrations");
+            const unsubscribe = q.onSnapshot(snapshot => {
+                const celebrations = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                renderCallback(celebrations);
+            }, (error) => {
+                console.error("Error listening to celebrations:", error);
+            });
+            return unsubscribe;
+        }
+
+
+        // Configuration de l'API Email
+        // Détection automatique : localhost en développement, URL de production sinon
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname === '';
+        const EMAIL_API_URL = isLocalhost
+            ? 'http://localhost:3001/api'
+            : 'https://votre-serveur-email.com/api'; // À configurer pour la production
+        
+        console.log('📧 EMAIL_API_URL configurée:', EMAIL_API_URL);
+        console.log('📍 Hostname:', window.location.hostname);
+
+        /**
+         * Affiche une alerte Bootstrap
+         * @param {string} message - Message à afficher
+         * @param {string} type - Type d'alerte ('success', 'danger', 'warning', 'info', 'primary', 'secondary')
+         */
+        function showBootstrapAlert(message, type = 'info') {
+            // Créer l'élément d'alerte
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.setAttribute('role', 'alert');
+            alertDiv.style.position = 'fixed';
+            alertDiv.style.top = '20px';
+            alertDiv.style.right = '20px';
+            alertDiv.style.zIndex = '9999';
+            alertDiv.style.minWidth = '300px';
+            alertDiv.style.maxWidth = '500px';
+            
+            // Icônes selon le type
+            const icons = {
+                'success': 'check-circle',
+                'danger': 'alert-triangle',
+                'warning': 'alert-circle',
+                'info': 'info',
+                'primary': 'info',
+                'secondary': 'bell'
+            };
+            const icon = icons[type] || 'info';
+            
+            alertDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i data-lucide="${icon}" class="w-5 h-5 mr-2 flex-shrink-0"></i>
+                    <div class="flex-1">${message}</div>
+                    <button type="button" class="ml-3 text-white opacity-75 hover:opacity-100 transition" aria-label="Close" onclick="this.parentElement.parentElement.remove()">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Ajouter au body
+            document.body.appendChild(alertDiv);
+            
+            // Initialiser les icônes Lucide
+            lucide.createIcons();
+            
+            // Auto-supprimer après 5 secondes
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.style.transition = 'opacity 0.3s';
+                    alertDiv.style.opacity = '0';
+                    setTimeout(() => alertDiv.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        /**
+         * Envoie un email de bienvenue lors de la création d'un compte
+         * @param {string} email - Email du destinataire
+         * @param {string} fullName - Nom complet
+         * @param {string} tempPassword - Mot de passe temporaire
+         * @returns {Promise<boolean>} Succès ou échec
+         */
+        async function sendWelcomeEmail(email, fullName, tempPassword) {
+            console.log('📧 Tentative d\'envoi d\'email à:', email);
+            console.log('🔗 URL API:', `${EMAIL_API_URL}/send-welcome-email`);
+            
+            try {
+                const response = await fetch(`${EMAIL_API_URL}/send-welcome-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        fullName: fullName,
+                        tempPassword: tempPassword,
+                        loginUrl: window.location.origin + '/login.html'
+                    })
+                });
+                
+                console.log('📡 Réponse du serveur:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Erreur HTTP:', response.status, errorText);
+                    return false;
+                }
+                
+                const result = await response.json();
+                console.log('📦 Résultat:', result);
+                
+                if (result.success) {
+                    console.log('✅ Email de bienvenue envoyé à', email);
+                    return true;
+                } else {
+                    console.error('❌ Erreur envoi email:', result.error);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+                console.error('❌ Détails:', error.message, error.stack);
+                // Ne pas bloquer la création du compte si l'email échoue
+                return false;
+            }
+        }
+
+        // --- Début du Script Principal ---
+
+        const celebrationListBody = document.getElementById('celebrationListBody');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const adminContent = document.getElementById('adminContent');
+        const welcomeName = document.getElementById('welcomeName');
+        const ioMsg = document.getElementById('ioMsg');
+
+        let allCelebrations = []; // Pour la recherche par fileNumber et classNumber
+        let unsubscribeCelebrations = null; 
+        let currentUserId = null; // Pour le logging 
+
+        const sections = {
+            'celebrations': document.getElementById('section-celebrations'),
+            'activities': document.getElementById('section-activities'),
+            'profiles': document.getElementById('section-profiles'),
+            'reputation': document.getElementById('section-reputation'),
+            'announcements': document.getElementById('section-announcements'),
+        };
+        
+        // --- Navigation et Autorisation ---
+
+        /** Redirige l'utilisateur s'il n'est pas Admin. */
+        async function checkAdminAuth() {
+            loadingScreen.style.display = 'flex';
+            
+            // Attendre que l'état d'authentification soit établi
+            const user = await new Promise(resolve => {
+                const unsubscribe = firebase.auth().onAuthStateChanged(u => {
+                    unsubscribe(); // Arrêter l'écoute après la première vérification
+                    resolve(u);
+                });
+            });
+
+            if (!user) {
+                // Pas connecté, rediriger vers login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const userData = await getUserRole(user.uid);
+            if (!userData) {
+                console.error('Erreur: Impossible de récupérer les données utilisateur');
+                showBootstrapAlert('Erreur lors de la vérification des autorisations. Veuillez réessayer.', 'danger');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                return;
+            }
+            
+            const role = userData.role;
+            const isAdmin = role === 'admin';
+            const isProfessor = role === 'professeur' || role === 'teacher';
+            
+            welcomeName.textContent = `${userData.name || userData.email || 'Admin'} (${isProfessor ? 'Professeur' : role})`;
+            currentUserId = user.uid; // Stocker pour logging
+            window.currentUserRole = role; // Stocker le rôle globalement
+
+            // Afficher les liens super-admin uniquement pour admin@ontech.com
+            const activityLogsLink = document.querySelector('a[href="activity-logs.html"]');
+            const superAdminLink = document.getElementById('superAdminLink');
+            if (user.email === 'admin@ontech.com') {
+                if (activityLogsLink) activityLogsLink.style.display = 'flex';
+                if (superAdminLink) superAdminLink.style.display = 'flex';
+            } else {
+                if (activityLogsLink) activityLogsLink.style.display = 'none';
+                if (superAdminLink) superAdminLink.style.display = 'none';
+            }
+
+            // Masquer le lien Présentation pour les professeurs
+            const presentationLink = document.querySelector('a[href="presentation-admin.html"]');
+            if (presentationLink && isProfessor && !isAdmin) {
+                presentationLink.style.display = 'none';
+            }
+
+            // La section "Gestion des Utilisateurs" a été déplacée vers super-admin.html
+
+            if (!isAdmin && !isProfessor) {
+                let redirectPage = 'eleve.html'; // Par défaut
+                let roleName = 'Élève';
+                
+                if (role === 'comite') {
+                    redirectPage = 'committee.html';
+                    roleName = 'Comité';
+                }
+                
+                showBootstrapAlert(`Accès refusé pour cette page. Rôle actuel: ${roleName}. Redirection vers ${redirectPage}.`, 'warning');
+                setTimeout(() => {
+                    window.location.href = redirectPage;
+                }, 2000);
+                return;
+            }
+
+            // Appliquer les restrictions selon le rôle
+            applyRoleRestrictions(isAdmin, isProfessor);
+
+            loadingScreen.style.display = 'none';
+            adminContent.classList.remove('hidden');
+            
+            // Afficher la section célébrations par défaut
+            changeSection('celebrations');
+
+            // Logger la connexion (ne pas bloquer si ça échoue)
+            try {
+            await logActivity(currentUserId, 'login', { description: 'Connexion à la page admin' });
+            } catch (logError) {
+                console.error('Erreur lors du logging:', logError);
+                // Ne pas bloquer l'accès si le logging échoue
+            }
+            
+            // Stocker l'heure de connexion pour calculer la durée de session
+            sessionStorage.setItem('loginTime', Date.now());
+        }
+
+        /**
+         * Applique les restrictions selon le rôle de l'utilisateur
+         */
+        function applyRoleRestrictions(isAdmin, isProfessor) {
+            if (isProfessor && !isAdmin) {
+                // Professeurs : restrictions
+                // Limiter les rôles dans le formulaire de création - SEULEMENT ÉLÈVE
+                const addRoleSelect = document.getElementById('addRole');
+                if (addRoleSelect) {
+                    // Retirer toutes les options sauf élève
+                    const adminOption = addRoleSelect.querySelector('option[value="admin"]');
+                    const profOption = addRoleSelect.querySelector('option[value="professeur"]');
+                    const comiteOption = addRoleSelect.querySelector('option[value="comite"]');
+                    if (adminOption) adminOption.remove();
+                    if (profOption) profOption.remove();
+                    if (comiteOption) comiteOption.remove();
+                    
+                    // Forcer la valeur à élève
+                    addRoleSelect.value = 'eleve';
+                    addRoleSelect.disabled = true;
+                    
+                    // Ajouter un message d'aide
+                    const existingHelp = addRoleSelect.parentElement.querySelector('.help-text-prof');
+                    if (!existingHelp) {
+                        const helpText = document.createElement('p');
+                        helpText.className = 'text-xs text-gray-500 mt-1 help-text-prof';
+                        helpText.textContent = 'Les professeurs peuvent uniquement créer des comptes Élève';
+                        addRoleSelect.parentElement.appendChild(helpText);
+                    }
+                }
+                
+                // Limiter les rôles dans le formulaire d'édition
+                const editRoleSelect = document.getElementById('editRole');
+                if (editRoleSelect) {
+                    // Retirer les options admin et professeur
+                    const adminOption = editRoleSelect.querySelector('option[value="admin"]');
+                    const profOption = editRoleSelect.querySelector('option[value="professeur"]');
+                    if (adminOption) adminOption.remove();
+                    if (profOption) profOption.remove();
+                }
+
+                // Masquer les filtres de rôle - les professeurs ne voient que les élèves
+                const roleFilterTabs = document.getElementById('roleFilterTabs');
+                if (roleFilterTabs) {
+                    roleFilterTabs.style.display = 'none';
+                }
+            }
+        }
+
+        /** Gère le changement d'onglet principal (Users, Celebrations, Settings). */
+        window.changeSection = function(sectionId) {
+            // Empêcher les professeurs d'accéder à la section utilisateurs
+            const isProfessor = window.currentUserRole === 'professeur' || window.currentUserRole === 'teacher';
+            const isAdmin = window.currentUserRole === 'admin';
+            if (sectionId === 'users' && isProfessor && !isAdmin) {
+                showBootstrapAlert('Accès refusé. Cette section est réservée aux administrateurs.', 'warning');
+                return;
+            }
+
+            // Gérer le listener OnSnapshot pour les célébrations (seulement actif si la section est visible)
+            if (unsubscribeCelebrations) {
+                console.log("Stopping old listener.");
+                unsubscribeCelebrations();
+                unsubscribeCelebrations = null;
+            }
+
+            Object.keys(sections).forEach(key => {
+                const tab = document.getElementById(`tab-${key}`);
+                if (key === sectionId) {
+                    sections[key].classList.remove('hidden');
+                    tab.classList.add('active-tab');
+                    tab.classList.remove('text-gray-400', 'border-transparent');
+                } else {
+                    sections[key].classList.add('hidden');
+                    tab.classList.remove('active-tab');
+                    tab.classList.add('text-gray-400', 'border-transparent');
+                }
+            });
+            
+            if (sectionId === 'celebrations') {
+                unsubscribeCelebrations = listenForCelebrations(renderCelebrationList);
+            } else if (sectionId === 'activities') {
+                loadActivities();
+                loadVoteSettings();
+            } else if (sectionId === 'profiles') {
+                loadProfiles();
+                loadProfileVisibilitySetting();
+            } else if (sectionId === 'reputation') {
+                loadReputationData();
+            } else if (sectionId === 'announcements') {
+                loadAnnouncements();
+            }
+        }
+
+        // --- Gestion des Activités & Votes ---
+
+        // Charger les activités
+        async function loadActivities() {
+            const activitiesList = document.getElementById('activitiesList');
+            try {
+                const activities = await getAllActivities();
+                
+                if (activities.length === 0) {
+                    activitiesList.innerHTML = '<p class="text-gray-500 text-center py-8">Aucune activité créée. Cliquez sur "Ajouter une Activité" pour commencer.</p>';
+                    return;
+                }
+                
+                activitiesList.innerHTML = activities.map(activity => `
+                    <div class="border border-gray-700 rounded-lg p-4 bg-gray-800 bg-opacity-20 flex items-center justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-lg">${activity.name}</h4>
+                            ${activity.description ? `<p class="text-sm text-gray-400 mt-1">${activity.description}</p>` : ''}
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="editActivity('${activity.id}')" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteActivityConfirm('${activity.id}', '${activity.name.replace(/'/g, "\\'")}')" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des activités:', error);
+                activitiesList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des activités.</p>';
+            }
+        }
+
+        // Ouvrir la modale d'ajout d'activité
+        window.openAddActivityModal = function() {
+            document.getElementById('addActivityForm').reset();
+            document.getElementById('activityId').value = '';
+            document.getElementById('activityModalTitle').textContent = 'Ajouter une Activité';
+            openModal('addActivityModal');
+            lucide.createIcons();
+        }
+
+        // Éditer une activité
+        window.editActivity = async function(activityId) {
+            try {
+                const activityDoc = await firebase.firestore().collection('activities').doc(activityId).get();
+                if (!activityDoc.exists) {
+                    showBootstrapAlert('Activité non trouvée', 'warning');
+                    return;
+                }
+                
+                const activity = activityDoc.data();
+                document.getElementById('activityId').value = activityId;
+                document.getElementById('activityName').value = activity.name || '';
+                document.getElementById('activityDescription').value = activity.description || '';
+                document.getElementById('activityModalTitle').textContent = 'Modifier l\'Activité';
+                openModal('addActivityModal');
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors de l\'édition:', error);
+                showBootstrapAlert('Erreur lors de l\'édition de l\'activité', 'danger');
+            }
+        }
+
+        // Confirmer la suppression d'une activité
+        window.deleteActivityConfirm = function(activityId, activityName) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer l'activité "${activityName}" ?`)) {
+                deleteActivityById(activityId);
+            }
+        }
+
+        // Supprimer une activité
+        async function deleteActivityById(activityId) {
+            try {
+                await deleteActivity(activityId);
+                showBootstrapAlert('Activité supprimée avec succès', 'success');
+                loadActivities();
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                showBootstrapAlert('Erreur lors de la suppression de l\'activité', 'danger');
+            }
+        }
+
+        // Gérer le formulaire d'activité
+        document.getElementById('addActivityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const saveBtn = document.getElementById('activitySaveBtn');
+            const activityId = document.getElementById('activityId').value;
+            const name = document.getElementById('activityName').value.trim();
+            const description = document.getElementById('activityDescription').value.trim();
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 mr-2 animate-spin"></i>Enregistrement...';
+            
+            try {
+                if (activityId) {
+                    // Modifier
+                    await updateActivity(activityId, { name, description });
+                    showBootstrapAlert('Activité modifiée avec succès !', 'success');
+                } else {
+                    // Créer
+                    await createActivity(name, description);
+                    showBootstrapAlert('Activité créée avec succès !', 'success');
+                }
+                
+                form.reset();
+                closeModal('addActivityModal');
+                loadActivities();
+            } catch (error) {
+                console.error('Erreur:', error);
+                showBootstrapAlert('Erreur lors de l\'enregistrement de l\'activité', 'danger');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4 mr-2"></i>Enregistrer';
+                lucide.createIcons();
+            }
+        });
+
+        // Charger les paramètres de vote
+        async function loadVoteSettings() {
+            try {
+                const settings = await getVoteSettings();
+                document.getElementById('toggleInitialVote').checked = settings.votingEnabled || false;
+                document.getElementById('toggleFinalVote').checked = settings.finalVotingEnabled || false;
+            } catch (error) {
+                console.error('Erreur lors du chargement des paramètres:', error);
+            }
+        }
+
+        // Toggle vote initial
+        document.getElementById('toggleInitialVote').addEventListener('change', async (e) => {
+            try {
+                const settings = await getVoteSettings();
+                await updateVoteSettings({
+                    ...settings,
+                    votingEnabled: e.target.checked,
+                    // Si on désactive le vote initial, on désactive aussi le vote final
+                    finalVotingEnabled: e.target.checked ? settings.finalVotingEnabled : false
+                });
+                if (!e.target.checked) {
+                    document.getElementById('toggleFinalVote').checked = false;
+                }
+                showBootstrapAlert('Paramètres de vote mis à jour', 'success');
+            } catch (error) {
+                console.error('Erreur:', error);
+                showBootstrapAlert('Erreur lors de la mise à jour', 'danger');
+                e.target.checked = !e.target.checked; // Revert
+            }
+        });
+
+        // Toggle vote final
+        document.getElementById('toggleFinalVote').addEventListener('change', async (e) => {
+            try {
+                const settings = await getVoteSettings();
+                // Le vote final nécessite le vote initial
+                if (e.target.checked && !settings.votingEnabled) {
+                    showBootstrapAlert('Vous devez d\'abord activer le vote initial', 'warning');
+                    e.target.checked = false;
+                    return;
+                }
+                await updateVoteSettings({
+                    ...settings,
+                    finalVotingEnabled: e.target.checked
+                });
+                showBootstrapAlert('Paramètres de vote mis à jour', 'success');
+            } catch (error) {
+                console.error('Erreur:', error);
+                showBootstrapAlert('Erreur lors de la mise à jour', 'danger');
+                e.target.checked = !e.target.checked; // Revert
+            }
+        });
+
+        // Charger les résultats de vote
+        window.loadVoteResults = async function(isFinal = false) {
+            const container = document.getElementById('voteResultsContainer');
+            container.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement des résultats...</p>';
+            
+            try {
+                const [results, voteDetails] = await Promise.all([
+                    getVoteResults(isFinal),
+                    getAllVoteDetails(isFinal)
+                ]);
+                
+                if (results.totalVotes === 0) {
+                    container.innerHTML = `
+                        <div class="bg-gray-800 bg-opacity-30 border border-gray-700 rounded-lg p-4 text-center">
+                            <p class="text-gray-400">Aucun vote enregistré pour le ${isFinal ? 'vote final' : 'vote initial'}.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="mb-4 p-4 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg">
+                        <div class="text-lg font-bold">Total des votes : ${results.totalVotes}</div>
+                        <div class="text-sm text-gray-400">Type : ${isFinal ? 'Vote Final' : 'Vote Initial'}</div>
+                    </div>
+                    <div class="space-y-4">
+                        ${results.results.map(item => {
+                            const percentage = item.percentage.toFixed(1);
+                            return `
+                                <div class="border border-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="font-bold text-lg">${item.activity.name}</h4>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-primary">${item.count}</div>
+                                            <div class="text-sm text-gray-400">${percentage}%</div>
+                                        </div>
+                                    </div>
+                                    <div class="w-full bg-gray-700 rounded-full h-4">
+                                        <div class="bg-gradient-to-r from-primary to-secondary h-4 rounded-full transition-all" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-bold mb-3">Détails des votes</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full border border-gray-700 rounded-lg">
+                                <thead class="bg-gray-800">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Élève</th>
+                                        <th class="px-4 py-2 text-left">Activité</th>
+                                        <th class="px-4 py-2 text-left">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${voteDetails.map(vote => `
+                                        <tr class="border-t border-gray-700">
+                                            <td class="px-4 py-2">${vote.user ? vote.user.fullName : 'Inconnu'}</td>
+                                            <td class="px-4 py-2">${vote.activity ? vote.activity.name : 'N/A'}</td>
+                                            <td class="px-4 py-2 text-sm text-gray-400">
+                                                ${vote.createdAt ? vote.createdAt.toDate().toLocaleString('fr-FR') : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Erreur lors du chargement des résultats:', error);
+                container.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des résultats.</p>';
+            }
+        };
+
+        /** Déconnecte l'utilisateur et redirige vers la page de connexion. */
+        window.signOutAndRedirect = async function() {
+            // Calculer la durée de session
+            const loginTime = sessionStorage.getItem('loginTime');
+            let sessionDuration = null;
+            if (loginTime) {
+                sessionDuration = Math.round((Date.now() - parseInt(loginTime)) / 1000); // Durée en secondes
+            }
+            
+            // Logger la déconnexion avec la durée de session
+            if (currentUserId) {
+                await logActivity(currentUserId, 'logout', { 
+                    sessionDuration: sessionDuration,
+                    description: 'Déconnexion depuis la page admin' 
+                });
+            }
+            signOutUser().then(() => {
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }).catch(error => {
+                console.error("Erreur de déconnexion:", error);
+            });
+        }
+        
+        // --- Fonctions Générales des Modales ---
+        window.closeModal = function(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        window.openModal = function(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+
+        // --- Gestion des Célébrations ---
+
+        /** Rendu de la liste des célébrations */
+        function renderCelebrationList(celebrations) {
+            // Stocker les célébrations pour l'export
+            allCelebrations = celebrations;
+            
+            celebrationListBody.innerHTML = '';
+
+            if (celebrations.length === 0) {
+                celebrationListBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Aucune personne enregistrée.</td></tr>';
+                return;
+            }
+
+            celebrations.forEach(celeb => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-bg-dark transition cursor-pointer';
+
+                // Format the date (YYYY-MM-DD to DD/MM/YYYY)
+                const dateParts = celeb.birthday ? celeb.birthday.split('-') : ['?', '?', '?'];
+                const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : 'N/A';
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium">${celeb.fullName || 'N/A'} <span class="text-xs text-gray-500">(${celeb.fileNumber || 'N/A'}/${celeb.classNumber || 'N/A'})</span></td>
+                    <td class="px-4 py-3 text-sm">${formattedDate}</td>
+                    <td class="px-4 py-3 text-sm hidden sm:table-cell">${celeb.gender || 'N/A'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">${celeb.extraInfo || 'N/A'}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="openDeleteCelebModal('${celeb.id}', '${celeb.fullName.replace(/'/g, "\\'")}')" class="text-red-400 hover:text-red-500 transition p-2 rounded-full hover:bg-gray-700">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
+                        </button>
+                    </td>
+                `;
+                celebrationListBody.appendChild(row);
+            });
+            lucide.createIcons();
+        }
+
+        /** Gère la soumission du formulaire d'ajout de célébration. */
+        document.getElementById('addCelebrationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const saveBtn = document.getElementById('celebSaveBtn');
+            const msgElement = document.getElementById('celebMsg');
+            const createAccount = form.celeb_createAccount.checked;
+            const fileNumber = form.celeb_fileNumber.value.trim();
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>Ajout en cours...';
+            msgElement.classList.add('hidden');
+            msgElement.classList.remove('text-green-400', 'text-red-400');
+
+            try {
+                const data = {
+                    fullName: form.celeb_fullName.value,
+                    birthday: form.celeb_birthday.value,
+                    fileNumber: fileNumber,
+                    classNumber: form.celeb_classNumber.value,
+                    gender: form.celeb_gender.value,
+                    extraInfo: form.celeb_extraInfo.value,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Ajouter la célébration
+                await addCelebration(data);
+                
+                // Si la case est cochée, créer un compte utilisateur
+                if (createAccount && fileNumber) {
+                    const email = `${fileNumber}@cslaval.qc.ca`;
+                    const tempPassword = 'Login123';
+                    
+                    try {
+                        // Créer l'utilisateur dans Firebase Auth
+                        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, tempPassword);
+                        const uid = userCredential.user.uid;
+                        
+                        // Créer le document utilisateur dans Firestore avec flag temporaire
+                        await firebase.firestore().collection('users').doc(uid).set({
+                            fullName: data.fullName,
+                            email: email,
+                            role: 'eleve',
+                            needsPasswordChange: true, // Flag pour indiquer que le mot de passe doit être changé
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        // Envoyer l'email de bienvenue
+                        const emailSent = await sendWelcomeEmail(email, data.fullName, tempPassword);
+                        if (emailSent) {
+                            msgElement.textContent = `✅ Personne et compte utilisateur créés avec succès ! Email de bienvenue envoyé à ${email}`;
+                        } else {
+                            msgElement.textContent = `✅ Personne et compte utilisateur créés avec succès ! Email: ${email} (⚠️ Email non envoyé)`;
+                        }
+                    } catch (authError) {
+                        // Si l'utilisateur existe déjà, ce n'est pas grave
+                        if (authError.code === 'auth/email-already-in-use') {
+                            msgElement.textContent = '✅ Personne ajoutée ! (Compte utilisateur existe déjà)';
+                        } else {
+                            msgElement.textContent = `⚠️ Personne ajoutée mais erreur création compte: ${authError.message}`;
+                        }
+                    }
+                } else {
+                    msgElement.textContent = '✅ Personne ajoutée avec succès !';
+                }
+                
+                msgElement.classList.add('text-green-400');
+                form.reset();
+
+            } catch (error) {
+                console.error("Erreur lors de l'ajout de la célébration:", error);
+                msgElement.textContent = `❌ Erreur: ${error.message}`;
+                msgElement.classList.add('text-red-400');
+            } finally {
+                msgElement.classList.remove('hidden');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i data-lucide="save" class="w-5 h-5 mr-2"></i>Sauvegarder la Personne';
+                lucide.createIcons();
+            }
+        });
+
+        // --- Fonctions de Modale de Suppression Célébration ---
+
+        /** Ouvre la modale de confirmation de suppression de célébration. */
+        window.openDeleteCelebModal = function(celebId, fullName) {
+            document.getElementById('deleteCelebId').value = celebId;
+            document.getElementById('celebToDeleteName').textContent = fullName;
+            document.getElementById('deleteCelebError').classList.add('hidden');
+            openModal('deleteCelebConfirmModal');
+        }
+
+        /** Exécute la suppression de la célébration après confirmation. */
+        window.deleteCelebrationConfirmed = async function() {
+            const celebId = document.getElementById('deleteCelebId').value;
+            const deleteBtn = document.getElementById('deleteCelebConfirmBtn');
+            const errorElement = document.getElementById('deleteCelebError');
+
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Suppression...';
+            errorElement.classList.add('hidden');
+
+            try {
+                await deleteCelebration(celebId);
+                
+                closeModal('deleteCelebConfirmModal');
+                // L'écouteur onSnapshot s'occupera de la mise à jour automatique du tableau
+
+            } catch (error) {
+                console.error("Erreur de suppression de célébration:", error);
+                errorElement.textContent = `Erreur lors de la suppression: ${error.message}`;
+                errorElement.classList.remove('hidden');
+            } finally {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = 'Oui, Supprimer';
+            }
+        }
+        
+        // --- Fonctions Import/Export ---
+        
+        // allCelebrations est déjà déclaré plus haut pour la recherche
+        
+        /** Déclenche le sélecteur de fichier pour l'import */
+        window.triggerFileInput = function() {
+            document.getElementById('excelFileInput').click();
+        }
+        
+        /** Gère l'import de fichier Excel/CSV */
+        document.getElementById('excelFileInput').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            ioMsg.textContent = "Lecture du fichier en cours...";
+            ioMsg.classList.remove('hidden', 'text-green-400', 'text-red-400', 'text-yellow-400');
+            ioMsg.classList.add('text-blue-400');
+            
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data);
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                
+                if (jsonData.length === 0) {
+                    throw new Error("Le fichier est vide ou mal formaté");
+                }
+                
+                let imported = 0;
+                let errors = 0;
+                
+                // Importer chaque ligne
+                for (const row of jsonData) {
+                    try {
+                        // Essayer de détecter les colonnes automatiquement
+                        const celebData = {
+                            fullName: row['Nom'] || row['Nom Complet'] || row['fullName'] || row['name'] || '',
+                            birthday: row['Date'] || row['Anniversaire'] || row['birthday'] || row['Date de Naissance'] || '',
+                            fileNumber: row['Fiche'] || row['Numéro de Fiche'] || row['fileNumber'] || '',
+                            classNumber: row['Classe'] || row['Numéro de Classe'] || row['classNumber'] || '',
+                            gender: row['Genre'] || row['Sexe'] || row['gender'] || '',
+                            extraInfo: row['Info'] || row['Information'] || row['extraInfo'] || '',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        
+                        // Valider que le nom et la date sont présents
+                        if (!celebData.fullName || !celebData.birthday) {
+                            errors++;
+                            continue;
+                        }
+                        
+                        // Normaliser la date si nécessaire (DD/MM/YYYY vers YYYY-MM-DD)
+                        if (celebData.birthday.includes('/')) {
+                            const parts = celebData.birthday.split('/');
+                            if (parts.length === 3) {
+                                celebData.birthday = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            }
+                        }
+                        
+                        await addCelebration(celebData);
+                        imported++;
+                        
+                    } catch (err) {
+                        console.error("Erreur lors de l'import d'une ligne:", err);
+                        errors++;
+                    }
+                }
+                
+                ioMsg.textContent = `✅ Import terminé: ${imported} personne(s) ajoutée(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`;
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-green-400');
+                
+            } catch (error) {
+                console.error("Erreur lors de l'import:", error);
+                ioMsg.textContent = `❌ Erreur d'import: ${error.message}`;
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-red-400');
+            }
+            
+            // Réinitialiser l'input
+            e.target.value = '';
+        });
+        
+        /** Exporte toutes les célébrations en PDF moderne */
+        window.exportToPDF = async function() {
+            // Charger les célébrations si elles ne sont pas déjà chargées
+            if (allCelebrations.length === 0) {
+                try {
+                    const celebrationsSnapshot = await firebase.firestore().collection('celebrations').get();
+                    allCelebrations = celebrationsSnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                } catch (error) {
+                    console.error("Erreur lors du chargement des célébrations:", error);
+                    ioMsg.textContent = "❌ Erreur lors du chargement des données";
+                    ioMsg.classList.remove('hidden', 'text-green-400', 'text-blue-400');
+                    ioMsg.classList.add('text-red-400');
+                    return;
+                }
+            }
+            
+            if (allCelebrations.length === 0) {
+                ioMsg.textContent = "❌ Aucune donnée à exporter";
+                ioMsg.classList.remove('hidden', 'text-green-400', 'text-blue-400');
+                ioMsg.classList.add('text-red-400');
+                return;
+            }
+            
+            ioMsg.textContent = "📄 Génération du PDF en cours...";
+            ioMsg.classList.remove('hidden', 'text-green-400', 'text-red-400');
+            ioMsg.classList.add('text-blue-400');
+            
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                
+                // Configuration
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const margin = 15;
+                let yPos = margin;
+                
+                // Fonction pour ajouter une nouvelle page si nécessaire
+                const checkNewPage = (neededSpace = 20) => {
+                    if (yPos + neededSpace > pageHeight - margin) {
+                        doc.addPage();
+                        yPos = margin;
+                        return true;
+                    }
+                    return false;
+                };
+                
+                // En-tête moderne avec gradient (simulé)
+                doc.setFillColor(255, 111, 97); // Couleur primaire
+                doc.rect(0, 0, pageWidth, 40, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(24);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Fête Express', margin, 20);
+                
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Liste Complète des Anniversaires', margin, 30);
+                
+                // Date d'export
+                const today = new Date().toLocaleDateString('fr-FR');
+                doc.setFontSize(10);
+                doc.text(`Exporté le: ${today}`, pageWidth - margin - 40, 30);
+                
+                yPos = 50;
+                
+                // Statistiques
+                doc.setTextColor(50, 50, 50);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Total: ${allCelebrations.length} personne(s)`, margin, yPos);
+                yPos += 15;
+                
+                // Trier par date d'anniversaire
+                const sortedCelebrations = [...allCelebrations].sort((a, b) => {
+                    return (a.birthday || '').localeCompare(b.birthday || '');
+                });
+                
+                // Liste des personnes
+                sortedCelebrations.forEach((celeb, index) => {
+                    checkNewPage(35);
+                    
+                    // Carte pour chaque personne
+                    doc.setFillColor(245, 245, 250);
+                    doc.roundedRect(margin, yPos, pageWidth - 2 * margin, 30, 3, 3, 'F');
+                    
+                    // Bordure gauche colorée
+                    doc.setFillColor(255, 111, 97);
+                    doc.rect(margin, yPos, 3, 30, 'F');
+                    
+                    // Numéro
+                    doc.setTextColor(150, 150, 150);
+                    doc.setFontSize(10);
+                    doc.text(`#${index + 1}`, margin + 8, yPos + 8);
+                    
+                    // Nom
+                    doc.setTextColor(30, 30, 30);
+                    doc.setFontSize(13);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(celeb.fullName || 'N/A', margin + 8, yPos + 15);
+                    
+                    // Date d'anniversaire
+                    doc.setFontSize(10);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(100, 100, 100);
+                    const dateParts = (celeb.birthday || '').split('-');
+                    const formattedDate = dateParts.length === 3 ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : 'N/A';
+                    doc.text(`🎂 ${formattedDate}`, margin + 8, yPos + 22);
+                    
+                    // Informations supplémentaires
+                    let xOffset = margin + 70;
+                    if (celeb.fileNumber) {
+                        doc.text(`Fiche: ${celeb.fileNumber}`, xOffset, yPos + 15);
+                        xOffset += 40;
+                    }
+                    if (celeb.classNumber) {
+                        doc.text(`Classe: ${celeb.classNumber}`, xOffset, yPos + 15);
+                    }
+                    if (celeb.gender) {
+                        doc.text(`Genre: ${celeb.gender}`, xOffset, yPos + 22);
+                    }
+                    
+                    yPos += 35;
+                });
+                
+                // Pied de page sur toutes les pages
+                const totalPages = doc.internal.pages.length - 1;
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(`Page ${i} / ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    doc.text('Fête Express - Gestion des Anniversaires', margin, pageHeight - 10);
+                }
+                
+                // Sauvegarder le PDF
+                doc.save(`Anniversaires_203_${today.replace(/\//g, '-')}.pdf`);
+                
+                ioMsg.textContent = "✅ PDF exporté avec succès !";
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-green-400');
+                
+            } catch (error) {
+                console.error("Erreur lors de l'export PDF:", error);
+                ioMsg.textContent = `❌ Erreur d'export: ${error.message}`;
+                ioMsg.classList.remove('text-blue-400');
+                ioMsg.classList.add('text-red-400');
+            }
+        }
+
+        // --- Gestion des Profils des Utilisateurs ---
+
+        // Charger tous les profils (élèves, invités, admins, etc.)
+        async function loadProfiles() {
+            const profilesTableBody = document.getElementById('profilesTableBody');
+            profilesTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Chargement...</td></tr>';
+
+            try {
+                const users = await getAllUsers();
+                // Afficher tous les utilisateurs, pas seulement les élèves
+                const allUsers = users;
+
+                if (allUsers.length === 0) {
+                    profilesTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Aucun utilisateur trouvé</td></tr>';
+                    return;
+                }
+
+                profilesTableBody.innerHTML = allUsers.map(user => {
+                    const hasProfile = user.profileCompleted || false;
+                    const userId = user.id || user.uid; // Utiliser id (document ID) ou uid en fallback
+                    const role = user.role || 'N/A';
+                    const accountType = user.accountType || '';
+                    
+                    // Déterminer la couleur du badge de rôle
+                    let roleClass = 'px-2 py-1 rounded text-sm font-semibold ';
+                    let roleText = role;
+                    if (role === 'admin') {
+                        roleClass += 'bg-red-500 bg-opacity-30 text-red-300';
+                    } else if (role === 'professeur') {
+                        roleClass += 'bg-green-500 bg-opacity-30 text-green-300';
+                    } else if (role === 'comite') {
+                        roleClass += 'bg-blue-500 bg-opacity-30 text-blue-300';
+                    } else if (role === 'eleve') {
+                        roleClass += 'bg-yellow-500 bg-opacity-30 text-yellow-300';
+                    } else if (role === 'guest' || accountType === 'guest') {
+                        roleClass += 'bg-purple-500 bg-opacity-30 text-purple-300';
+                        roleText = 'Invité';
+                    } else {
+                        roleClass += 'bg-gray-500 bg-opacity-30 text-gray-300';
+                    }
+                    
+                    // Afficher le type de compte si différent de standard
+                    let accountTypeBadge = '';
+                    if (accountType && accountType !== 'standard' && accountType !== 'eleve') {
+                        if (accountType === 'limited') {
+                            accountTypeBadge = `<span class="text-xs text-orange-400 ml-1">(Limité)</span>`;
+                        } else if (accountType === 'temporary') {
+                            accountTypeBadge = `<span class="text-xs text-orange-400 ml-1">(Temporaire)</span>`;
+                        }
+                    }
+                    
+                    return `
+                        <tr class="hover:bg-gray-800 transition">
+                            <td class="px-4 py-3 text-sm">${user.fullName || 'N/A'}</td>
+                            <td class="px-4 py-3 text-sm text-gray-400">${user.email || 'N/A'}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <span class="${roleClass} capitalize">${roleText}</span>${accountTypeBadge}
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                ${hasProfile 
+                                    ? '<span class="px-2 py-1 rounded bg-green-500 bg-opacity-30 text-green-300">Complété</span>' 
+                                    : '<span class="px-2 py-1 rounded bg-gray-500 bg-opacity-30 text-gray-300">Non complété</span>'}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                ${hasProfile 
+                                    ? `<button onclick="viewStudentProfile('${userId}')" class="px-3 py-1 rounded bg-primary hover:bg-opacity-90 text-bg-dark text-sm transition">
+                                        <i data-lucide="eye" class="w-4 h-4 inline-block"></i> Voir
+                                       </button>`
+                                    : '<span class="text-gray-500 text-sm">-</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des profils:', error);
+                profilesTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-400">Erreur lors du chargement</td></tr>';
+            }
+        }
+
+        // Voir le profil d'un élève
+        function viewStudentProfile(studentId) {
+            window.location.href = `student-profile.html?id=${studentId}`;
+        }
+
+        // Voir mon propre profil (admin)
+        function viewMyProfile() {
+            if (currentUserId) {
+                window.location.href = `student-profile.html?id=${currentUserId}`;
+            } else {
+                showBootstrapAlert('Erreur : Impossible de récupérer votre ID utilisateur', 'danger');
+            }
+        }
+
+        // Charger le paramètre de visibilité des profils
+        async function loadProfileVisibilitySetting() {
+            try {
+                const settingsDoc = await firebase.firestore().collection('settings').doc('profileVisibility').get();
+                const enabled = settingsDoc.exists && settingsDoc.data().enabled || false;
+                
+                const toggle = document.getElementById('toggleProfileVisibility');
+                const status = document.getElementById('profileVisibilityStatus');
+                
+                toggle.checked = enabled;
+                status.textContent = enabled ? 'Activé' : 'Désactivé';
+                status.className = enabled ? 'text-sm text-green-400' : 'text-sm text-gray-400';
+            } catch (error) {
+                console.error('Erreur lors du chargement du paramètre de visibilité:', error);
+            }
+        }
+
+        // Toggle la visibilité des profils
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggle = document.getElementById('toggleProfileVisibility');
+            if (toggle) {
+                toggle.addEventListener('change', async (e) => {
+                    const enabled = e.target.checked;
+                    const status = document.getElementById('profileVisibilityStatus');
+                    
+                    try {
+                        await firebase.firestore().collection('settings').doc('profileVisibility').set({
+                            enabled: enabled,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        
+                        status.textContent = enabled ? 'Activé' : 'Désactivé';
+                        status.className = enabled ? 'text-sm text-green-400' : 'text-sm text-gray-400';
+                        
+                        console.log(`✅ Visibilité des profils ${enabled ? 'activée' : 'désactivée'}`);
+                        showBootstrapAlert(`Visibilité des profils ${enabled ? 'activée' : 'désactivée'}`, 'success');
+                    } catch (error) {
+                        console.error('Erreur lors de la mise à jour de la visibilité:', error);
+                        showBootstrapAlert('Erreur lors de la mise à jour', 'danger');
+                        e.target.checked = !enabled; // Revert
+                    }
+                });
+            }
+
+            // Gestion de la recherche de réputation
+            const reputationSearchInput = document.getElementById('reputationSearchInput');
+            if (reputationSearchInput) {
+                reputationSearchInput.addEventListener('input', (e) => {
+                    filterReputationTable(e.target.value);
+                });
+            }
+        });
+
+        // --- Gestion de la Réputation & Statuts ---
+
+        let allReputationUsers = [];
+        let reputationSearchTerm = '';
+
+        // Charger les données de réputation
+        async function loadReputationData() {
+            const reputationTableBody = document.getElementById('reputationTableBody');
+            reputationTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Chargement...</td></tr>';
+
+            try {
+                const users = await getAllUsers();
+                allReputationUsers = users.map(user => ({
+                    id: user.id,
+                    fullName: user.fullName || 'N/A',
+                    email: user.email || user.id,
+                    reputation: user.reputation !== undefined ? user.reputation : 100,
+                    status: user.status || 'active',
+                    role: user.role || 'eleve'
+                }));
+
+                // Trier par réputation (plus basse en premier)
+                allReputationUsers.sort((a, b) => a.reputation - b.reputation);
+
+                renderReputationTable(allReputationUsers);
+            } catch (error) {
+                console.error('Erreur lors du chargement de la réputation:', error);
+                reputationTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-red-400">Erreur lors du chargement</td></tr>';
+            }
+        }
+
+        // Filtrer le tableau de réputation
+        function filterReputationTable(searchTerm) {
+            reputationSearchTerm = searchTerm.toLowerCase().trim();
+            renderReputationTable(allReputationUsers);
+        }
+
+        // Afficher le tableau de réputation
+        async function renderReputationTable(users) {
+            const reputationTableBody = document.getElementById('reputationTableBody');
+            reputationTableBody.innerHTML = '';
+
+            // Filtrer selon le terme de recherche
+            let filteredUsers = users;
+            if (reputationSearchTerm) {
+                filteredUsers = users.filter(user => {
+                    const fullName = (user.fullName || '').toLowerCase();
+                    const email = (user.email || '').toLowerCase();
+                    const fileNumber = email.split('@')[0];
+                    return fullName.includes(reputationSearchTerm) || 
+                           email.includes(reputationSearchTerm) || 
+                           fileNumber.includes(reputationSearchTerm);
+                });
+            }
+
+            if (filteredUsers.length === 0) {
+                reputationTableBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Aucun utilisateur trouvé</td></tr>';
+                return;
+            }
+
+            // Vérifier pour chaque utilisateur s'il a des messages bloqués
+            for (const user of filteredUsers) {
+                // Vérifier si l'utilisateur a des messages bloqués
+                let hasBlockedMessages = false;
+                try {
+                    const blockedMessagesSnapshot = await firebase.firestore()
+                        .collection('blockedMessages')
+                        .where('userId', '==', user.id)
+                        .limit(1)
+                        .get();
+                    hasBlockedMessages = !blockedMessagesSnapshot.empty;
+                } catch (error) {
+                    console.error('Erreur lors de la vérification des messages bloqués:', error);
+                }
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-800 transition';
+
+                // Couleur de la réputation
+                let repColor = 'text-green-400';
+                let repBg = 'bg-green-900 bg-opacity-30';
+                if (user.reputation < 20) {
+                    repColor = 'text-red-400';
+                    repBg = 'bg-red-900 bg-opacity-30';
+                } else if (user.reputation < 50) {
+                    repColor = 'text-yellow-400';
+                    repBg = 'bg-yellow-900 bg-opacity-30';
+                }
+
+                // Badge de statut
+                let statusBadge = '';
+                let statusColor = 'bg-green-600';
+                if (user.status === 'blocked') {
+                    statusBadge = 'Bloqué';
+                    statusColor = 'bg-red-600';
+                } else if (user.status === 'spectator') {
+                    statusBadge = 'Spectateur';
+                    statusColor = 'bg-gray-600';
+                } else {
+                    statusBadge = 'Actif';
+                    statusColor = 'bg-green-600';
+                }
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 font-medium">${user.fullName}</td>
+                    <td class="px-4 py-3 text-sm text-gray-400">${user.email}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-3 py-1 rounded-full text-sm font-semibold ${repColor} ${repBg}">
+                            ${user.reputation}/100
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold text-white ${statusColor}">
+                            ${statusBadge}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="openReputationModal('${user.id}')" class="px-3 py-1 rounded-lg bg-primary hover:bg-opacity-90 text-white text-sm transition">
+                                <i data-lucide="edit" class="w-4 h-4 inline-block mr-1"></i>
+                                Modifier
+                            </button>
+                            ${hasBlockedMessages ? `
+                                <button onclick="viewBlockedMessages('${user.id}')" class="px-2 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs transition" title="Voir les messages bloqués">
+                                    <i data-lucide="alert-triangle" class="w-3 h-3 inline-block mr-1"></i>
+                                    Bloqués
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                reputationTableBody.appendChild(row);
+            }
+
+            lucide.createIcons();
+        }
+
+        // Ouvrir la modale de modification de réputation
+        window.openReputationModal = function(userId) {
+            const user = allReputationUsers.find(u => u.id === userId);
+            if (!user) {
+                alert('Utilisateur non trouvé');
+                return;
+            }
+
+            document.getElementById('repUserId').value = user.id;
+            document.getElementById('repUserName').textContent = user.fullName;
+            document.getElementById('repUserEmail').textContent = user.email;
+            document.getElementById('repCurrentReputation').textContent = user.reputation;
+            document.getElementById('repNewReputation').value = user.reputation;
+            document.getElementById('repStatus').value = user.status;
+
+            openModal('reputationModal');
+        };
+
+        // Voir les messages bloqués d'un utilisateur
+        window.viewBlockedMessages = async function(userId) {
+            const user = allReputationUsers.find(u => u.id === userId);
+            if (!user) {
+                alert('Utilisateur non trouvé');
+                return;
+            }
+
+            // Charger les messages bloqués
+            try {
+                // Récupérer tous les messages bloqués et filtrer côté client pour éviter l'index composite
+                const blockedMessagesSnapshot = await firebase.firestore()
+                    .collection('blockedMessages')
+                    .where('userId', '==', userId)
+                    .get();
+
+                let blockedMessages = blockedMessagesSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Trier par date côté client (plus récent en premier)
+                blockedMessages.sort((a, b) => {
+                    const dateA = a.createdAt ? a.createdAt.toDate().getTime() : 0;
+                    const dateB = b.createdAt ? b.createdAt.toDate().getTime() : 0;
+                    return dateB - dateA;
+                });
+
+                // Afficher dans la modale
+                document.getElementById('blockedMessagesUserName').textContent = user.fullName;
+                document.getElementById('blockedMessagesUserEmail').textContent = user.email;
+                document.getElementById('blockedMessagesCount').textContent = blockedMessages.length;
+
+                const blockedMessagesList = document.getElementById('blockedMessagesList');
+                blockedMessagesList.innerHTML = '';
+
+                if (blockedMessages.length === 0) {
+                    blockedMessagesList.innerHTML = `
+                        <div class="text-center py-8 text-gray-400">
+                            <i data-lucide="check-circle" class="w-12 h-12 mx-auto mb-2 text-green-400"></i>
+                            <p>Aucun message bloqué pour cet utilisateur.</p>
+                        </div>
+                    `;
+                } else {
+                    blockedMessages.forEach((msg, index) => {
+                        const msgDate = msg.createdAt ? new Date(msg.createdAt.toDate()).toLocaleString('fr-FR') : 'Date inconnue';
+                        const msgCard = document.createElement('div');
+                        msgCard.className = 'bg-red-900 bg-opacity-20 border border-red-500 rounded-lg p-4 mb-4';
+                        msgCard.innerHTML = `
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <p class="text-sm text-gray-400">Message #${index + 1}</p>
+                                    <p class="text-xs text-gray-500">${msgDate}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs text-gray-400">Réputation</p>
+                                    <p class="text-sm font-semibold text-red-400">${msg.reputationBefore} → ${msg.reputationAfter}</p>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <p class="text-xs text-gray-400 mb-1">Destinataire</p>
+                                <p class="text-sm font-medium">${msg.recipientName || 'N/A'}</p>
+                            </div>
+                            <div class="mb-3">
+                                <p class="text-xs text-gray-400 mb-1">Message bloqué</p>
+                                <div class="bg-gray-900 rounded p-3 border border-red-500">
+                                    <p class="text-sm text-red-300 whitespace-pre-wrap">${msg.message || 'Aucun contenu'}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 text-xs">
+                                <div>
+                                    <span class="text-gray-400">Mot interdit détecté:</span>
+                                    <span class="text-red-400 font-semibold ml-1">${msg.blockedWord || 'N/A'}</span>
+                                </div>
+                            </div>
+                        `;
+                        blockedMessagesList.appendChild(msgCard);
+                    });
+                }
+
+                lucide.createIcons();
+                openModal('blockedMessagesModal');
+            } catch (error) {
+                console.error('Erreur lors du chargement des messages bloqués:', error);
+                showBootstrapAlert('Erreur lors du chargement des messages bloqués: ' + error.message, 'danger');
+            }
+        };
+
+        // Sauvegarder les modifications de réputation
+        document.getElementById('reputationForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const userId = form.repUserId.value;
+            const newReputation = parseInt(form.repNewReputation.value);
+            const newStatus = form.repStatus.value;
+
+            if (newReputation < 0 || newReputation > 100) {
+                showBootstrapAlert('La réputation doit être entre 0 et 100', 'warning');
+                return;
+            }
+
+            const saveBtn = form.querySelector('button[type="submit"]');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Sauvegarde...';
+
+            try {
+                await firebase.firestore().collection('users').doc(userId).update({
+                    reputation: newReputation,
+                    status: newStatus,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                closeModal('reputationModal');
+                loadReputationData();
+
+                // Logger l'action
+                await logActivity(currentUserId, 'update', {
+                    modifiedData: { userId, reputation: newReputation, status: newStatus },
+                    description: `Modification de la réputation et du statut de l'utilisateur`
+                });
+
+                showBootstrapAlert('Réputation et statut mis à jour avec succès', 'success');
+            } catch (error) {
+                console.error('Erreur lors de la mise à jour:', error);
+                showBootstrapAlert('Erreur lors de la mise à jour: ' + error.message, 'danger');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Sauvegarder';
+            }
+        });
+
+        // --- Gestion des Annonces ---
+        let announcementsSystem = null;
+
+        async function loadAnnouncements() {
+            if (!announcementsSystem) {
+                announcementsSystem = new AnnouncementsSystem();
+            }
+            const announcementsList = document.getElementById('announcementsList');
+            announcementsList.innerHTML = '<p class="text-gray-500 text-center py-8">Chargement des annonces...</p>';
+            try {
+                const announcements = await announcementsSystem.getActiveAnnouncements();
+                if (announcements.length === 0) {
+                    announcementsList.innerHTML = '<div class="text-center py-12"><i data-lucide="megaphone" class="w-16 h-16 mx-auto mb-4 text-gray-400"></i><p class="text-gray-400 text-lg mb-2">Aucune annonce active</p><p class="text-gray-500 text-sm">Créez votre première annonce pour informer les élèves.</p></div>';
+                    lucide.createIcons();
+                    return;
+                }
+                // Mapping des priorités vers les classes Bootstrap Alerts
+                const priorityAlertClasses = {
+                    'urgent': 'alert-danger',
+                    'high': 'alert-warning',
+                    'normal': 'alert-info',
+                    'low': 'alert-secondary'
+                };
+                const priorityLabels = {
+                    'urgent': 'Urgent',
+                    'high': 'Haute',
+                    'normal': 'Normale',
+                    'low': 'Basse'
+                };
+                const priorityIcons = {
+                    'urgent': 'alert-triangle',
+                    'high': 'alert-circle',
+                    'normal': 'info',
+                    'low': 'bell'
+                };
+                
+                // Charger les noms des utilisateurs cibles
+                const targetUsersMap = {};
+                for (const announcement of announcements) {
+                    if (announcement.targetUsers && announcement.targetUsers.length > 0) {
+                        for (const userId of announcement.targetUsers) {
+                            if (!targetUsersMap[userId]) {
+                                try {
+                                    const userDoc = await firebase.firestore().collection('users').doc(userId).get();
+                                    if (userDoc.exists) {
+                                        targetUsersMap[userId] = userDoc.data().fullName || userDoc.data().email || 'Inconnu';
+                                    }
+                                } catch (e) {
+                                    targetUsersMap[userId] = 'Inconnu';
+                                }
+                            }
+                        }
+                    }
+                }
+
+                announcementsList.innerHTML = announcements.map(announcement => {
+                    const date = announcement.createdAt?.toDate ? announcement.createdAt.toDate() : new Date();
+                    const formattedDate = date.toLocaleDateString('fr-FR', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    const isTargeted = announcement.targetUsers && announcement.targetUsers.length > 0;
+                    const targetNames = isTargeted ? announcement.targetUsers.map(uid => targetUsersMap[uid] || 'Inconnu').join(', ') : '';
+                    const alertClass = priorityAlertClasses[announcement.priority] || 'alert-info';
+                    const icon = priorityIcons[announcement.priority] || 'info';
+                    const priorityLabel = priorityLabels[announcement.priority] || 'Normale';
+                    
+                    return `
+                        <div class="alert ${alertClass} mb-4" role="alert">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 mr-3">
+                                    <i data-lucide="${icon}" class="w-6 h-6"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h4 class="alert-heading mb-0 flex items-center text-lg font-bold">
+                                            ${announcement.title}
+                                        </h4>
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-opacity-75">
+                                                ${priorityLabel}
+                                            </span>
+                                            ${isTargeted 
+                                                ? '<span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-500 bg-opacity-75 text-white" title="Annonce ciblée">Ciblée</span>' 
+                                                : '<span class="px-3 py-1 rounded-full text-xs font-bold bg-green-500 bg-opacity-75 text-white">Publique</span>'
+                                            }
+                                        </div>
+                                    </div>
+                                    <p class="mb-2 text-sm opacity-75">
+                                        <i data-lucide="user" class="w-4 h-4 inline-block mr-1"></i>
+                                        Par <strong>${announcement.createdByName}</strong> • ${formattedDate}
+                                    </p>
+                                    ${isTargeted 
+                                        ? `<p class="mb-3 text-sm opacity-75">
+                                            <i data-lucide="users" class="w-4 h-4 inline-block mr-1"></i>
+                                            <strong>Visible par:</strong> ${targetNames}
+                                           </p>` 
+                                        : ''
+                                    }
+                                    <div class="mt-3 mb-3 p-4 rounded-lg" style="background-color: rgba(0, 0, 0, 0.15);">
+                                        <p class="mb-0 whitespace-pre-wrap leading-relaxed">${announcement.content}</p>
+                                    </div>
+                                    <hr class="my-3 opacity-25">
+                                    <div class="flex items-center justify-between">
+                                        <div class="text-sm opacity-75">
+                                            <i data-lucide="eye" class="w-4 h-4 inline-block mr-1"></i>
+                                            ${announcement.readBy?.length || 0} lecteur(s)
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button onclick="deactivateAnnouncement('${announcement.id}')" 
+                                                    class="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition flex items-center text-sm">
+                                                <i data-lucide="eye-off" class="w-4 h-4 mr-1"></i>
+                                                Désactiver
+                                            </button>
+                                            <button onclick="deleteAnnouncement('${announcement.id}')" 
+                                                    class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition flex items-center text-sm">
+                                                <i data-lucide="trash-2" class="w-4 h-4 mr-1"></i>
+                                                Supprimer
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            } catch (error) {
+                console.error('Erreur lors du chargement des annonces:', error);
+                announcementsList.innerHTML = '<p class="text-red-400 text-center py-8">Erreur lors du chargement des annonces.</p>';
+            }
+        }
+
+        async function openCreateAnnouncementModal() {
+            let modal = document.getElementById('createAnnouncementModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'createAnnouncementModal';
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-2xl font-bold">Créer une Annonce</h3>
+                            <button onclick="closeModal('createAnnouncementModal')" class="text-gray-400 hover:text-white">
+                                <i data-lucide="x" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        <form id="createAnnouncementForm">
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold mb-2">Titre</label>
+                                <input type="text" id="announcementTitle" required class="w-full p-3 rounded-lg bg-bg-dark border border-gray-700 text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold mb-2">Contenu</label>
+                                <textarea id="announcementContent" required rows="6" class="w-full p-3 rounded-lg bg-bg-dark border border-gray-700 text-white focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold mb-2">Priorité</label>
+                                <select id="announcementPriority" class="w-full p-3 rounded-lg bg-bg-dark border border-gray-700 text-white focus:ring-2 focus:ring-primary focus:border-primary">
+                                    <option value="low">Basse</option>
+                                    <option value="normal" selected>Normale</option>
+                                    <option value="high">Haute</option>
+                                    <option value="urgent">Urgente</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="checkbox" id="announcementTargetSpecific" onchange="toggleTargetUsers()" class="w-5 h-5 rounded border-gray-700 bg-bg-dark text-primary focus:ring-primary">
+                                    <span class="text-sm font-semibold">Cibler des utilisateurs spécifiques</span>
+                                </label>
+                                <p class="text-xs text-gray-400 mt-1 ml-8">Si coché, l'annonce sera visible uniquement par les utilisateurs sélectionnés</p>
+                            </div>
+                            <div id="targetUsersSection" class="mb-6 hidden">
+                                <label class="block text-sm font-semibold mb-2">Sélectionner les utilisateurs</label>
+                                <div class="max-h-60 overflow-y-auto border border-gray-700 rounded-lg p-3 bg-bg-dark">
+                                    <div id="targetUsersList" class="space-y-2">
+                                        <p class="text-gray-500 text-center py-4">Chargement des utilisateurs...</p>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-2" id="selectedUsersCount">0 utilisateur(s) sélectionné(s)</p>
+                            </div>
+                            <div class="flex justify-end space-x-4">
+                                <button type="button" onclick="closeModal('createAnnouncementModal')" class="px-6 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition">
+                                    Annuler
+                                </button>
+                                <button type="submit" class="px-6 py-2 rounded-lg bg-primary hover:bg-opacity-90 text-white transition">
+                                    Créer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                document.getElementById('createAnnouncementForm').addEventListener('submit', async (e) => { 
+                    e.preventDefault(); 
+                    await createAnnouncement(); 
+                });
+            }
+            
+            // Charger la liste des utilisateurs pour la sélection
+            await loadTargetUsersList();
+            
+            modal.style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        async function loadTargetUsersList() {
+            const targetUsersList = document.getElementById('targetUsersList');
+            if (!targetUsersList) return;
+
+            try {
+                // Charger tous les utilisateurs (élèves seulement)
+                const usersSnapshot = await firebase.firestore().collection('users')
+                    .where('role', '==', 'eleve')
+                    .get();
+
+                if (usersSnapshot.empty) {
+                    targetUsersList.innerHTML = '<p class="text-gray-500 text-center py-4">Aucun élève trouvé</p>';
+                    return;
+                }
+
+                const users = [];
+                usersSnapshot.forEach(doc => {
+                    const userData = doc.data();
+                    if (userData.status === 'active' || !userData.status) {
+                        users.push({
+                            id: doc.id,
+                            name: userData.fullName || userData.email || 'Inconnu',
+                            email: userData.email || ''
+                        });
+                    }
+                });
+
+                // Trier par nom
+                users.sort((a, b) => a.name.localeCompare(b.name));
+
+                targetUsersList.innerHTML = users.map(user => `
+                    <label class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-800 cursor-pointer">
+                        <input type="checkbox" value="${user.id}" class="target-user-checkbox w-4 h-4 rounded border-gray-700 bg-bg-dark text-primary focus:ring-primary" onchange="updateSelectedUsersCount()">
+                        <div class="flex-1">
+                            <div class="font-medium">${user.name}</div>
+                            <div class="text-xs text-gray-400">${user.email}</div>
+                        </div>
+                    </label>
+                `).join('');
+
+                updateSelectedUsersCount();
+            } catch (error) {
+                console.error('Erreur lors du chargement des utilisateurs:', error);
+                targetUsersList.innerHTML = '<p class="text-red-400 text-center py-4">Erreur lors du chargement</p>';
+            }
+        }
+
+        function toggleTargetUsers() {
+            const checkbox = document.getElementById('announcementTargetSpecific');
+            const targetUsersSection = document.getElementById('targetUsersSection');
+            
+            if (checkbox.checked) {
+                targetUsersSection.classList.remove('hidden');
+            } else {
+                targetUsersSection.classList.add('hidden');
+            }
+        }
+
+        function updateSelectedUsersCount() {
+            const checkboxes = document.querySelectorAll('.target-user-checkbox:checked');
+            const countElement = document.getElementById('selectedUsersCount');
+            if (countElement) {
+                countElement.textContent = `${checkboxes.length} utilisateur(s) sélectionné(s)`;
+            }
+        }
+
+        async function createAnnouncement() {
+            const title = document.getElementById('announcementTitle').value.trim();
+            const content = document.getElementById('announcementContent').value.trim();
+            const priority = document.getElementById('announcementPriority').value;
+            const targetSpecific = document.getElementById('announcementTargetSpecific').checked;
+            
+            if (!title || !content) { 
+                alert('Veuillez remplir tous les champs'); 
+                return; 
+            }
+
+            // Récupérer les utilisateurs cibles si spécifiques
+            let targetUsers = [];
+            if (targetSpecific) {
+                const checkboxes = document.querySelectorAll('.target-user-checkbox:checked');
+                targetUsers = Array.from(checkboxes).map(cb => cb.value);
+                
+                if (targetUsers.length === 0) {
+                    alert('Veuillez sélectionner au moins un utilisateur');
+                    return;
+                }
+            }
+
+            try {
+                if (!announcementsSystem) { 
+                    announcementsSystem = new AnnouncementsSystem(); 
+                }
+                await announcementsSystem.createAnnouncement(title, content, priority, currentUserId, targetUsers);
+                
+                // Réinitialiser le formulaire
+                document.getElementById('announcementTitle').value = '';
+                document.getElementById('announcementContent').value = '';
+                document.getElementById('announcementPriority').value = 'normal';
+                document.getElementById('announcementTargetSpecific').checked = false;
+                document.getElementById('targetUsersSection').classList.add('hidden');
+                document.querySelectorAll('.target-user-checkbox').forEach(cb => cb.checked = false);
+                
+                closeModal('createAnnouncementModal');
+                loadAnnouncements();
+                showBootstrapAlert(`Annonce créée avec succès${targetUsers.length > 0 ? ` pour ${targetUsers.length} utilisateur(s)` : ' (visible par tous)'}`, 'success');
+            } catch (error) {
+                console.error('Erreur lors de la création:', error);
+                showBootstrapAlert('Erreur: ' + error.message, 'danger');
+            }
+        }
+
+        async function deactivateAnnouncement(announcementId) {
+            if (!confirm('Êtes-vous sûr de vouloir désactiver cette annonce ?')) return;
+            try {
+                if (!announcementsSystem) { announcementsSystem = new AnnouncementsSystem(); }
+                await announcementsSystem.deactivateAnnouncement(announcementId, currentUserId);
+                loadAnnouncements();
+                showBootstrapAlert('Annonce désactivée', 'success');
+            } catch (error) {
+                console.error('Erreur lors de la désactivation:', error);
+                showBootstrapAlert('Erreur: ' + error.message, 'danger');
+            }
+        }
+
+        async function deleteAnnouncement(announcementId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cette annonce ? Cette action est irréversible.')) return;
+            try {
+                if (!announcementsSystem) { announcementsSystem = new AnnouncementsSystem(); }
+                await announcementsSystem.deleteAnnouncement(announcementId, currentUserId);
+                loadAnnouncements();
+                showBootstrapAlert('Annonce supprimée', 'success');
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                showBootstrapAlert('Erreur: ' + error.message, 'danger');
+            }
+        }
+
+        // Démarrage de l'application
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkAdminAuth();
+            
+        });
+
+    </script>
+</body>
+</html>
