@@ -16,7 +16,8 @@
     "import-csv": "node import-fetexpress-csv.js",
     "remove-duplicates": "node remove-duplicates-celebrations.js",
     "create-missing-accounts": "node create-missing-user-accounts.js",
-    "reset-passwords": "node reset-all-passwords.js"
+    "reset-passwords": "node reset-all-passwords.js",
+    "generate-icons": "node generate-icons.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
@@ -29,5 +30,8 @@
     "anniversaire"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
 }

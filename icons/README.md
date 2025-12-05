@@ -1,10 +1,10 @@
 # Icônes PWA pour Fête Express
 
-Ce dossier doit contenir les icônes nécessaires pour l'installation de l'application en Progressive Web App (PWA).
+Ce dossier contient toutes les icônes nécessaires pour l'installation de l'application en Progressive Web App (PWA).
 
-## Icônes requises
+## ✅ Icônes générées
 
-Vous devez créer les icônes suivantes pour une compatibilité optimale sur tous les appareils :
+Toutes les icônes suivantes ont été générées automatiquement :
 
 1. **icon-72.png** - 72x72 pixels (Android)
 2. **icon-96.png** - 96x96 pixels (Android)
@@ -14,6 +14,26 @@ Vous devez créer les icônes suivantes pour une compatibilité optimale sur tou
 6. **icon-192.png** - 192x192 pixels (Android/iOS - Minimum requis)
 7. **icon-384.png** - 384x384 pixels (Android)
 8. **icon-512.png** - 512x512 pixels (Android/iOS - Minimum requis)
+
+## 🎨 Source SVG
+
+Le fichier **icon-source.svg** contient le design original de l'icône (gâteau avec bougies sur fond dégradé indigo-violet-rose).
+
+## 🔄 Régénérer les icônes
+
+Si vous modifiez le SVG source, vous pouvez régénérer toutes les icônes avec :
+
+```bash
+npm run generate-icons
+```
+
+Ou directement :
+
+```bash
+node generate-icons.js
+```
+
+**Note:** Le script nécessite `sharp` qui est installé comme dépendance de développement.
 
 ## Comment créer les icônes
 

@@ -1,0 +1,46 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cakeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f1f5f9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)"/>
+  
+  <!-- Cake base -->
+  <rect x="156" y="280" width="200" height="80" rx="10" fill="url(#cakeGradient)"/>
+  
+  <!-- Cake middle layer -->
+  <rect x="176" y="240" width="160" height="50" rx="8" fill="url(#cakeGradient)"/>
+  
+  <!-- Cake top layer -->
+  <rect x="196" y="200" width="120" height="50" rx="8" fill="url(#cakeGradient)"/>
+  
+  <!-- Candles -->
+  <rect x="216" y="150" width="8" height="60" rx="4" fill="#f9c74f"/>
+  <rect x="236" y="150" width="8" height="60" rx="4" fill="#ff6f61"/>
+  <rect x="256" y="150" width="8" height="60" rx="4" fill="#f9c74f"/>
+  <rect x="276" y="150" width="8" height="60" rx="4" fill="#ff6f61"/>
+  <rect x="296" y="150" width="8" height="60" rx="4" fill="#f9c74f"/>
+  
+  <!-- Candle flames -->
+  <circle cx="220" cy="140" r="6" fill="#ff6f61"/>
+  <circle cx="240" cy="140" r="6" fill="#f9c74f"/>
+  <circle cx="260" cy="140" r="6" fill="#ff6f61"/>
+  <circle cx="280" cy="140" r="6" fill="#f9c74f"/>
+  <circle cx="300" cy="140" r="6" fill="#ff6f61"/>
+  
+  <!-- Decorative stars -->
+  <path d="M120 180 L125 195 L140 195 L128 205 L133 220 L120 210 L107 220 L112 205 L100 195 L115 195 Z" fill="#ffffff" opacity="0.8"/>
+  <path d="M380 200 L384 210 L394 210 L386 218 L390 228 L380 222 L370 228 L374 218 L366 210 L376 210 Z" fill="#ffffff" opacity="0.8"/>
+  <path d="M140 320 L144 330 L154 330 L146 338 L150 348 L140 342 L130 348 L134 338 L126 330 L136 330 Z" fill="#ffffff" opacity="0.6"/>
+  <path d="M360 320 L364 330 L374 330 L366 338 L370 348 L360 342 L350 348 L354 338 L346 330 L356 330 Z" fill="#ffffff" opacity="0.6"/>
+</svg>
+
